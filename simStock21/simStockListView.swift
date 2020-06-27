@@ -16,13 +16,25 @@ struct simStockListView: View {
     var body: some View {
         NavigationView {
             VStack(alignment: .leading) {
-                SearchBar(text: "", searchText: $list.searchText)
-                Text(searchMessage)
+                SearchBar(text: self.$searchText, searchText: $list.searchText, searchCommitted: self.$searchCommitted)
+                    .disabled(self.isChoosing)
+                HStack{
+                    if list.searchText != nil && list.groups[0][0].group != "" {
+                    Text("未加入股群的股票中查無符合者，試以部分的代號或簡稱來查詢？")
+                        .foregroundColor(.orange)
+                    Button("[知道了]") {
+                        self.searchText = ""
+                        self.searchCommitted = false
+                        self.list.searchText = nil
+                    }
+                    }
+                }
                     .font(.footnote)
                     .padding(.horizontal, 20)
+                Spacer()
                 List{
                     ForEach(list.groups, id: \.self) {(stocks:[Stock]) in
-                        stockSection(stocks: stocks, isChoosing: self.$isChoosing, checkedStocks: self.$checkedStocks)
+                        stockSection(stocks: stocks, isChoosing: self.$isChoosing, searchCommitted: self.$searchCommitted, checkedStocks: self.$checkedStocks)
                     }
                 }
                     .listStyle(GroupedListStyle())
@@ -33,20 +45,41 @@ struct simStockListView: View {
  
     }
     
-    @State private var isChoosing = false
-    @State var checkedStocks: [Stock] = []
+    @State private var isChoosing = false   //進入了選取模式
+    @State var checkedStocks: [Stock] = []  //已選取的股票們
+    @State var searchText:String = ""       //剛才輸入的搜尋文字
+    @State var searchCommitted:Bool = false //搜尋剛被執行了
 
     
     var choose: some View {
         HStack {
             if isChoosing {
                 Text("請勾選")
+                    .foregroundColor(Color(.darkGray))
                  if checkedStocks.count > 0 {
-                    Text(">")
-                    Button("移除") {
+//                    Text(">")
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                    Button("自股群移除") {
                         self.list.removeStock(self.checkedStocks)
                         self.checkedStocks = []
                         self.isChoosing = false
+                    }
+                    Divider()
+                    Button("加入股群") {
+                        self.checkedStocks = []
+                        self.isChoosing = false
+                    }
+                }
+            } else if self.searchCommitted {
+                if list.searchText != nil && list.groups[0][0].group == "" {
+                    Text("請勾選")
+                     if checkedStocks.count > 0 {
+                        Text(">")
+                        Button("加入股群") {
+                            self.checkedStocks = []
+                            self.searchCommitted = false
+                        }
                     }
                 }
             } else {
@@ -55,26 +88,33 @@ struct simStockListView: View {
                 }
             }
         }
-            .frame(width:500.0, alignment: .leading)
+            .frame(width:300.0, alignment: .leading)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
+
 
     }
     
     var endChoosing: some View {
-        Group {
+        HStack {
             if isChoosing {
                 Button("離開選取模式") {
                     self.isChoosing = false
                 }
+            } else if self.searchCommitted && self.list.groups[0][0].group == "" {
+                Button("放棄搜尋結果") {
+                    self.searchText = ""
+                    self.list.searchText = nil
+                    self.searchCommitted = false
+                }
             }
         }
+        .frame(width:300.0, alignment: .trailing)
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
     }
 
     
-    var searchMessage:String {
-        (list.searchText != nil && list.groups[0][0].group != "" ? "查無符合，或已在股群清單？" : "")
-    }
 }
 
 
@@ -82,6 +122,7 @@ struct simStockListView: View {
 struct stockSection : View {
     @State var stocks : [Stock]
     @Binding var isChoosing:Bool
+    @Binding var searchCommitted:Bool
     @Binding var checkedStocks: [Stock]
 
     var header:String {
@@ -94,7 +135,7 @@ struct stockSection : View {
     var body: some View {
         Section(header: Text(header),footer: Text(footer)) {
             ForEach(stocks, id: \.sId) {stock in
-                stockCell(stock: stock, isChoosing: self.$isChoosing, checkedStocks: self.$checkedStocks)
+                stockCell(stock: stock, isChoosing: self.$isChoosing, searchCommitted: self.$searchCommitted, checkedStocks: self.$checkedStocks)
             }
         }
     }
@@ -105,11 +146,12 @@ struct stockSection : View {
 struct stockCell : View {
     var stock : Stock
     @Binding var isChoosing:Bool
+    @Binding var searchCommitted:Bool
     @Binding var checkedStocks:[Stock]
         
     var body: some View {
         HStack {
-            if isChoosing {
+            if isChoosing || (searchCommitted && stock.group == "") {
                 checkStock(stock: self.stock, isChecked: false, checkedStocks: self.$checkedStocks)
             }
             Text(stock.sId)
@@ -168,15 +210,18 @@ struct stockPage: View {
 
 struct SearchBar: View {
     @State   private var isEditing = false
-    @State   var text: String
+    @Binding var text: String
     @Binding var searchText:[String]?
+    @Binding var searchCommitted:Bool
 
     var body: some View {
         HStack {
-            TextField("Search ...", text: $text, onEditingChanged: {    //began or end (bool)
+            TextField("以代號或簡稱來搜尋未加入股群的上市股票", text: $text, onEditingChanged: {    //began or end (bool)
                 self.isEditing = $0
             }, onCommit: {
                 self.searchText = self.text.replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "  ", with: " ").replacingOccurrences(of: "  ", with: " ").components(separatedBy: " ")
+                self.searchCommitted = true
+                self.isEditing = false
             })
                 .padding(7)
                 .padding(.horizontal, 25)
@@ -193,6 +238,7 @@ struct SearchBar: View {
                             Button(action: {
                                 self.text = ""
                                 self.searchText = nil
+                                self.searchCommitted = false
                            })
                            {
                                 Image(systemName: "multiply.circle.fill")
@@ -205,6 +251,7 @@ struct SearchBar: View {
                 .padding(.horizontal, 10)
             if isEditing {
                 Button(action: {
+                    self.searchCommitted = false
                     self.isEditing = false
                     self.text = ""
                     self.searchText = nil
