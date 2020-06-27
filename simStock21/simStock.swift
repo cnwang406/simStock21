@@ -9,14 +9,7 @@
 import Foundation
 struct simStock {
         
-    var stocks:[Stock] = coreData.shared.fetchStock().stocks
-    var searchText:[String]? = nil {
-        didSet {
-            if let txt = searchText {
-                stocks = coreData.shared.fetchStock(sId: txt, sName: txt).stocks
-            }
-        }
-    }
+    private(set) var stocks:[Stock] = Stock.fetch(coreData.shared.context)
 
     init() {
         if defaults.object(forKey: "timeDownloadedStocks") as? Date == nil {
@@ -25,27 +18,33 @@ struct simStock {
     }
     
     let defaults:UserDefaults = UserDefaults.standard
-
+    
+    mutating func fetchStock(_ searchText:[String]?=nil) {
+        stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
+    }
         
     mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
-        let context = coreData.shared.getContext()
+        let context = coreData.shared.context
         for stock in stocks {
-            let _ = coreData.shared.newStock(context, sId:stock.sId, sName:stock.sName, group: group)
+            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
         }
-        coreData.shared.saveContext(context)
-        self.stocks = coreData.shared.fetchStock().stocks
+        try? context.save()
+        self.stocks = Stock.fetch(coreData.shared.context)
         NSLog("new stocks added: \(stocks)")
     }
     
-    mutating func removeStockFromGroup (sId:String) {
-        let updated = coreData.shared.updateStock(sId: sId, group: "")
-        coreData.shared.saveContext(updated.context)
-        self.stocks = coreData.shared.fetchStock().stocks
+    mutating func moveStockFromGroup(_ stocks:[Stock], group:String) {
+        if let context = stocks.first?.managedObjectContext {
+            for stock in stocks {
+                stock.group = group
+            }
+            try? context.save()
+            self.stocks = Stock.fetch(context)
+        }
     }
-    
+        
     
 //    var stocksJSON: Data? { try? JSONEncoder().encode(stocks) }
-    
 //    init?(stocksJSON: Data?) {
 //        if let json = stocksJSON, let s = try? JSONDecoder().decode(Array<Stock>.self, from: json) {
 //            stocks = s
@@ -108,7 +107,7 @@ struct simStock {
 
                     let lines:[String] = textString.components(separatedBy: CharacterSet.newlines) as [String]
                     var stockListBegins:Bool = false
-                    let theContext = coreData.shared.getContext()
+                    let context = coreData.shared.context
                     var allStockCount:Int = 0
                     for (index, lineText) in lines.enumerated() {
                         var line:String = lineText
@@ -122,14 +121,7 @@ struct simStock {
 
                             let sId = line.components(separatedBy: ",")[0]
                             let sName = line.components(separatedBy: ",")[1]
-//                            var sectionName:String
-//                            if self.simPrices.keys.contains(id) {
-//                                sectionName = (self.simPrices[id]!.paused ? coreData.shared.sectionWasPaused : coreData.shared.sectionInList)
-//                            } else {
-//                                sectionName = coreData.shared.sectionBySearch
-//                            }
-                            
-                            let _ = coreData.shared.updateStock(theContext, sId:sId, sName: sName)
+                            Stock.update(context, sId:sId, sName: sName)
                             allStockCount += 1
 //                            let progress:Float = Float(index+1) / Float(lines.count)
 //                            OperationQueue.main.addOperation {
@@ -138,13 +130,13 @@ struct simStock {
 
                         }   //if line != ""
                     } //for
-                    coreData.shared.saveContext(theContext)    //self.saveContext()
+                    try? context.save()
                     let timeDownloadedStocks = Date()
                     self.defaults.set(timeDownloadedStocks, forKey: "timeDownloadedStocks")
                     NSLog("twseDailyMI(ALLBUT0999): \(twDateTime.stringFromDate(timeDownloadedStocks, format: "yyyy/MM/dd HH:mm:ss")) \(allStockCount)筆")
                 }   //if let downloadedData
             } else {  //if error == nil
-                NSLog("twsePrices error:\(String(describing: error))")
+                NSLog("twseDailyMI(ALLBUT0999) error:\(String(describing: error))")
             }
         })
         task.resume()

@@ -30,7 +30,7 @@
 		E25ED3EC24A40F8C006C1332 /* pickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pickerViewController.swift; sourceTree = "<group>"; };
 		E25ED3ED24A40F95006C1332 /* settingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settingViewController.swift; sourceTree = "<group>"; };
 		E25ED3EE24A40FAF006C1332 /* cellObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cellObject.swift; sourceTree = "<group>"; };
-		E2C4580824A36CAA0036791E /* simStock21.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simStock21.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2C4580824A36CAA0036791E /* simStock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simStock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C4580B24A36CAA0036791E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E2C4580D24A36CAA0036791E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		E2C4581024A36CAA0036791E /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
@@ -82,7 +82,7 @@
 		E2C4580924A36CAA0036791E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E2C4580824A36CAA0036791E /* simStock21.app */,
+				E2C4580824A36CAA0036791E /* simStock.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -131,7 +131,7 @@
 			);
 			name = simStock21;
 			productName = simStock21;
-			productReference = E2C4580824A36CAA0036791E /* simStock21.app */;
+			productReference = E2C4580824A36CAA0036791E /* simStock.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -338,7 +338,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mystock.simStock21;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = simStock;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -358,7 +358,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.mystock.simStock21;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = simStock;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

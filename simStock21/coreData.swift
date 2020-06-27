@@ -15,7 +15,7 @@ public class coreData {
 
     private init() {} // Prevent clients from creating another instance.
 
-    lazy var persistentContainer: NSPersistentContainer = {
+    lazy private var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "simStock21")
         
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
@@ -26,49 +26,28 @@ public class coreData {
         return container
     }()
 
-    lazy var mainContext: NSManagedObjectContext = {
+    lazy private var mainContext: NSManagedObjectContext = {
         let context = self.persistentContainer.viewContext
         context.automaticallyMergesChangesFromParent = true
         return context
     }()
     
 
-    func getContext(_ context:NSManagedObjectContext?=nil) -> NSManagedObjectContext {
-        if let context = context {
+    var context:NSManagedObjectContext {
+        if Thread.current == Thread.main {
+            return mainContext
+        } else {
+            let context = persistentContainer.newBackgroundContext()
             return context
-        } else {
-            if Thread.current == Thread.main {
-                return mainContext
-            } else {
-                let context = persistentContainer.newBackgroundContext()
-//                context.automaticallyMergesChangesFromParent = true
-                return context
-            }
         }
     }
+    
+}
 
-    func saveContext(_ context:NSManagedObjectContext?=nil) {   //每個線程結束的最後不再用到coredata物件時就save
-        var theContext:NSManagedObjectContext
-        if let context = context {
-            theContext = context
-        } else {
-            theContext = mainContext
-        }
-        if theContext.hasChanges {
-            do {
-                try theContext.save()
-            } catch {
-              let nserror = error as NSError
-              NSLog("saveContext error \(nserror), \(nserror.userInfo)")
-            }
-        }
-    }
+
+public class Stock: NSManagedObject {
     
-    
-    
-    
-    
-    func fetchRequestStock (sId:[String]?=nil, sName:[String]?=nil, fetchLimit:Int?=nil) -> NSFetchRequest<Stock> {
+    static func fetchRequest (sId:[String]?=nil, sName:[String]?=nil, fetchLimit:Int?=nil) -> NSFetchRequest<Stock> {
         let fetchRequest = NSFetchRequest<Stock>(entityName: "Stock")
         var predicates:[NSPredicate] = []
         if let ids = sId {
@@ -84,7 +63,7 @@ public class coreData {
             }
         }
         let grouping = NSPredicate(format: "group != %@", "")
-        //合併以上條件為OR，可能都沒有就是ALL（list為nil時不是ALL,是tableview的預設查詢）
+        //合併以上條件為OR，或不搜尋sId,sName時只查回股群清單（過濾掉不在股群內的上市股）
         if predicates.count > 0 {
             if predicates.count > 1 {
                 predicates.append(grouping)
@@ -103,54 +82,39 @@ public class coreData {
         return fetchRequest
     }
 
-    func fetchStock (_ context:NSManagedObjectContext?=nil, sId:[String]?=nil, sName:[String]?=nil, fetchLimit:Int?=nil) -> (context:NSManagedObjectContext,stocks:[Stock]) {
-        let theContext = getContext(context)
-        let fetchRequest = fetchRequestStock(sId: sId, sName: sName, fetchLimit: fetchLimit)
-        do {
-            return try (theContext,theContext.fetch(fetchRequest))
-        } catch {
-            NSLog("\tfetch Stock error:\n\(error)")
-            return (theContext,[])
-        }
+    static func fetch (_ context:NSManagedObjectContext, sId:[String]?=nil, sName:[String]?=nil, fetchLimit:Int?=nil) -> [Stock] {
+        let fetchRequest = self.fetchRequest(sId: sId, sName: sName, fetchLimit: fetchLimit)
+        return (try? context.fetch(fetchRequest)) ?? []
     }
-    
-    func newStock(_ context:NSManagedObjectContext?=nil, sId:String, sName:String, group:String?=nil) -> (context:NSManagedObjectContext,stock:Stock) {
-        let theContext = getContext(context)
-        let stock = Stock(context: theContext)
+
+        
+    static func new(_ context:NSManagedObjectContext, sId:String, sName:String, group:String?=nil) -> Stock {
+        let stock = Stock(context: context)
         stock.sId    = sId
         stock.sName  = sName
         if let group = group {
             stock.group = group
         }
-        return (theContext,stock)
+        return stock
     }
     
-    func updateStock(_ context:NSManagedObjectContext?=nil, sId:String, sName:String?=nil, group:String?=nil) -> (context:NSManagedObjectContext,stock:Stock?) {
-        let theContext = getContext(context)
-        let fetched = fetchStock(theContext, sId:[sId])
-        if let stock = fetched.stocks.first {
+    static func update(_ context:NSManagedObjectContext, sId:String, sName:String?=nil, group:String?=nil) {
+        let stocks = fetch(context, sId:[sId])
+        if stocks.count == 0 {
             if let sName = sName {
-                stock.sName = sName
+                let _ = new(context, sId: sId, sName: sName)
             }
-            if let group = group {
-                stock.group = group
-            }
-            return (fetched.context,stock)
         } else {
-            if let sName = sName {
-                return newStock(theContext, sId: sId, sName: sName)
-            } else {
-                return newStock(theContext, sId: sId, sName: "")
+            for stock in stocks {
+                if let sName = sName {
+                    stock.sName = sName
+                }
+                if let group = group {
+                    stock.group = group
+                }
             }
         }
     }
-
-    
-}
-
-
-public class Stock: NSManagedObject {
-
 
 }
 
