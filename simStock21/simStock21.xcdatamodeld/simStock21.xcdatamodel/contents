@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="16119" systemVersion="19F101" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Stock" representedClassName=".Stock" syncable="YES">
-        <attribute name="group" attributeType="String" defaultValueString=""/>
         <attribute name="sId" attributeType="String" defaultValueString=""/>
         <attribute name="sName" attributeType="String" defaultValueString=""/>
+        <relationship name="group" maxCount="1" deletionRule="Nullify" destinationEntity="StockGroup" inverseName="stocks" inverseEntity="StockGroup"/>
+        <relationship name="prefix" maxCount="1" deletionRule="Nullify" destinationEntity="StockPrefix" inverseName="stocks" inverseEntity="StockPrefix"/>
+    </entity>
+    <entity name="StockGroup" representedClassName="StockGroup" syncable="YES">
+        <attribute name="gName" attributeType="String" defaultValueString=""/>
+        <relationship name="stocks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Stock" inverseName="group" inverseEntity="Stock"/>
+    </entity>
+    <entity name="StockPrefix" representedClassName="StockPrefix" syncable="YES">
+        <attribute name="pName" attributeType="String" defaultValueString=""/>
+        <relationship name="stocks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Stock" inverseName="prefix" inverseEntity="Stock"/>
     </entity>
     <elements>
-        <element name="Stock" positionX="-63" positionY="-18" width="128" height="88"/>
+        <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="73"/>
+        <element name="StockGroup" positionX="-186.53515625" positionY="-174.19140625" width="128" height="73"/>
+        <element name="StockPrefix" positionX="301.42578125" positionY="-540.74609375" width="128" height="73"/>
     </elements>
 </model>

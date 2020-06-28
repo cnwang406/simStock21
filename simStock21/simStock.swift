@@ -23,18 +23,19 @@ struct simStock {
         self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
     }
         
-    mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
+    mutating func newStock(stocks:[(sId:String,sName:String)], gName:String?=nil) {
         let context = coreData.shared.context
         for stock in stocks {
-            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
+            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, gName: gName)
         }
         try? context.save()
         self.stocks = Stock.fetch(coreData.shared.context)
         NSLog("new stocks added: \(stocks)")
     }
     
-    mutating func moveStockToGroup(_ stocks:[Stock], group:String) {
+    mutating func moveStockToGroup(_ stocks:[Stock], gName:String) {
         if let context = stocks.first?.managedObjectContext {
+            let group = StockGroup.get(context, gName:gName)
             for stock in stocks {
                 stock.group = group
             }

@@ -34,7 +34,7 @@ struct simStockListView: View {
                 Spacer()
                 List{
                     ForEach(list.groupedStocks, id: \.self) {(stocks:[Stock]) in
-                        stockSection(stocks: stocks, isChoosing: self.$isChoosing, isSeaching: self.$isSearching, checkedStocks: self.$checkedStocks)
+                        stockSection(list: self.list, stocks: stocks, isChoosing: self.$isChoosing, isSeaching: self.$isSearching, checkedStocks: self.$checkedStocks)
                     }
                 }
                     .listStyle(GroupedListStyle())
@@ -95,8 +95,6 @@ struct simStockListView: View {
 //                    self.checkedStocks = []
                     self.isSearching = false
                 }
-            } else {
-                Text(String("isSearching:\(self.isSearching)"))
             }
         }
     .fixedSize()
@@ -193,6 +191,8 @@ struct pickerGroups:View {
 
 
 struct stockSection : View {
+    @ObservedObject var list: simStockList
+
     @State var stocks : [Stock]
     @Binding var isChoosing:Bool
     @Binding var isSeaching:Bool
@@ -200,9 +200,9 @@ struct stockSection : View {
 
 
     var header:some View {
-        Text((stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]"))
+        Text((stocks[0].group.gName == "" ? "<搜尋結果>" : "[\(stocks[0].group.gName)]"))
             .font(.headline)
-            .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.5))
+//            .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.5))
     }
     var footer:some View {
         Text("\(stocks.count)支股")
@@ -211,7 +211,7 @@ struct stockSection : View {
     var body: some View {
         Section(header: header,footer: footer) {
             ForEach(stocks, id: \.sId) {stock in
-                stockCell(stock: stock, isChoosing: self.$isChoosing, isSearching: self.$isSeaching, checkedStocks: self.$checkedStocks)
+                stockCell(list: self.list, stock: stock, isChoosing: self.$isChoosing, isSearching: self.$isSeaching, checkedStocks: self.$checkedStocks)
             }
         }
     }
@@ -220,6 +220,8 @@ struct stockSection : View {
 
 
 struct stockCell : View {
+    @ObservedObject var list: simStockList
+
     var stock : Stock
     @Binding var isChoosing:Bool
     @Binding var isSearching:Bool
@@ -227,15 +229,15 @@ struct stockCell : View {
         
     var body: some View {
         HStack {
-            if isChoosing || (isSearching && stock.group == "") {
+            if isChoosing || (isSearching && stock.group.gName == "") {
                 checkStock(stock: self.stock, isChecked: false, checkedStocks: self.$checkedStocks)
             }
             Text(stock.sId)
                 .frame(width : 50.0, alignment: .leading)
             Text(stock.sName)
                 .frame(width : 80.0, alignment: .leading)
-            if stock.group != "" && !isChoosing && !isSearching {
-                NavigationLink(destination: stockPage(stock: stock)) {
+            if stock.group.gName != "" && !isChoosing && !isSearching {
+                NavigationLink(destination: stockPageView(list: self.list, stock: stock)) {
                     Text("")
                 }
                     .navigationBarTitle("")
@@ -271,19 +273,6 @@ struct checkStock: View {
     }
 }
 
-struct stockPage: View {
-    var stock : Stock
-    
-    var body: some View {
-        VStack {
-            HStack {
-                Text(stock.sId)
-                Text(stock.sName)
-            }
-        }
-        .padding()
-    }
-}
 
 struct SearchBar: View {
     @Binding var editText: String
