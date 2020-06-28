@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13122.16" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="16097" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="ipad12_9" orientation="portrait" layout="fullscreen" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13104.12"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="16087"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -11,15 +12,58 @@
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <rect key="frame" x="0.0" y="0.0" width="1024" height="1366"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" xcode11CocoaTouchSystemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="Launch Logo" translatesAutoresizingMaskIntoConstraints="NO" id="1o5-7H-73a">
+                                <rect key="frame" x="346" y="380.5" width="332" height="332"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="1o5-7H-73a" secondAttribute="height" multiplier="1:1" id="Xup-t4-8rZ"/>
+                                </constraints>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="simStock" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="Lcu-Gr-jx3">
+                                <rect key="frame" x="379.5" y="724.5" width="265" height="45"/>
+                                <fontDescription key="fontDescription" name="ArialMT" family="Arial" pointSize="40"/>
+                                <color key="textColor" cocoaTouchSystemColor="scrollViewTexturedBackgroundColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="-----" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="E2L-LE-oRx">
+                                <rect key="frame" x="0.0" y="736.5" width="379.5" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label hidden="YES" opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="-----" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3bB-jR-boC">
+                                <rect key="frame" x="644.5" y="736.5" width="379.5" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor" cocoaTouchSystemColor="whiteColor"/>
+                        <constraints>
+                            <constraint firstItem="Lcu-Gr-jx3" firstAttribute="leading" secondItem="E2L-LE-oRx" secondAttribute="trailing" id="1cx-mp-41a"/>
+                            <constraint firstItem="3bB-jR-boC" firstAttribute="width" secondItem="E2L-LE-oRx" secondAttribute="width" id="1jj-J3-lz3"/>
+                            <constraint firstItem="Lcu-Gr-jx3" firstAttribute="top" secondItem="1o5-7H-73a" secondAttribute="bottom" constant="12" id="2f9-3E-pzl"/>
+                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="3bB-jR-boC" secondAttribute="trailing" id="7Uf-qY-Cku"/>
+                            <constraint firstItem="E2L-LE-oRx" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="JZz-vF-BUt"/>
+                            <constraint firstItem="Lcu-Gr-jx3" firstAttribute="width" secondItem="1o5-7H-73a" secondAttribute="width" multiplier="0.8" id="SMd-F1-78A"/>
+                            <constraint firstItem="3bB-jR-boC" firstAttribute="leading" secondItem="Lcu-Gr-jx3" secondAttribute="trailing" id="TGV-n2-5fr"/>
+                            <constraint firstItem="Lcu-Gr-jx3" firstAttribute="centerY" secondItem="E2L-LE-oRx" secondAttribute="centerY" id="UE9-YS-XNz"/>
+                            <constraint firstItem="Lcu-Gr-jx3" firstAttribute="width" secondItem="E2L-LE-oRx" secondAttribute="width" multiplier="0.7" id="YAP-li-KGQ"/>
+                            <constraint firstItem="3bB-jR-boC" firstAttribute="centerY" secondItem="E2L-LE-oRx" secondAttribute="centerY" id="YFM-Dd-xoN"/>
+                            <constraint firstItem="1o5-7H-73a" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="a1I-85-cXA"/>
+                            <constraint firstItem="1o5-7H-73a" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" multiplier="0.8" id="sQT-yc-WKB"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="53" y="375"/>
+            <point key="canvasLocation" x="52.734375" y="374.67057101024886"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="Launch Logo" width="1365" height="1365"/>
+    </resources>
 </document>

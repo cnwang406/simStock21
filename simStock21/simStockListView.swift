@@ -16,17 +16,17 @@ struct simStockListView: View {
     var body: some View {
         NavigationView {
             VStack(alignment: .leading) {
-                SearchBar(text: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching)
+                SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching, isEditing: self.$searchEditing)
                     .disabled(self.isChoosing)
                 HStack(alignment: .bottom){
                     if self.isSearching && list.searchText != nil && !self.list.searchGotResults {
-                    Text("未加入股群的股票中查無符合者，試以部分的代號或簡稱來查詢？")
-                        .foregroundColor(.orange)
-                    Button("[知道了]") {
-                        self.searchText = ""
-                        self.list.searchText = nil
-                        self.isSearching = false
-                    }
+                        Text("未加入股群的股票中查無符合者，試以部分的代號或簡稱來查詢？")
+                            .foregroundColor(.orange)
+                        Button("[知道了]") {
+                            self.searchText = ""
+                            self.list.searchText = nil
+                            self.isSearching = false
+                        }
                     }
                 }
                     .font(.footnote)
@@ -39,17 +39,19 @@ struct simStockListView: View {
                 }
                     .listStyle(GroupedListStyle())
             }
-            .navigationBarItems(leading: choose, trailing: endChoosing)
+                .navigationBarItems(leading: choose, trailing: endChoosing)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
+            .navigationViewStyle(StackNavigationViewStyle())
  
     }
     
-    @State var isChoosing = false   //進入了選取模式
+    @State var isChoosing = false           //進入了選取模式
     @State var isSearching:Bool = false     //進入了搜尋模式
     @State var showFilter:Bool = false
     @State var checkedStocks: [Stock] = []  //已選取的股票們
     @State var searchText:String = ""       //輸入的搜尋文字
+    @State var searchEditing:Bool = false
+
 
     
     var choose: some View {
@@ -87,8 +89,11 @@ struct simStockListView: View {
             } else if !isSearching {
                 Button("選取") {
                     self.isChoosing = true
-                    // self.searchText = ""
-                    // self.list.searchText = nil
+                    self.searchEditing = false
+                    self.searchText = ""
+                    self.list.searchText = nil
+//                    self.checkedStocks = []
+                    self.isSearching = false
                 }
             } else {
                 Text(String("isSearching:\(self.isSearching)"))
@@ -138,17 +143,19 @@ struct pickerGroups:View {
         NavigationView {
             Form {
                 Section(header: Text("選取的股票要加入哪個股群？")) {
-                    Picker("", selection: $groupPicked) {
+                    Picker("", selection: self.$groupPicked) {
                         Text("新增股群").tag("新增股群")
-                        ForEach(list.groups, id: \.self) { group in
+                        ForEach(self.list.groups, id: \.self) { group in
                             Text(group).tag(group)
                         }
                     }
                         .pickerStyle(WheelPickerStyle())
+                        .labelsHidden()
                 }
-                if groupPicked == "新增股群" {
+
+                if self.groupPicked == "新增股群" {
                     Section (header: Text("加入新增的股群：")) {
-                            TextField("輸入股群名稱", text: $newGroup, onEditingChanged: { _ in    //began or end (bool)
+                        TextField("輸入股群名稱", text: self.$newGroup, onEditingChanged: { _ in    //began or end (bool)
                             }, onCommit: {
                             })
                     }
@@ -157,6 +164,9 @@ struct pickerGroups:View {
             .navigationBarTitle("加入股群")
             .navigationBarItems(leading: cancel, trailing: done)
         }
+            .navigationViewStyle(StackNavigationViewStyle())
+            .clipped()
+
     }
     
     var cancel: some View {
@@ -189,15 +199,17 @@ struct stockSection : View {
     @Binding var checkedStocks: [Stock]
 
 
-    var header:String {
-        (stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]")
+    var header:some View {
+        Text((stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]"))
+            .font(.headline)
+            .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.5))
     }
-    var footer:String {
-        "\(stocks.count)支股"
+    var footer:some View {
+        Text("\(stocks.count)支股")
     }
 
     var body: some View {
-        Section(header: Text(header),footer: Text(footer)) {
+        Section(header: header,footer: footer) {
             ForEach(stocks, id: \.sId) {stock in
                 stockCell(stock: stock, isChoosing: self.$isChoosing, isSearching: self.$isSeaching, checkedStocks: self.$checkedStocks)
             }
@@ -231,6 +243,7 @@ struct stockCell : View {
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+        .foregroundColor(self.checkedStocks.contains(stock) ? .orange : .primary)
     }
 }
 
@@ -273,19 +286,21 @@ struct stockPage: View {
 }
 
 struct SearchBar: View {
-    @State   private var isEditing = false
-    @Binding var text: String
+    @Binding var editText: String
     @Binding var searchText:[String]?
     @Binding var isSearching:Bool
+    @Binding var isEditing:Bool
 
-
+    //來自： https://www.appcoda.com/swiftui-search-bar/
     var body: some View {
         HStack {
-            TextField("以代號或簡稱來搜尋未加入股群的上市股票", text: $text, onEditingChanged: {    //began or end (bool)
-                self.isEditing = $0
-//                self.isSearching = true
+            TextField("以代號或簡稱來搜尋未加入股群的上市股票", text: $editText, onEditingChanged: { editing in
+                if !editing {
+                    self.isEditing = false
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)  // Dismiss the keyboard
+                }
             }, onCommit: {
-                self.searchText = self.text.replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "  ", with: " ").replacingOccurrences(of: "  ", with: " ").components(separatedBy: " ")
+                self.searchText = self.editText.replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "  ", with: " ").replacingOccurrences(of: "  ", with: " ").components(separatedBy: " ")
                 self.isEditing = false
                 self.isSearching = true
             })
@@ -293,7 +308,11 @@ struct SearchBar: View {
                 .padding(.horizontal, 25)
                 .background(Color(.systemGray6))
                 .minimumScaleFactor(0.5)
+//                .keyboardType(.webSearch)
                 .cornerRadius(8)
+                .onTapGesture {
+                    self.isEditing = true
+                }
                 .overlay(
                    HStack {
                        Image(systemName: "magnifyingglass")
@@ -303,7 +322,7 @@ struct SearchBar: View {
                 
                        if isEditing {
                             Button(action: {
-                                self.text = ""
+                                self.editText = ""
                                 self.searchText = nil
                                 self.isSearching = false
                            })
@@ -320,7 +339,7 @@ struct SearchBar: View {
                 Button(action: {
                     self.isSearching = false
                     self.isEditing = false
-                    self.text = ""
+                    self.editText = ""
                     self.searchText = nil
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)  // Dismiss the keyboard
                 })
