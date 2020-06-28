@@ -67,6 +67,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 //        (UIApplication.shared.delegate as? AppDelegate)?.saveContext()
         try? coreData.shared.context.save()
     }
+    
+    func windowScene(_ windowScene: UIWindowScene, didUpdate previousCoordinateSpace: UICoordinateSpace, interfaceOrientation previousInterfaceOrientation: UIInterfaceOrientation, traitCollection previousTraitCollection: UITraitCollection) {
+
+    }
 
 
 }

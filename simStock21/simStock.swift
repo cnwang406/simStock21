@@ -20,7 +20,7 @@ struct simStock {
     let defaults:UserDefaults = UserDefaults.standard
     
     mutating func fetchStock(_ searchText:[String]?=nil) {
-        stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
+        self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
     }
         
     mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
@@ -33,7 +33,7 @@ struct simStock {
         NSLog("new stocks added: \(stocks)")
     }
     
-    mutating func moveStockFromGroup(_ stocks:[Stock], group:String) {
+    mutating func moveStockToGroup(_ stocks:[Stock], group:String) {
         if let context = stocks.first?.managedObjectContext {
             for stock in stocks {
                 stock.group = group

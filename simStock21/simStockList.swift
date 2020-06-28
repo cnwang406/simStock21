@@ -13,16 +13,29 @@ class simStockList:ObservableObject {
     
     @Published private var sim:simStock = simStock()
     
-    var searchText:[String]? = nil {
+    var searchText:[String]? = nil {    //搜尋String以空格逗號分離為關鍵字Array
         didSet {
             sim.fetchStock(searchText)
         }
     }
 
-    var groups:[[Stock]] {
+    var groupedStocks:[[Stock]] {
         return Dictionary(grouping: sim.stocks) { (stock:Stock)  in
             stock.group
         }.values.map{$0}.sorted {$0[0].group < $1[0].group}
+    }
+    
+    var groups:[String] {
+        return groupedStocks.map{$0[0].group}.sorted {$0 < $1}
+    }
+        
+    var searchGotResults:Bool {
+        if sim.stocks.count > 0 {
+            if sim.stocks[0].group == "" {
+                return true
+            }
+        }
+        return false
     }
     
     init() {
@@ -45,9 +58,27 @@ class simStockList:ObservableObject {
         }
         
     }
+        
+    var isLandscape: Bool {
+        if UIDevice.current.orientation.isLandscape {
+            return true
+        } else {
+            return false
+        }
+    }
     
-    func removeStock(_ stocks:[Stock]) {
-        sim.moveStockFromGroup(stocks, group:"")
+    var isPad:Bool {
+        if (UIDevice.current.userInterfaceIdiom == .pad) {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    func moveStockToGroup(_ stocks:[Stock], group:String? = "") {
+        if let to = group {
+            sim.moveStockToGroup(stocks, group:to)
+        }
     }
 
 }
