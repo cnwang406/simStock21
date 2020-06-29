@@ -12,25 +12,29 @@ struct stockPageView: View {
     @ObservedObject var list: simStockList
     
     @State var stock : Stock
-    @State var stocks: [Stock] = []
+    @State var prefix: String
 
     var body: some View {
-        VStack {
-            Picker("", selection: $stock) {
-                ForEach(Array(list.nameGroup.keys), id:\.self) { key in
-                    Text(key).tag(self.list.nameGroup[key]!.first!)
+        return VStack {
+            Picker("", selection: $prefix) {
+                ForEach(list.prefixs, id:\.self) {prefix in
+                    Text(prefix).tag(prefix)
                 }
             }
                 .pickerStyle(SegmentedPickerStyle())
                 .labelsHidden()
+            .onReceive([self.prefix].publisher.first()) { value in
+                self.stock = self.list.prefixStocks(prefix: value)[0]
+            }
             
             Picker("", selection: $stock) {
-                ForEach(list.nameGroup[String(stock.sName.first!)]!, id:\.sId) { s in
-                    Text(s.sName).tag(s)
+                ForEach(list.prefixStocks(prefix: prefix), id:\.self) { stock in
+                    Text(stock.sName).tag(stock)
                 }
             }
                 .pickerStyle(SegmentedPickerStyle())
                 .labelsHidden()
+            .frame(width: 500.0, alignment: .leading)
 
             
             Form{

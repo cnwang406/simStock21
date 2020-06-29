@@ -16,7 +16,7 @@ struct simStockListView: View {
     var body: some View {
         NavigationView {
             VStack(alignment: .leading) {
-                SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching, isEditing: self.$searchEditing)
+                SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching) //, isEditing: self.$searchEditing)
                     .disabled(self.isChoosing)
                 HStack(alignment: .bottom){
                     if self.isSearching && list.searchText != nil && !self.list.searchGotResults {
@@ -33,7 +33,7 @@ struct simStockListView: View {
                     .padding(.horizontal, 20)
                 Spacer()
                 List{
-                    ForEach(list.groupedStocks, id: \.self) {(stocks:[Stock]) in
+                    ForEach(list.groupStocks, id: \.self) { (stocks:[Stock]) in
                         stockSection(list: self.list, stocks: stocks, isChoosing: self.$isChoosing, isSeaching: self.$isSearching, checkedStocks: self.$checkedStocks)
                     }
                 }
@@ -50,7 +50,7 @@ struct simStockListView: View {
     @State var showFilter:Bool = false
     @State var checkedStocks: [Stock] = []  //已選取的股票們
     @State var searchText:String = ""       //輸入的搜尋文字
-    @State var searchEditing:Bool = false
+//    @State var searchEditing:Bool = false
 
 
     
@@ -63,7 +63,7 @@ struct simStockListView: View {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
                     Button((list.isPad || list.isLandscape ? "自股群" : "") + "移除") {
-                        self.list.moveStockToGroup(self.checkedStocks)
+                        self.list.moveStocks(self.checkedStocks)
                         self.checkedStocks = []
                         self.isChoosing = false
                     }
@@ -89,7 +89,7 @@ struct simStockListView: View {
             } else if !isSearching {
                 Button("選取") {
                     self.isChoosing = true
-                    self.searchEditing = false
+//                    self.searchEditing = false
                     self.searchText = ""
                     self.list.searchText = nil
 //                    self.checkedStocks = []
@@ -143,8 +143,8 @@ struct pickerGroups:View {
                 Section(header: Text("選取的股票要加入哪個股群？")) {
                     Picker("", selection: self.$groupPicked) {
                         Text("新增股群").tag("新增股群")
-                        ForEach(self.list.groups, id: \.self) { group in
-                            Text(group).tag(group)
+                        ForEach(self.list.groups, id: \.self) { (gName:String) in
+                            Text(gName).tag(gName)
                         }
                     }
                         .pickerStyle(WheelPickerStyle())
@@ -175,7 +175,7 @@ struct pickerGroups:View {
     var done: some View {
         Button("確認") {
             let toGroup:String = (self.groupPicked != "新增股群" ? self.groupPicked : self.newGroup)
-            self.list.moveStockToGroup(self.checkedStocks, group: toGroup)
+            self.list.moveStocks(self.checkedStocks, toGroup: toGroup)
             self.isPresented = false
             self.isMoving = false
             self.searchText = ""
@@ -200,7 +200,7 @@ struct stockSection : View {
 
 
     var header:some View {
-        Text((stocks[0].group.gName == "" ? "<搜尋結果>" : "[\(stocks[0].group.gName)]"))
+        Text((stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]"))
             .font(.headline)
 //            .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.5))
     }
@@ -210,7 +210,7 @@ struct stockSection : View {
 
     var body: some View {
         Section(header: header,footer: footer) {
-            ForEach(stocks, id: \.sId) {stock in
+            ForEach(stocks, id: \.self) {stock in
                 stockCell(list: self.list, stock: stock, isChoosing: self.$isChoosing, isSearching: self.$isSeaching, checkedStocks: self.$checkedStocks)
             }
         }
@@ -226,18 +226,19 @@ struct stockCell : View {
     @Binding var isChoosing:Bool
     @Binding var isSearching:Bool
     @Binding var checkedStocks:[Stock]
+    @State   var prefix:String = ""
         
     var body: some View {
         HStack {
-            if isChoosing || (isSearching && stock.group.gName == "") {
+            if isChoosing || (isSearching && stock.group == "") {
                 checkStock(stock: self.stock, isChecked: false, checkedStocks: self.$checkedStocks)
             }
             Text(stock.sId)
                 .frame(width : 50.0, alignment: .leading)
             Text(stock.sName)
                 .frame(width : 80.0, alignment: .leading)
-            if stock.group.gName != "" && !isChoosing && !isSearching {
-                NavigationLink(destination: stockPageView(list: self.list, stock: stock)) {
+            if stock.group != "" && !isChoosing && !isSearching {
+                NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
                     Text("")
                 }
                     .navigationBarTitle("")
@@ -278,17 +279,17 @@ struct SearchBar: View {
     @Binding var editText: String
     @Binding var searchText:[String]?
     @Binding var isSearching:Bool
-    @Binding var isEditing:Bool
+    @State var isEditing:Bool = false
 
     //來自： https://www.appcoda.com/swiftui-search-bar/
     var body: some View {
         HStack {
-            TextField("以代號或簡稱來搜尋未加入股群的上市股票", text: $editText, onEditingChanged: { editing in
+            TextField("以代號或簡稱來搜尋未加入股群的上市股票", text: $editText    /*, onEditingChanged: { editing in
                 if !editing {
                     self.isEditing = false
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)  // Dismiss the keyboard
                 }
-            }, onCommit: {
+            } */, onCommit: {
                 self.searchText = self.editText.replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "  ", with: " ").replacingOccurrences(of: "  ", with: " ").components(separatedBy: " ")
                 self.isEditing = false
                 self.isSearching = true
@@ -301,6 +302,7 @@ struct SearchBar: View {
                 .cornerRadius(8)
                 .onTapGesture {
                     self.isEditing = true
+                    self.isSearching = true
                 }
                 .overlay(
                    HStack {
@@ -324,7 +326,7 @@ struct SearchBar: View {
                    }
                 )
                 .padding(.horizontal, 10)
-            if isEditing {
+            if isEditing && isSearching {
                 Button(action: {
                     self.isSearching = false
                     self.isEditing = false

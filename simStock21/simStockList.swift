@@ -19,38 +19,51 @@ class simStockList:ObservableObject {
         }
     }
     
-    var stocks:[Stock] {
-        sim.stocks
+    
+    var prefixedStocks:[[Stock]] {
+        Dictionary(grouping: sim.stocks) { (stock:Stock)  in
+            stock.prefix
+        }.values
+            .map{$0.map{$0}.sorted{$0.sName < $1.sName}}
+            .sorted {$0[0].prefix < $1[0].prefix}
     }
     
-    var nameGroup:[String:[Stock]] {
-        var n:[String:[Stock]] = [:]
-        for stock in stocks {
-            let name1 = String(stock.sName.first!)
-            if n[name1] != nil {
-                n[name1]!.append(stock)
-            } else {
-                n[name1] = [stock]
-            }
-        }
-        return n
+    var prefixs:[String] {
+        prefixedStocks.map{$0[0].prefix}
     }
-
-    var groupedStocks:[[Stock]] {
-        return Dictionary(grouping: sim.stocks) { (stock:Stock)  in
-            stock.group.gName
-        }.values.map{$0}.sorted {$0[0].group.gName < $1[0].group.gName}
+    
+    func prefixStocks(prefix:String) -> [Stock] {
+        return prefixedStocks.filter{ $0[0].prefix == prefix}[0]
+    }
+    
+    var groupStocks:[[Stock]] {
+        Dictionary(grouping: sim.stocks) { (stock:Stock)  in
+            stock.group
+        }.values
+            .map{$0.map{$0}.sorted{$0.sName < $1.sName}}
+            .sorted {$0[0].group < $1[0].group}
     }
     
     var groups:[String] {
-        return groupedStocks.map{$0[0].group.gName}.sorted {$0 < $1}
+        groupStocks.map{$0[0].group}
     }
+
+//    var groups:[(group:String,stocks:[Stock])] {
+//        let groupedStocks = Dictionary(grouping: sim.stocks) { (stock:Stock)  in
+//            stock.group
+//        }
+//        let tupleGroups = groupedStocks.values
+//            .map{($0[0].group,$0.map{$0}.sorted{$0.sName < $1.sName})} as [(group:String,stocks:[Stock])]
+//        let sortedGroups = tupleGroups.sorted {$0.group < $1.group}
+//        NSLog("\(sortedGroups[0].stocks.map{$0.sName})")
+//        return sortedGroups
+//    }
+
+    
         
     var searchGotResults:Bool {
-        if groups.count > 0 {
-            if groups[0] == "" {
-                return true
-            }
+        if let firstGroup = groupStocks.first?[0].group, firstGroup == "" {
+            return true
         }
         return false
     }
@@ -63,7 +76,7 @@ class simStockList:ObservableObject {
             (sId:"2327", sName:"國巨"),
             (sId:"2330", sName:"台積電"),
             (sId:"2474", sName:"可成")]
-            sim.newStock(stocks: group1, gName: "股群1")
+            sim.newStock(stocks: group1, group: "股群1")
             
             let group2:[(sId:String,sName:String)] = [
             (sId:"9914", sName:"美利達"),
@@ -71,7 +84,7 @@ class simStockList:ObservableObject {
             (sId:"1476", sName:"儒鴻"),
             (sId:"2912", sName:"統一超"),
             (sId:"9910", sName:"豐泰")]
-            sim.newStock(stocks: group2, gName: "股群2")
+            sim.newStock(stocks: group2, group: "股群2")
         }
         
     }
@@ -92,10 +105,8 @@ class simStockList:ObservableObject {
         }
     }
     
-    func moveStockToGroup(_ stocks:[Stock], group:String? = "") {
-        if let to = group {
-            sim.moveStockToGroup(stocks, gName:to)
-        }
+    func moveStocks(_ stocks:[Stock], toGroup:String = "") {
+        sim.moveStocksToGroup(stocks, group:toGroup)
     }
 
 }

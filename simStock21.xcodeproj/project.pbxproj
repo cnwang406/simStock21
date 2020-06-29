@@ -11,7 +11,6 @@
 		E27B62B224A8774600092943 /* simStockPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27B62B124A8774600092943 /* simStockPageView.swift */; };
 		E2C4580C24A36CAA0036791E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4580B24A36CAA0036791E /* AppDelegate.swift */; };
 		E2C4580E24A36CAA0036791E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4580D24A36CAA0036791E /* SceneDelegate.swift */; };
-		E2C4581124A36CAA0036791E /* simStock21.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E2C4580F24A36CAA0036791E /* simStock21.xcdatamodeld */; };
 		E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4581224A36CAA0036791E /* simStockListView.swift */; };
 		E2C4581524A36CAA0036791E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E2C4581424A36CAA0036791E /* Assets.xcassets */; };
 		E2C4581824A36CAA0036791E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E2C4581724A36CAA0036791E /* Preview Assets.xcassets */; };
@@ -35,7 +34,6 @@
 		E2C4580824A36CAA0036791E /* simStock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simStock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C4580B24A36CAA0036791E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E2C4580D24A36CAA0036791E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		E2C4581024A36CAA0036791E /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
 		E2C4581224A36CAA0036791E /* simStockListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockListView.swift; sourceTree = "<group>"; };
 		E2C4581424A36CAA0036791E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E2C4581724A36CAA0036791E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
@@ -103,7 +101,6 @@
 				E2C4581424A36CAA0036791E /* Assets.xcassets */,
 				E2C4581924A36CAA0036791E /* LaunchScreen.storyboard */,
 				E2C4581C24A36CAA0036791E /* Info.plist */,
-				E2C4580F24A36CAA0036791E /* simStock21.xcdatamodeld */,
 				E2C4581624A36CAA0036791E /* Preview Content */,
 			);
 			path = simStock21;
@@ -196,7 +193,6 @@
 				E25ED3EF24A43DD0006C1332 /* utility.swift in Sources */,
 				E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */,
 				E2C4582324A36CC50036791E /* simStock.swift in Sources */,
-				E2C4581124A36CAA0036791E /* simStock21.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,19 +386,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCVersionGroup section */
-		E2C4580F24A36CAA0036791E /* simStock21.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-				E2C4581024A36CAA0036791E /* simStock21.xcdatamodel */,
-			);
-			currentVersion = E2C4581024A36CAA0036791E /* simStock21.xcdatamodel */;
-			path = simStock21.xcdatamodeld;
-			sourceTree = "<group>";
-			versionGroupType = wrapper.xcdatamodel;
-		};
-/* End XCVersionGroup section */
 	};
 	rootObject = E2C4580024A36CAA0036791E /* Project object */;
 }

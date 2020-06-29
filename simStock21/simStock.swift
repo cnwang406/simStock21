@@ -12,35 +12,38 @@ struct simStock {
     private(set) var stocks:[Stock] = Stock.fetch(coreData.shared.context)
 
     init() {
+        
         if defaults.object(forKey: "timeDownloadedStocks") as? Date == nil {
             twseDailyMI()
         }
     }
     
+    
     let defaults:UserDefaults = UserDefaults.standard
     
     mutating func fetchStock(_ searchText:[String]?=nil) {
         self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
-    }
+     }
         
-    mutating func newStock(stocks:[(sId:String,sName:String)], gName:String?=nil) {
+    mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
         let context = coreData.shared.context
         for stock in stocks {
-            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, gName: gName)
+            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
         }
         try? context.save()
-        self.stocks = Stock.fetch(coreData.shared.context)
+        self.fetchStock()
         NSLog("new stocks added: \(stocks)")
     }
     
-    mutating func moveStockToGroup(_ stocks:[Stock], gName:String) {
+    mutating func moveStocksToGroup(_ stocks:[Stock], group:String) {
         if let context = stocks.first?.managedObjectContext {
-            let group = StockGroup.get(context, gName:gName)
             for stock in stocks {
                 stock.group = group
+                NSLog("\(stock.sName) 加入 \(group)")
+
             }
             try? context.save()
-            self.stocks = Stock.fetch(context)
+            self.fetchStock()
         }
     }
         
