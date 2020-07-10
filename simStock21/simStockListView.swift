@@ -7,16 +7,17 @@
 //
 
 import SwiftUI
-import CoreData
 
 struct simStockListView: View {
     
     @ObservedObject var list: simStockList
+    @Environment(\.horizontalSizeClass) var sizeClass
         
     var body: some View {
         NavigationView {
+            
             VStack(alignment: .leading) {
-                SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching) //, isEditing: self.$searchEditing)
+                SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching)
                     .disabled(self.isChoosing)
                 HStack(alignment: .bottom){
                     if self.isSearching && list.searchText != nil && !self.list.searchGotResults {
@@ -40,6 +41,7 @@ struct simStockListView: View {
                     .listStyle(GroupedListStyle())
             }
                 .navigationBarItems(leading: choose, trailing: endChoosing)
+            
         }
             .navigationViewStyle(StackNavigationViewStyle())
  
@@ -47,10 +49,9 @@ struct simStockListView: View {
     
     @State var isChoosing = false           //進入了選取模式
     @State var isSearching:Bool = false     //進入了搜尋模式
-    @State var showFilter:Bool = false
+    @State var showFilter:Bool = false      //顯示pickerGroups
     @State var checkedStocks: [Stock] = []  //已選取的股票們
     @State var searchText:String = ""       //輸入的搜尋文字
-//    @State var searchEditing:Bool = false
 
 
     
@@ -62,7 +63,7 @@ struct simStockListView: View {
                  if checkedStocks.count > 0 {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
-                    Button((list.isPad || list.isLandscape ? "自股群" : "") + "移除") {
+                    Button((sizeClass == .regular ? "自股群" : "") + "移除") {
                         self.list.moveStocks(self.checkedStocks)
                         self.checkedStocks = []
                         self.isChoosing = false
@@ -89,10 +90,8 @@ struct simStockListView: View {
             } else if !isSearching {
                 Button("選取") {
                     self.isChoosing = true
-//                    self.searchEditing = false
                     self.searchText = ""
                     self.list.searchText = nil
-//                    self.checkedStocks = []
                     self.isSearching = false
                 }
             }
@@ -108,12 +107,12 @@ struct simStockListView: View {
     var endChoosing: some View {
         HStack {
             if isChoosing {
-                Button("離開" + (list.isPad || list.isLandscape ? "選取模式" : "")) {
+                Button("離開" + (sizeClass == .regular ? "選取模式" : "")) {
                     self.isChoosing = false
                     self.checkedStocks = []
                 }
             } else if self.list.searchGotResults {
-                Button("放棄" + (list.isPad || list.isLandscape ? "搜尋結果" : "")) {
+                Button("放棄" + (sizeClass == .regular ? "搜尋結果" : "")) {
                     self.searchText = ""
                     self.list.searchText = nil
                     self.checkedStocks = []
@@ -121,7 +120,7 @@ struct simStockListView: View {
                 }
             }
         }
-        .frame(width:(list.isPad || list.isLandscape ? 100.0 : 50.0), alignment: .trailing)
+        .frame(width:(sizeClass == .regular ? 100.0 : 50.0), alignment: .trailing)
         .lineLimit(1)
         .minimumScaleFactor(0.5)
     }

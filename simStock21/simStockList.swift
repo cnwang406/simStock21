@@ -36,6 +36,12 @@ class simStockList:ObservableObject {
         return prefixedStocks.filter{ $0[0].prefix == prefix}[0]
     }
     
+    func prefixStocksWidth(prefix:String) -> CGFloat {
+        let stocks = prefixStocks(prefix: prefix)
+        let maxLength = stocks.map{$0.sName.count}.max() ?? 0
+        return CGFloat(20 * maxLength * stocks.count)
+    }
+    
     var groupStocks:[[Stock]] {
         Dictionary(grouping: sim.stocks) { (stock:Stock)  in
             stock.group
@@ -85,23 +91,6 @@ class simStockList:ObservableObject {
             (sId:"2912", sName:"統一超"),
             (sId:"9910", sName:"豐泰")]
             sim.newStock(stocks: group2, group: "股群2")
-        }
-        
-    }
-        
-    var isLandscape: Bool {
-        if UIDevice.current.orientation.isLandscape {
-            return true
-        } else {
-            return false
-        }
-    }
-    
-    var isPad:Bool {
-        if (UIDevice.current.userInterfaceIdiom == .pad) {
-            return true
-        } else {
-            return false
         }
     }
     

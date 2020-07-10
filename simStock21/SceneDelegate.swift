@@ -24,7 +24,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let context = coreData.shared.context
 
         // Create the SwiftUI view and set the context as the value for the managedObjectContext environment keyPath.
-        // Add `@Environment(\.managedObjectContext)` in the views that will need the context.
+        // Add `@Environment(\.managedObjectContext)` in the views that will need the context.        
         let contentView = simStockListView(list: simStockList()).environment(\.managedObjectContext, context)
 
         // Use a UIHostingController as window root view controller.
@@ -74,4 +74,3 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 }
-
