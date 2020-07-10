@@ -15,8 +15,8 @@ struct simStockListView: View {
         
     var body: some View {
         NavigationView {
-            
-            VStack(alignment: .leading) {
+            VStack (alignment: .leading) {
+                Spacer()
                 SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching)
                     .disabled(self.isChoosing)
                 HStack(alignment: .bottom){
@@ -40,11 +40,11 @@ struct simStockListView: View {
                 }
                     .listStyle(GroupedListStyle())
             }
+                .navigationBarTitle("", displayMode: .inline)
                 .navigationBarItems(leading: choose, trailing: endChoosing)
-            
         }
             .navigationViewStyle(StackNavigationViewStyle())
- 
+
     }
     
     @State var isChoosing = false           //進入了選取模式
@@ -240,7 +240,7 @@ struct stockCell : View {
                 NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
                     Text("")
                 }
-                    .navigationBarTitle("")
+//                    .navigationBarTitle("")
             }
         }
         .lineLimit(1)

@@ -20,7 +20,7 @@ class simStockList:ObservableObject {
     }
     
     
-    var prefixedStocks:[[Stock]] {
+    private var prefixedStocks:[[Stock]] {
         Dictionary(grouping: sim.stocks) { (stock:Stock)  in
             stock.prefix
         }.values
@@ -35,13 +35,7 @@ class simStockList:ObservableObject {
     func prefixStocks(prefix:String) -> [Stock] {
         return prefixedStocks.filter{ $0[0].prefix == prefix}[0]
     }
-    
-    func prefixStocksWidth(prefix:String) -> CGFloat {
-        let stocks = prefixStocks(prefix: prefix)
-        let maxLength = stocks.map{$0.sName.count}.max() ?? 0
-        return CGFloat(20 * maxLength * stocks.count)
-    }
-    
+        
     var groupStocks:[[Stock]] {
         Dictionary(grouping: sim.stocks) { (stock:Stock)  in
             stock.group
@@ -53,19 +47,6 @@ class simStockList:ObservableObject {
     var groups:[String] {
         groupStocks.map{$0[0].group}
     }
-
-//    var groups:[(group:String,stocks:[Stock])] {
-//        let groupedStocks = Dictionary(grouping: sim.stocks) { (stock:Stock)  in
-//            stock.group
-//        }
-//        let tupleGroups = groupedStocks.values
-//            .map{($0[0].group,$0.map{$0}.sorted{$0.sName < $1.sName})} as [(group:String,stocks:[Stock])]
-//        let sortedGroups = tupleGroups.sorted {$0.group < $1.group}
-//        NSLog("\(sortedGroups[0].stocks.map{$0.sName})")
-//        return sortedGroups
-//    }
-
-    
         
     var searchGotResults:Bool {
         if let firstGroup = groupStocks.first?[0].group, firstGroup == "" {
@@ -77,7 +58,7 @@ class simStockList:ObservableObject {
     init() {
         if sim.stocks.count == 0 {
             let group1:[(sId:String,sName:String)] = [
-            (sId:"1590", sName:"亞客-KY"),
+            (sId:"1590", sName:"亞德客-KY"),
             (sId:"3406", sName:"玉晶光"),
             (sId:"2327", sName:"國巨"),
             (sId:"2330", sName:"台積電"),
