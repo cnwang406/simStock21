@@ -10,14 +10,68 @@ import Foundation
 import SwiftUI
 
 class simStockList:ObservableObject {
-    
     @Published private var sim:simStock = simStock()
+    @Published var orientation: Orientation
+    @Published var tradesUpdated:Date = Date.distantPast
     
-    var searchText:[String]? = nil {    //搜尋String以空格逗號分離為關鍵字Array
-        didSet {
-            sim.fetchStock(searchText)
+    enum Orientation {
+        case portrait
+        case landscape
+    }
+    
+    private var _observer: NSObjectProtocol?
+    
+    init() {
+        // fairly arbitrary starting value for 'flat' orientations
+        if UIDevice.current.orientation.isLandscape {
+            self.orientation = .landscape
+        }
+        else {
+            self.orientation = .portrait
+        }
+        
+        // unowned self because we unregister before self becomes invalid
+        _observer = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [unowned self] note in
+            guard let device = note.object as? UIDevice else {
+                return
+            }
+            if device.orientation.isPortrait {
+                self.orientation = .portrait
+            }
+            else if device.orientation.isLandscape {
+                self.orientation = .landscape
+            }
+        }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification),
+            name: UIApplication.willResignActiveNotification, object: nil)
+    }
+    
+    deinit {
+        if let observer = _observer {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
+
+    var searchText:[String]? = nil {    //搜尋String以空格逗號分離為關鍵字Array
+        didSet {
+            sim.fetchStocks(searchText)
+        }
+    }
+    
+//    var stock:Stock? = nil {
+//        didSet {
+//            if let stock = stock {
+//                sim.fetchTrades(stock)
+//            }
+//        }
+//    }
+//    
+//    var trades:[Trade] {
+//        sim.trades
+//    }
     
     
     private var prefixedStocks:[[Stock]] {
@@ -54,29 +108,24 @@ class simStockList:ObservableObject {
         }
         return false
     }
-    
-    init() {
-        if sim.stocks.count == 0 {
-            let group1:[(sId:String,sName:String)] = [
-            (sId:"1590", sName:"亞德客-KY"),
-            (sId:"3406", sName:"玉晶光"),
-            (sId:"2327", sName:"國巨"),
-            (sId:"2330", sName:"台積電"),
-            (sId:"2474", sName:"可成")]
-            sim.newStock(stocks: group1, group: "股群1")
-            
-            let group2:[(sId:String,sName:String)] = [
-            (sId:"9914", sName:"美利達"),
-            (sId:"2377", sName:"微星"),
-            (sId:"1476", sName:"儒鴻"),
-            (sId:"2912", sName:"統一超"),
-            (sId:"9910", sName:"豐泰")]
-            sim.newStock(stocks: group2, group: "股群2")
-        }
-    }
-    
+
     func moveStocks(_ stocks:[Stock], toGroup:String = "") {
         sim.moveStocksToGroup(stocks, group:toGroup)
     }
 
+    @objc func appNotification(_ notification: Notification) {
+        switch notification.name {
+        case UIApplication.didBecomeActiveNotification:
+            NSLog ("=== appDidBecomeActive ===")
+            sim.downloadStocks()
+            sim.downloadTrades()
+        case UIApplication.willResignActiveNotification:
+            NSLog ("=== appWillResignActive ===\n")
+        default:
+            break
+        }
+
+    }
+
+    
 }

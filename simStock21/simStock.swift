@@ -7,44 +7,91 @@
 //
 
 import Foundation
+
+
 struct simStock {
-        
-    private(set) var stocks:[Stock] = Stock.fetch(coreData.shared.context)
+    
+    let simTesting:Bool = false
+    let request = urlRequest()
+    let defaults = UserDefaults.standard
+
+    private(set) var stocks:[Stock] = []
+//    private(set) var trades:[Trade] = []
 
     init() {
-        
-        if defaults.object(forKey: "timeDownloadedStocks") as? Date == nil {
-            twseDailyMI()
+        if defaults.integer(forKey: "simYears") == 0 {
+            defaults.set(1, forKey: "simYears")
+        }
+        self.stocks = Stock.fetch(coreData.shared.context)
+        if self.stocks.count == 0 {
+            let group1:[(sId:String,sName:String)] = [
+                (sId:"1590", sName:"亞德客-KY"),
+                (sId:"3406", sName:"玉晶光"),
+                (sId:"2327", sName:"國巨"),
+                (sId:"2330", sName:"台積電"),
+                (sId:"2474", sName:"可成")]
+            self.newStock(stocks: group1, group: "股群1")
+            
+            let group2:[(sId:String,sName:String)] = [
+                (sId:"9914", sName:"美利達"),
+                (sId:"2377", sName:"微星"),
+                (sId:"1476", sName:"儒鴻"),
+                (sId:"2912", sName:"統一超"),
+                (sId:"9910", sName:"豐泰")]
+            self.newStock(stocks: group2, group: "股群2")
         }
     }
-    
-    
-    let defaults:UserDefaults = UserDefaults.standard
-    
-    mutating func fetchStock(_ searchText:[String]?=nil) {
+        
+    mutating func fetchStocks(_ searchText:[String]?=nil) {
         self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
-     }
+    }
+    
+//    mutating func fetchTrades(_ stock:Stock) {
+//        let context = stock.managedObjectContext ?? coreData.shared.context
+//        self.trades = Trade.fetch(context, stock: stock, asc: false)
+//    }
+
         
     mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
+        let defaultDate = self.defaultDate
         let context = coreData.shared.context
         for stock in stocks {
-            let _ = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
+            let s = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
+            s.dateFirst = defaultDate.first
+            s.dateStart = defaultDate.start
         }
         try? context.save()
-        self.fetchStock()
+        self.fetchStocks()
         NSLog("new stocks added: \(stocks)")
     }
     
     mutating func moveStocksToGroup(_ stocks:[Stock], group:String) {
-        if let context = stocks.first?.managedObjectContext {
+        var requestStocks:[Stock] = []
+        if let context = stocks.first?.context {
+            let defaultDate = self.defaultDate
             for stock in stocks {
+                if stock.group == "" && group != "" {
+                    if defaultDate.first < stock.dateFirst {
+                        stock.dateFirst = defaultDate.first
+                        stock.dateStart = defaultDate.start
+                    }
+                    requestStocks.append(stock)
+                }
                 stock.group = group
-                NSLog("\(stock.sName) 加入 \(group)")
-
             }
             try? context.save()
-            self.fetchStock()
+            self.fetchStocks()
+            if requestStocks.count > 0 {
+                request.runRequest(stocks: requestStocks)
+            }
         }
+    }
+    
+    var defaultDate:(first:Date,start:Date) {
+        let simYears = defaults.integer(forKey: "simYears")
+        let dt0 = twDateTime.calendar.date(byAdding: .year, value: (0 - simYears), to: twDateTime.startOfDay()) ?? Date.distantFuture
+        let dt1 = twDateTime.calendar.date(byAdding: .year, value: 1, to: dt0) ?? Date.distantFuture
+        return (dt0,dt1)
     }
         
     
@@ -56,95 +103,42 @@ struct simStock {
 //            stocks = []
 //        }
 //    }
-
     
-    private func twseDailyMI() {
-        //        let y = calendar.component(.Year, fromDate: qDate) - 1911
-        //        let m = calendar.component(.Month, fromDate: qDate)
-        //        let d = calendar.component(.Day, fromDate: qDate)
-        //        let YYYMMDD = String(format: "%3d/%02d/%02d", y,m,d)
-        //================================================================================
-        //從當日收盤行情取股票代號名稱
-        //2017-05-24因應TWSE網站改版變更查詢方式為URLRequest
-        //http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=20170523&type=ALLBUT0999
-
-        let url = URL(string: "http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&type=ALLBUT0999")
-        let request = URLRequest(url: url!,timeoutInterval: 30)
-
-        let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
-            if error == nil {
-                let big5 = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.dosChineseTrad.rawValue))
-                if let downloadedData = String(data:data!, encoding:String.Encoding(rawValue: big5)) {
-
-                    /* csv檔案的內容是混合格式：
-                     2016年07月19日大盤統計資訊
-                     "指數","收盤指數","漲跌(+/-)","漲跌點數","漲跌百分比(%)"
-                     寶島股價指數,10452.88,+,26.8,0.26
-                     發行量加權股價指數,9034.87,+,26.66,0.3
-                     "成交統計","成交金額(元)","成交股數(股)","成交筆數"
-                     "1.一般股票","86290700501","2396982245","807880"
-                     "2.台灣存託憑證","25070276","4935658","1405"
-                     "證券代號","證券名稱","成交股數","成交筆數","成交金額","開盤價","最高價","最低價","收盤價","漲跌(+/-)","漲跌價差","最後揭示買價","最後揭示買量","最後揭示賣價","最後揭示賣量","本益比"
-                     ="0050  ","元大台灣50      ","17045587","2165","1179010803","69.2","69.3","68.8","69.25","+","0.1","69.25","615","69.3","40","0.00"
-                     "1101  ","台泥            ","10196350","5055","362488555","35.55","35.75","35.4","35.6","+","0.1","35.55","122","35.6","152","25.25"
-                     "1102  ","亞泥            ","5021942","3083","144691768","28.7","29","28.55","28.9","+","0.2","28.85","106","28.9","147","27.01"
-
-                     "說明："
-                     */
-
-                    //去掉千分位逗號和雙引號
-                    var textString:String = ""
-                    var quoteCount:Int=0
-                    for e in downloadedData {
-                        if e == "\r\n" {
-                            quoteCount = 0
-                        } else if e == "\"" {
-                            quoteCount = quoteCount + 1
-                        }
-                        if e != "," || quoteCount % 2 == 0 {
-                            textString.append(e)
-                        }
-                    }
-                    textString = textString.replacingOccurrences(of: " ", with: "")   //去空白
-                    textString = textString.replacingOccurrences(of: "\"", with: "")  //去雙引號
-                    textString = textString.replacingOccurrences(of: "\r\n", with: "\n")  //去換行
-
-                    let lines:[String] = textString.components(separatedBy: CharacterSet.newlines) as [String]
-                    var stockListBegins:Bool = false
-                    let context = coreData.shared.context
-                    var allStockCount:Int = 0
-                    for (index, lineText) in lines.enumerated() {
-                        var line:String = lineText
-                        if lineText.first == "=" {
-                            stockListBegins = true
-                        }
-                        if lineText != "" && lineText.contains(",") && lineText.contains(".") && index > 2 && stockListBegins {
-                            if lineText.first == "=" {
-                                line = lineText.replacingOccurrences(of: "=", with: "")   //去首列等號
-                            }
-
-                            let sId = line.components(separatedBy: ",")[0]
-                            let sName = line.components(separatedBy: ",")[1]
-                            Stock.update(context, sId:sId, sName: sName)
-                            allStockCount += 1
-//                            let progress:Float = Float(index+1) / Float(lines.count)
-//                            OperationQueue.main.addOperation {
-//                                self.uiProgress.setProgress(progress, animated: true)
-//                            }
-
-                        }   //if line != ""
-                    } //for
-                    try? context.save()
-                    let timeDownloadedStocks = Date()
-                    self.defaults.set(timeDownloadedStocks, forKey: "timeDownloadedStocks")
-                    NSLog("twseDailyMI(ALLBUT0999): \(twDateTime.stringFromDate(timeDownloadedStocks, format: "yyyy/MM/dd HH:mm:ss")) \(allStockCount)筆")
-                }   //if let downloadedData
-            } else {  //if error == nil
-                NSLog("twseDailyMI(ALLBUT0999) error:\(String(describing: error))")
+    func downloadStocks(doItNow:Bool = false) {
+        if doItNow {
+            request.twseDailyMI()
+        } else if let timeStocksDownloaded = defaults.object(forKey: "timeStocksDownloaded") as? Date {
+            if timeStocksDownloaded.timeIntervalSinceNow < 0 - (10 * 24 * 60 * 60) {    //10天更新一次
+                request.twseDailyMI()
             }
-        })
-        task.resume()
+        } else {
+            request.twseDailyMI()
+        }
     }
+        
+    func downloadTrades(doItNow:Bool = false) {
+        if doItNow {
+            NSLog("立即下載全部交易！")
+            request.runRequest(stocks: stocks, all: true)
+        } else if simTesting {
+            NSLog("模擬測試...")
+        } else {
+            let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
+            let time1332 = twDateTime.time1330(delayMinutes: 2)
+            let time0900 = twDateTime.time0900()
+            if (request.isOffDay && twDateTime.isDateInToday(request.timeTradesDownloaded)) {
+                NSLog("休市日且今天已更新。")
+            } else if request.timeTradesDownloaded > last1332 && Date() < time0900 {
+                NSLog("今天還沒開盤且上次更新是昨收盤後。")
+            } else if request.timeTradesDownloaded > time1332 {
+                NSLog("上次更新是今天收盤之後。")
+            } else { //if timeTradesDownloaded.compare(time0900) == .orderedDescending && timeTradesDownloaded.compare(time1332) == .orderedAscending {
+                NSLog("下載交易及排程...")
+                request.runRequest(stocks: stocks)
+            }
+        }
+    }
+
     
 }
 

@@ -614,14 +614,14 @@ class simStock: NSObject {
             
             if self.needPriceTimer() || self.modePriority[timerMode]! > 2 {
                 let userInfo:(id:String,mode:String,delay:TimeInterval) = (timerId,timerMode,timerDelay)
-                self.priceTimer = Timer.scheduledTimer(timeInterval: timerDelay, target: self, selector: #selector(simStock.updatePriceByTimer(_:)), userInfo: userInfo, repeats: false)
+                self.priceTimer = Timer.scheduledTimer(timeInterval: timerDelay, target: self, selector: #selector(sim.updatePriceByTimer(_:)), userInfo: userInfo, repeats: false)
                 var forId = ""
                 if let sim = self.simPrices[timerId] {
                     forId = " for: \(timerId)\(sim.name)"
                 }
                 self.masterUI?.nsLog("priceTimer\t:\(mode)\(forId) in \(timerDelay)s.")
                 self.masterUI?.setIdleTimer(timeInterval: -2)    //立即停止休眠
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(5), execute: {Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(simStock.updateCountdown(_:)), userInfo: nil, repeats: true)})
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(5), execute: {Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(sim.updateCountdown(_:)), userInfo: nil, repeats: true)})
             } else {
                 self.priceTimer.invalidate()
                 self.masterUI?.nsLog("priceTimer stop, idleTimer in 1min.\n")

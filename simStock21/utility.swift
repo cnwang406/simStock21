@@ -92,7 +92,7 @@ public struct twDateTime { //用於台灣當地日期時間的一些計算函數
     }
 
     static func isDateInToday(_ date:Date) -> Bool {
-        if date.compare(self.startOfDay()) != .orderedAscending && date.compare(self.endOfDay()) != .orderedDescending {
+        if date >= self.startOfDay() && date <= self.endOfDay() {
             return true
         } else {
             return false
@@ -146,10 +146,10 @@ public struct twDateTime { //用於台灣當地日期時間的一些計算函數
         return dt
     }
 
-    static func marketingTime(_ time:Date=Date(), delay:Int = 0) -> Bool {
+    static func inMarketingTime(_ time:Date=Date(), delay:Int = 0) -> Bool {
         let time1330 = self.time1330(time, delayMinutes:delay)
-        let time0900 = self.time0900(time, delayMinutes:0 - delay)
-        if (time.compare(time1330) == .orderedAscending && time.compare(time0900) != .orderedAscending) {
+        let time0900 = self.time0900(time, delayMinutes:delay)
+        if time < time1330 && time >= time0900 {
             return true
         } else {
             return false    //盤外時間

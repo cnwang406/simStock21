@@ -1,11 +1,71 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="16119" systemVersion="19F101" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Stock" representedClassName=".Stock" syncable="YES">
+        <attribute name="amtInvestBase" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="dateFirst" attributeType="Date" defaultDateTimeInterval="31493808000" usesScalarValueType="NO"/>
+        <attribute name="dateStart" attributeType="Date" defaultDateTimeInterval="31493808000" usesScalarValueType="NO"/>
         <attribute name="group" attributeType="String" defaultValueString=""/>
         <attribute name="sId" attributeType="String" defaultValueString=""/>
         <attribute name="sName" attributeType="String" defaultValueString=""/>
+        <relationship name="stockTrades" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Trade" inverseName="stock" inverseEntity="Trade"/>
+    </entity>
+    <entity name="Trade" representedClassName="Trade" syncable="YES">
+        <attribute name="dateTime" attributeType="Date" defaultDateTimeInterval="-3187324800" usesScalarValueType="NO"/>
+        <attribute name="priceClose" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="priceHigh" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="priceLow" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="priceOpen" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="rollAmtCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="rollAmtProfit" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="rollAmtRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="rollDays" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="rollRounds" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simAmtBalance" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simAmtCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simAmtProfit" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simAmtRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simDays" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simInvestTimes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simQtyBuy" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simQtyInventory" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simQtySell" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simUnitCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simUnitRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="tKdD" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdJ" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdK" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdKZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdKZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdKZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa20" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa20Days" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa20Diff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa20DiffMax9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa20DiffMin9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60Days" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60Diff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60DiffMax9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60DiffMin9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60DiffZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60DiffZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tMa60DiffZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOsc" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscEma12" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscEma26" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscMacd9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscMax9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscMin9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tOscZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tSource" attributeType="String" defaultValueString=""/>
+        <attribute name="tUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <relationship name="stock" maxCount="1" deletionRule="Nullify" destinationEntity="Stock" inverseName="stockTrades" inverseEntity="Stock"/>
     </entity>
     <elements>
-        <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="88"/>
+        <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="148"/>
+        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="838"/>
     </elements>
 </model>

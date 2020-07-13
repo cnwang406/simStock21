@@ -21,11 +21,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // Get the managed object context from the shared persistent container.
 //        let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        let context = coreData.shared.context
+//        let context = coreData.shared.context
 
         // Create the SwiftUI view and set the context as the value for the managedObjectContext environment keyPath.
         // Add `@Environment(\.managedObjectContext)` in the views that will need the context.        
-        let contentView = simStockListView(list: simStockList()).environment(\.managedObjectContext, context)
+        let contentView = simStockListView(list: simStockList())//.environment(\.managedObjectContext, context)
 
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
@@ -33,6 +33,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = UIHostingController(rootView: contentView)
             self.window = window
             window.makeKeyAndVisible()
+            NSLog("scene willConnectTo...")
         }
     }
 
@@ -46,11 +47,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        NSLog("sceneDidBecomeActive...")
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
+        NSLog("sceneWillResignActive...")
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {

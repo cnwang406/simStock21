@@ -88,7 +88,7 @@ struct simStockListView: View {
                         }
                 }
             } else if !isSearching {
-                Button("選取") {
+                Button("編輯") {
                     self.isChoosing = true
                     self.searchText = ""
                     self.list.searchText = nil
@@ -107,7 +107,7 @@ struct simStockListView: View {
     var endChoosing: some View {
         HStack {
             if isChoosing {
-                Button("離開" + (sizeClass == .regular ? "選取模式" : "")) {
+                Button("取消" + (sizeClass == .regular ? "編輯模式" : "")) {
                     self.isChoosing = false
                     self.checkedStocks = []
                 }
@@ -146,7 +146,7 @@ struct pickerGroups:View {
                             Text(gName).tag(gName)
                         }
                     }
-                        .pickerStyle(WheelPickerStyle())
+//                        .pickerStyle(WheelPickerStyle())
                         .labelsHidden()
                 }
 
@@ -160,10 +160,9 @@ struct pickerGroups:View {
             }
             .navigationBarTitle("加入股群")
             .navigationBarItems(leading: cancel, trailing: done)
+
         }
             .navigationViewStyle(StackNavigationViewStyle())
-            .clipped()
-
     }
     
     var cancel: some View {
@@ -172,14 +171,18 @@ struct pickerGroups:View {
         }
     }
     var done: some View {
-        Button("確認") {
-            let toGroup:String = (self.groupPicked != "新增股群" ? self.groupPicked : self.newGroup)
-            self.list.moveStocks(self.checkedStocks, toGroup: toGroup)
-            self.isPresented = false
-            self.isMoving = false
-            self.searchText = ""
-            self.list.searchText = nil
-            self.checkedStocks = []
+        Group {
+            if self.groupPicked != "新增股群" || self.newGroup != "" {
+                Button("確認") {
+                    let toGroup:String = (self.groupPicked != "新增股群" ? self.groupPicked : self.newGroup)
+                    self.list.moveStocks(self.checkedStocks, toGroup: toGroup)
+                    self.isPresented = false
+                    self.isMoving = false
+                    self.searchText = ""
+                    self.list.searchText = nil
+                    self.checkedStocks = []
+                }
+            }
         }
     }
 
@@ -240,12 +243,15 @@ struct stockCell : View {
                 NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
                     Text("")
                 }
-//                    .navigationBarTitle("")
+//                .simultaneousGesture(TapGesture().onEnded{
+//                    self.list.stock = self.stock
+//                    print("hello hello hello")
+//                })
             }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
-        .foregroundColor(self.checkedStocks.contains(stock) ? .orange : .primary)
+            .foregroundColor(self.checkedStocks.contains(stock) ? .orange : ((isSearching && stock.group != "") ? .gray : .primary))
     }
 }
 
