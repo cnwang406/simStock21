@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let request = simRequest()
+    let request = simDataRequest()
     let defaults = UserDefaults.standard
 
     private(set) var stocks:[Stock] = []

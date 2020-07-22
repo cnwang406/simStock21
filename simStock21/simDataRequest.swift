@@ -8,7 +8,7 @@
 
 import Foundation
 
-class simRequest {
+class simDataRequest {
     let defaults = UserDefaults.standard
     var isOffDay:Bool = false
     var timer:Timer?

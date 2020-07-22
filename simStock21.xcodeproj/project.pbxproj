@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E24E5E2B24B97A58000ED54D /* simRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24E5E2A24B97A58000ED54D /* simRequest.swift */; };
+		E24E5E2B24B97A58000ED54D /* simDataRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24E5E2A24B97A58000ED54D /* simDataRequest.swift */; };
 		E25ED3EF24A43DD0006C1332 /* utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E25ED3EB24A40F63006C1332 /* utility.swift */; };
 		E27B62B224A8774600092943 /* simStockPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27B62B124A8774600092943 /* simStockPageView.swift */; };
 		E27CBDED24A9C235005F6649 /* simStock21.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E27CBDEB24A9C235005F6649 /* simStock21.xcdatamodeld */; };
@@ -23,7 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		E24E5E2A24B97A58000ED54D /* simRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simRequest.swift; sourceTree = "<group>"; };
+		E24E5E2A24B97A58000ED54D /* simDataRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simDataRequest.swift; sourceTree = "<group>"; };
 		E25ED3E624A40F38006C1332 /* CoreDataS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataS.swift; sourceTree = "<group>"; };
 		E25ED3E724A40F41006C1332 /* masterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = masterViewController.swift; sourceTree = "<group>"; };
 		E25ED3E824A40F49006C1332 /* simPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simPrice.swift; sourceTree = "<group>"; };
@@ -96,7 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				E2C4582624A36D710036791E /* coreData.swift */,
-				E24E5E2A24B97A58000ED54D /* simRequest.swift */,
+				E24E5E2A24B97A58000ED54D /* simDataRequest.swift */,
 				E2C4582224A36CC50036791E /* simStock.swift */,
 				E2C4582424A36D1C0036791E /* simStockList.swift */,
 				E2C4581224A36CAA0036791E /* simStockListView.swift */,
@@ -201,7 +201,7 @@
 				E25ED3EF24A43DD0006C1332 /* utility.swift in Sources */,
 				E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */,
 				E2C4582324A36CC50036791E /* simStock.swift in Sources */,
-				E24E5E2B24B97A58000ED54D /* simRequest.swift in Sources */,
+				E24E5E2B24B97A58000ED54D /* simDataRequest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

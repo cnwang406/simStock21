@@ -196,7 +196,6 @@ struct tradeListView: View {
                     //== 工具按鈕 1 ==
                     Button(action: {self.showSetting = true}) {
                         Image(systemName: "wrench")
-                            .font(.system(size: 20))
                     }
                         .sheet(isPresented: $showSetting) {
                             settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
@@ -205,7 +204,6 @@ struct tradeListView: View {
                     Spacer()
                     Button(action: {self.showReload = true}) {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 20))
                     }
                         .sheet(isPresented: $showReload) {
                             Form {
@@ -230,7 +228,6 @@ struct tradeListView: View {
                     Spacer()
                     Button(action: {self.showInformation = true}) {
                         Image(systemName: "questionmark.circle")
-                            .font(.system(size: 20))
                     }
                         .sheet(isPresented: $showInformation) {
                             Form {
@@ -257,6 +254,8 @@ struct tradeListView: View {
                         }
                 } //工具按鈕的HStack
                     .frame(width: 100, alignment: .trailing)
+                    .font(.body)
+
 
             }
             .font(.title)
@@ -280,7 +279,7 @@ struct tradeListView: View {
                     Text(simSummary)
                 }
             }
-                .font(.system(size: 14))
+                .font(.callout)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .padding(.trailing)
@@ -336,12 +335,6 @@ struct settingForm: View {
                     Toggle("自動2次加碼", isOn: $addInvest)
                 }
                 Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults).font(.footnote)) {
-
-//                    VStack {
-//                        Text(" ")
-//                        Text("擴大設定範圍")
-//                    }
-//                        .font(.title)
                     Toggle("套用到同股群", isOn: $applyToGroup)
                         .disabled(self.applyToAll)
                     Toggle("套用到全部股", isOn: $applyToAll)
@@ -405,6 +398,10 @@ struct tradeCell: View {
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
     
+    func textSize(textStyle: UIFont.TextStyle) -> CGFloat {
+       return UIFont.preferredFont(forTextStyle: textStyle).pointSize
+    }
+    
      var body: some View {
         VStack(alignment: .leading) {
             HStack {
@@ -463,12 +460,13 @@ struct tradeCell: View {
 //                        .frame(width: 40.0, alignment: .trailing)
                 }
             }   //HStack
+                .font(.body)
             if self.selected == trade.date {
                 VStack(alignment: .leading) {
                     Text(twDateTime.stringFromDate(trade.dateTime, format: "EEE HH:mm:ss"))
                     Text(trade.tSource)
                 }
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundColor(tradeCellColor(trade, for: "dateTime"))
                 Spacer()
                 if trade.simRule != "_" {
@@ -534,7 +532,7 @@ struct tradeCell: View {
                         }
                         Spacer()
                     }
-                        .font(.custom("Courier", size: 12))
+                        .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                 }   //if trade.simRule != "_"
                 HStack {
                     Spacer()
@@ -584,7 +582,7 @@ struct tradeCell: View {
                     }
                     Spacer()
                 }   //HStack
-                .font(.custom("Courier", size: 16))
+                .font(.custom("Courier", size: textSize(textStyle: .callout)))
                 Spacer()    //以下是擴充技術數值
                 if list.widthClass != .widePhone {
                     HStack {
@@ -652,14 +650,13 @@ struct tradeCell: View {
                         }
                         Spacer()
                     }   //HStack
-                    .font(.custom("Courier", size: 14))
+                        .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                 }
             }   //If
         }   //VStack
         .lineLimit(1)
         .minimumScaleFactor(0.6)
         
-
 
     }
 
