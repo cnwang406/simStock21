@@ -8,7 +8,7 @@
 
 import Foundation
 
-class urlRequest {
+class simRequest {
     let defaults = UserDefaults.standard
     var isOffDay:Bool = false
     var timer:Timer?
@@ -24,26 +24,29 @@ class urlRequest {
         timeTradesDownloaded = defaults.object(forKey: "timeTradesDownloaded") as? Date ?? Date.distantPast
     }
     
-    func runRequest(stocks:[Stock], all:Bool=true) {
-        let realtime:Bool = twDateTime.isDateInToday(timeTradesDownloaded) && twDateTime.inMarketingTime(timeTradesDownloaded, delay: 2)
-        NSLog((realtime && !all ? "下載盤中交易..." : "下載歷史交易...") + (realtime ? "timer scheduled." : "timer invalidated."))
+    func runRequest(stocks:[Stock], action:simTechnicalAction = .realtime) {
+        let realtime:Bool = twDateTime.inMarketingTime(delay: 2, forToday: true)
+        NSLog((realtime && action == .realtime ? "下載盤中價..." : "下載歷史價...") + (realtime ? " timer scheduled." : " timer invalidated."))
         for stock in stocks {
-            if realtime && !all {
+            if realtime && action == .realtime {
                 self.yahooRequest(stock)
             } else {
                 let requestGroup:DispatchGroup = DispatchGroup()
                 cnyesPrice(stock: stock, dGroup: requestGroup)
                 requestGroup.notify(queue: .global()) {
-                    self.simTechnical(stock: stock)
-                    if realtime {
-                        self.yahooRequest(stock)
+                    self.simTechnical(stock: stock, action: action)
+                    self.yahooRequest(stock)
+                    if action == .simUpdateAll || action == .tUpdateAll {
+                        DispatchQueue.main.async {
+                            stock.objectWillChange.send()
+                        }
                     }
-                }
+                  }
             }
         }
         if realtime {
             self.timer = Timer.scheduledTimer(withTimeInterval: 1 * 60, repeats: false) {_ in
-                    self.runRequest(stocks: stocks, all: false)
+                self.runRequest(stocks: stocks, action: .realtime)
             }
         } else {
             self.timer?.invalidate()
@@ -120,11 +123,6 @@ class urlRequest {
                             let sName = line.components(separatedBy: ",")[1]
                             let _ = Stock.new(context, sId:sId, sName: sName)
                             allStockCount += 1
-//                            let progress:Float = Float(index+1) / Float(lines.count)
-//                            OperationQueue.main.addOperation {
-//                                self.uiProgress.setProgress(progress, animated: true)
-//                            }
-
                         }   //if line != ""
                     } //for
                     try? context.save()
@@ -142,7 +140,7 @@ class urlRequest {
 
     func cnyesRequest(_ stock:Stock, ymdStart:String, ymdEnd:String, dGroup:DispatchGroup) {
         dGroup.enter()
-        let url = URL(string: "http://www.cnyes.com/archive/twstock/ps_historyprice.aspx?code=\(stock.sId)&ctl00$ContentPlaceHolder1$startText=\(ymdStart)&ctl00$ContentPlaceHolder1$endText=\(ymdEnd)")
+        let url = URL(string: "http://www.cnyes.com/twstock/ps_historyPrice.aspx?code=\(stock.sId)&ctl00$ContentPlaceHolder1$startText=\(ymdStart)&ctl00$ContentPlaceHolder1$endText=\(ymdEnd)")
         let request = URLRequest(url: url!,timeoutInterval: 30)
         let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
             if error == nil {
@@ -177,7 +175,6 @@ class urlRequest {
                                         var trade:Trade
                                         if let lastTrade = stock.lastTrade(context), lastTrade.date == dt0 {
                                             trade = lastTrade
-                                            NSLog("\(stock.sId)\(stock.sName)\t更新\(trade.dateTime)")
                                         } else {
                                             trade = Trade(context: context)
                                             if let s = Stock.fetch(context, sId:[stock.sId]).first {
@@ -199,19 +196,21 @@ class urlRequest {
 //                                            if let volume  = Double(line.components(separatedBy: ",")[7]) {
 //                                            }
                                         trade.tSource = "cnyes"
-                                        trade.objectWillChange.send()
                                     }
                                 }   //if let close
                             }   //if let dt0
                         }   //for
                         if tradesCount > 0 {
-                            try? context.save()
                             NSLog("\(stock.sId)\(stock.sName)\tcnyes \(ymdStart)~\(ymdEnd) 有效\(tradesCount)筆/全部\(lines.count)筆")
+                            try? context.save()
                             if twDateTime.stringFromDate(stock.dateFirst) == ymdStart && firstDate > stock.dateFirst {
                                 stock.dateFirst = firstDate
+                                if stock.dateStart <= stock.dateFirst {
+                                    stock.dateStart = twDateTime.calendar.date(byAdding: .day, value: 1, to: stock.dateFirst) ?? stock.dateFirst
+                                }
                                 stock.save()
                             }
-                         } else {
+                        } else {
                             NSLog("\(stock.sId)\(stock.sName)\tcnyes \(ymdStart)~\(ymdEnd) 全部\(lines.count)筆，但無有效交易？")
                         }
                     } else {  //if let findRange 有資料無交易故touch
@@ -303,13 +302,11 @@ class urlRequest {
                                             let dt0 = twDateTime.startOfDay(dt1)
                                             if let lastTrade = stock.lastTrade(context), lastTrade.date == dt0 {
                                                 trade = lastTrade
-//                                                NSLog("\(stock.sId)\(stock.sName)\tyahoo取代\(trade.dateTime)")
                                             } else {
                                                 trade = Trade(context: context)
                                                 if let s = Stock.fetch(context, sId:[stock.sId]).first {
                                                     trade.stock = s
                                                 }
-//                                                NSLog("\(stock.sId)\(stock.sName)\tyahoo新增\(trade.dateTime)")
                                             }
                                             trade.dateTime = dt1
                                             trade.priceClose = close
@@ -318,9 +315,8 @@ class urlRequest {
                                             trade.priceLow = yNumber(yColumn[8])
     //                                        let volume = yNumber(yColumn[5])
                                             trade.tSource = "yahoo"
-                                            trade.objectWillChange.send()
-                                            try? context.save()
-                                            self.simTechnical(stock: stock, realtime: true)
+                                            try? context.save() //由simTechnical執行trade.objectWillChange.send()
+                                            self.simTechnical(stock: stock, action: .realtime)
                                             NSLog("\(stock.sId)\(stock.sName)\tyahoo " + twDateTime.stringFromDate(dt1, format: "HH:mm:ss") + String(format:" %.2f",close))
                                             
                                         }
@@ -354,19 +350,33 @@ class urlRequest {
             return []
         }
     }
+    
+    enum simTechnicalAction {
+        case newTrades
+        case tUpdateAll
+        case simUpdateAll
+        case realtime
+    }
 
-    func simTechnical(stock:Stock, realtime:Bool=false) {
+    func simTechnical(stock:Stock, action:simTechnicalAction = .newTrades) {
         let context = coreData.shared.context
         let trades = Trade.fetch(context, stock: stock, asc:true)
         if trades.count > 0 {
-            if realtime {
+            if action == .realtime {
                 tUpdate(trades, index: trades.count - 1)
+                simUpdate(trades, index: trades.count - 1)
             } else {
+                var tCount:Int = 0
                 for (index,trade) in trades.enumerated() {
-                    if trade.tUpdated == false {
-                        tUpdate(trades, index:index)
+                    if trade.tUpdated == false || action == .tUpdateAll {
+                        tUpdate(trades, index: index)
+                        simUpdate(trades, index: index)
+                        tCount += 1
+                    } else if action == .simUpdateAll {
+                        simUpdate(trades, index: index)
                     }
                 }
+                NSLog("\(stock.sId)\(stock.sName)\t技術數值：歷史價共\(trades.count)筆/統計\(tCount)筆")
             }
             try? context.save()
         }
@@ -386,7 +396,7 @@ class urlRequest {
             let d375 = tradeIndex(375, index: index)
 
             let maxDouble:Double = Double.greatestFiniteMagnitude
-            let minDouble:Double = Double.leastNormalMagnitude
+//            let minDouble:Double = Double.leastNormalMagnitude
             
             var sum60:Double = 0
             var sum20:Double = 0
@@ -409,6 +419,28 @@ class urlRequest {
                 }
                 ma60Sum += t.tMa60Diff  //但是自己的ma60Diff還是0
             }
+            //最高價差、最低價差
+            func nextPriceDiff(_ thisPrice:Double) -> Double {  //每檔差額
+                switch thisPrice {
+                case let p where p < 10:
+                    return 0.01
+                case let p where p < 50:
+                    return 0.05
+                case let p where p < 100:
+                    return 0.1
+                case let p where p < 500:
+                    return 0.5
+                case let p where p < 1000:
+                    return 1
+                default:
+                    return 5    //1000元以上檔位
+                }
+            }
+            let nextLow  = 100 * (prev.priceClose - trade.priceLow + nextPriceDiff(trade.priceLow)) / prev.priceClose
+            let nextHigh = 100 * (trade.priceHigh + nextPriceDiff(trade.priceHigh) - prev.priceClose) / prev.priceClose
+            trade.tPriceLowDiff  = (nextLow > 10 ? 10 : 100 * (prev.priceClose - trade.priceLow) / prev.priceClose)
+            trade.tPriceHighDiff = (nextHigh > 10 ? 10 : 100 * (trade.priceHigh - prev.priceClose) / prev.priceClose)
+
             //ma60,ma20
             trade.tMa60 = sum60 / d60.thisCount
             trade.tMa20 = sum20 / d20.thisCount
@@ -434,8 +466,142 @@ class urlRequest {
             let doubleDif:Double = 2 * dif
             trade.tOscMacd9 = ((8 * prev.tOscMacd9) + doubleDif) / 10
             trade.tOsc = dif - trade.tOscMacd9
+            
+            trade.tMa20DiffMax9 = trade.tMa20Diff
+            trade.tMa20DiffMin9 = trade.tMa20Diff
+            trade.tMa60DiffMax9 = trade.tMa60Diff
+            trade.tMa60DiffMin9 = trade.tMa60Diff
+            trade.tOscMax9 = trade.tOsc
+            trade.tOscMin9 = trade.tOsc
+            trade.tKdKMax9 = trade.tKdK
+            trade.tKdKMin9 = trade.tKdK
+            for t in trades[d9.thisIndex...(index - 1)] {
+                //9天最高最低
+                if t.tMa20Diff > trade.tMa20DiffMax9 {
+                    trade.tMa20DiffMax9 = t.tMa20Diff
+                }
+                if t.tMa20Diff < trade.tMa20DiffMin9 {
+                    trade.tMa20DiffMin9 = t.tMa20Diff
+                }
+                if t.tMa60Diff > trade.tMa60DiffMax9 {
+                    trade.tMa60DiffMax9 = t.tMa60Diff
+                }
+                if t.tMa60Diff < trade.tMa60DiffMin9 {
+                    trade.tMa60DiffMin9 = t.tMa60Diff
+                }
+                if t.tOsc > trade.tOscMax9 {
+                    trade.tOscMax9 = t.tOsc
+                }
+                if t.tOsc < trade.tOscMin9 {
+                    trade.tOscMin9 = t.tOsc
+                }
+                if t.tKdK > trade.tKdKMax9 {
+                    trade.tKdKMax9 = t.tKdK
+                }
+                if t.tKdK < trade.tKdKMin9 {
+                    trade.tKdKMin9 = t.tKdK
+                }
+            }
 
 
+            //ma60在半年、1年、1年半內的標準分數；K,Osc在半年內的標準分數
+            func standardDeviationZ(_ key:String, dIndex:(prevIndex:Int,prevCount:Double,thisIndex:Int,thisCount:Double)) -> Double {
+                var sum:Double = 0
+                for t in trades[dIndex.thisIndex...index] {
+                    sum += (t.value(forKey: key) as? Double ?? 0)   //總計
+                }
+                let avg = sum / d375.thisCount  //平均值
+                var vsum:Double = 0
+                for t in trades[dIndex.thisIndex...index] {
+                    let variance = pow(((t.value(forKey: key) as? Double ?? 0) - avg),2)  //偏差值
+                    vsum += variance
+                }
+                let sd = sqrt(vsum / dIndex.thisCount) //標準差
+                let zScore = ((trade.value(forKey: key) as? Double ?? 0) - avg) / sd     //標準分數
+                return zScore
+            }
+            trade.tKdKZ125  = standardDeviationZ("tKdK", dIndex:d125)
+            trade.tKdKZ250  = standardDeviationZ("tKdK", dIndex:d250)
+            trade.tKdKZ375  = standardDeviationZ("tKdK", dIndex:d375)
+            trade.tOscZ125  = standardDeviationZ("tOsc", dIndex:d125)
+            trade.tOscZ250  = standardDeviationZ("tOsc", dIndex:d250)
+            trade.tOscZ375  = standardDeviationZ("tOsc", dIndex:d375)
+            trade.tMa60DiffZ125 = standardDeviationZ("tMa60", dIndex:d125)
+            trade.tMa60DiffZ250 = standardDeviationZ("tMa60", dIndex:d250)
+            trade.tMa60DiffZ375 = standardDeviationZ("tMa60", dIndex:d375)
+
+            var ma20DaysBefore: Double = 0
+            if prev.tMa20Days < 0 && prev.tMa20Days > -5 && index >= Int(0 - prev.tMa20Days + 1) {
+                ma20DaysBefore = trades[index - Int(0 - prev.tMa20Days + 1)].tMa20Days
+            } else if prev.tMa20Days > 0 && prev.tMa20Days < 5 && index > Int(prev.tMa20Days + 1) {
+                ma20DaysBefore = trades[index - Int(prev.tMa20Days + 1)].tMa20Days
+            }
+            if trade.tMa20 > prev.tMa20 {
+                if prev.tMa20Days < 0  {
+                    if prev.tMa20Days > -5 && ma20DaysBefore > 0 {
+                        trade.tMa20Days = ma20DaysBefore + 1
+                    } else {
+                        trade.tMa20Days = 1
+                    }
+                } else {
+                    trade.tMa20Days = prev.tMa20Days + 1
+                }
+            } else if trade.tMa20 < prev.tMa20 {
+                if prev.tMa20Days > 0  {
+                    if prev.tMa20Days < 5 && ma20DaysBefore < 0 {
+                        trade.tMa20Days = ma20DaysBefore - 1
+                    } else {
+                        trade.tMa20Days = -1
+                    }
+                } else {
+                    trade.tMa20Days = prev.tMa20Days - 1
+                }
+            } else {
+                if prev.tMa20Days > 0 {
+                    trade.tMa20Days = prev.tMa20Days + 1
+                } else if prev.tMa20Days < 0 {
+                    trade.tMa20Days = prev.tMa20Days - 1
+                } else {
+                    trade.tMa20Days = 0
+                }
+            }
+
+
+            var ma60DaysBefore: Double = 0
+            if prev.tMa60Days < 0 && prev.tMa60Days > -5 && index >= Int(0 - prev.tMa60Days + 1) {
+                ma60DaysBefore = trades[index - Int(0 - prev.tMa60Days + 1)].tMa60Days
+            } else if prev.tMa60Days > 0 && prev.tMa60Days < 5 && index >= Int(prev.tMa60Days + 1) {
+                ma60DaysBefore = trades[index - Int(prev.tMa60Days + 1)].tMa60Days
+            }
+            if trade.tMa60 > prev.tMa60 {
+                if prev.tMa60Days < 0  {
+                    if prev.tMa60Days > -5 && ma60DaysBefore > 0 {
+                        trade.tMa60Days = ma60DaysBefore + 1
+                    } else {
+                        trade.tMa60Days = 1
+                    }
+                } else {
+                    trade.tMa60Days = prev.tMa60Days + 1
+                }
+            } else if trade.tMa60 < prev.tMa60 {
+                if prev.tMa60Days > 0  {
+                    if prev.tMa60Days < 5 && ma60DaysBefore < 0 {
+                        trade.tMa60Days = ma60DaysBefore - 1
+                    } else {
+                        trade.tMa60Days = -1
+                    }
+                } else {
+                    trade.tMa60Days = prev.tMa60Days - 1
+                }
+            } else {
+                if prev.tMa60Days > 0 {
+                    trade.tMa60Days = prev.tMa60Days + 1
+                } else if prev.tMa60Days < 0 {
+                    trade.tMa60Days = prev.tMa60Days - 1
+                } else {
+                    trade.tMa60Days = 0
+                }
+            }
 
         } else {
             trade.tKdK = 50
@@ -444,6 +610,8 @@ class urlRequest {
             trade.tOscEma12 = demandIndex
             trade.tOscEma26 = demandIndex
         }
+        trade.tUpdated = true
+
     }
     
     func tradeIndex(_ count:Double, index:Int) ->  (prevIndex:Int,prevCount:Double,thisIndex:Int,thisCount:Double) {
@@ -466,4 +634,233 @@ class urlRequest {
         return (prevIndex,prevCount,thisIndex,thisCount)
     }
 
+    func simUpdate(_ trades:[Trade], index:Int) {
+        let trade = trades[index]
+        
+        if index == 0 || trade.date < trade.stock.dateStart {
+            trade.setDefaultValues()
+            trade.simRule = "_"
+            return
+        }
+        let prev = trades[index - 1]
+        trade.resetSimValues()
+        trade.rollDays = prev.rollDays
+        //trade.rollAmtCost = prev.rollAmtCost
+        //trade.rollAmtProfit = prev.rollAmtProfit    //最後面才更新
+        //trade.rollAmtRoi = prev.rollAmtRoi
+        trade.simAmtBalance = (prev.simRule == "_" ? trade.stock.simMoneyBase * 10000 : prev.simAmtBalance)
+        trade.simInvestTimes = prev.simInvestTimes
+        trade.rollRounds = prev.rollRounds
+        var rollAmtCost = prev.rollAmtCost * prev.rollDays
+        if prev.simQtyInventory > 0 { //前筆有庫存，更新結餘
+            trade.simAmtCost = prev.simAmtCost
+            trade.simQtyInventory = prev.simQtyInventory
+//            trade.simAmtProfit = (trade.priceClose * trade.simQtyInventory * 1000) - trade.simAmtCost
+//            trade.simAmtRoi = 100 * trade.simAmtProfit / trade.simAmtCost
+            trade.simUnitCost = prev.simUnitCost
+            trade.simUnitRoi = 100 * (trade.priceClose - trade.simUnitCost) / trade.simUnitCost
+            let intervalDays = round(Double(trade.date.timeIntervalSince(prev.date)) / 86400)
+            trade.simDays = prev.simDays + intervalDays
+            trade.rollDays += intervalDays
+            trade.simRuleBuy = prev.simRuleBuy
+            rollAmtCost -= (prev.simAmtCost * prev.simDays)
+        } else { //前筆沒有庫存，就沒有成本什麼的
+            if prev.simQtySell > 0 && trade.simInvestTimes > 1 {
+                trade.simInvestAdded = 1 - trade.simInvestTimes
+            } else if trade.simInvestTimes == 0 {
+                trade.simInvestTimes = 1
+            }
+        }
+
+        
+//        let d3 = tradeIndex(3, index: index)
+//        let d5 = tradeIndex(5, index:index)
+//        let d10 = tradeIndex(10, index:index)
+//        let d15 = tradeIndex(15, index:index)
+
+
+        
+        //*** Z=P? ***
+        //0.84=0.7995 0.85=0.8023 1=0.8413 1.04=0.8508 1.3=0.9032 1.45=0.9265 1.5=0.9332
+        //1.55=0.9394 1.65=0.9505 2=0.9772 3=0.9987 3.5=0.9998
+        //-0.84=0.2005 -0.85=0.1977 -0.67=0.2514 -0.68=0.2483
+        
+		//== 高買 ==
+        var wantH:Double = 0
+        wantH += (trade.tMa60DiffZ125 >= 0.85 ? 1 : 0)
+        wantH += (trade.tKdKZ125 > -0.85 && trade.tKdK < 82 ? 1 : 0)
+        wantH += (trade.tOscZ125 > -0.25 ? 1 : 0)
+        wantH += (trade.tMa60Diff > trade.tMa60DiffMin9 && trade.tMa20Diff > trade.tMa20DiffMin9 && trade.tOsc > trade.tOscMin9 && trade.tKdK > trade.tKdKMin9 ? 1 : 0)
+        wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days >= 0 ? 1 : 0)
+        if wantH >= 3 {
+            trade.simRule = "H"
+        } else {
+        //== 低買 ==
+            var wantL:Double = 0
+            wantL += (trade.tKdKZ125 < -0.85 ? 1 : 0)
+            wantL += (trade.tOscZ125 < -0.85 ? 1 : 0)
+            wantL += (trade.tKdJ < -1 ? 1 : 0) + (trade.tKdJ < -9 ? 1 : 0)
+            wantL += (trade.tKdK < 9 ? 1 : 0)
+            wantL += (trade.tMa20Days < -30 && trade.tMa20Days > -60 ? -1 : 0)
+            if wantL >= 3 {
+                trade.simRule = "L"
+            }
+        }
+        
+		//== 賣出 ==
+        if trade.simQtyInventory > 0 {
+            var wantS:Double = 0
+            wantS += (trade.tKdJ > 101 ? 1 : 0)
+            wantS += (trade.tKdJ > 90 && trade.tKdK == trade.tKdKMax9 ? 1 : 0)
+            wantS += (trade.tKdKZ125 > 0.85 ? 1 : 0)
+            wantS += (trade.tOscZ125 > 0.85 ? 1 : 0)
+
+            let sRoi9 = trade.simUnitRoi > 9.5 && trade.simDays < 20
+            let sRoi7 = trade.simUnitRoi > 7.5 && trade.simDays < 10 && trade.simRule == "H"
+            let sRoi4 = trade.simUnitRoi > 4.5 && trade.simDays > 35 && trade.simDays < 45
+            let sRoi0 = trade.simUnitRoi > 0.45 && trade.simDays > 75
+            let sBase3 = wantS >= 3 && sRoi0
+            let sBase2 = wantS >= 2 && (sRoi9 || sRoi7 || sRoi4)
+            
+            var sell:Bool = sBase3 || sBase2
+            
+            //== 反轉賣 ==
+            if sell && trade.simReversed == "不賣" {
+                sell = false
+                trade.stock.simReversed = true
+            } else if sell == false && trade.simReversed == "賣" {
+                sell = true
+                trade.stock.simReversed = true
+            } else if trade.simReversed != "買" && trade.simReversed != "不買" {
+                trade.simReversed = ""
+            }
+            
+			//不管賣不賣得成，要算好損益含稅費？？？
+			
+            if sell {
+                trade.simQtySell = trade.simQtyInventory
+                trade.simQtyInventory = 0
+            } else {
+                //==加碼條件==
+                var invest:Double = 0
+                invest += (trade.simUnitRoi < -30 ? 1 : 0)
+                invest += (trade.simRule == "L" ? 1 : 0)
+                invest += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa60Diff < -20 ? 1 : 0)
+                if invest >= 3 {
+                    trade.simRuleInvest = "A"
+                }
+                if trade.simRuleInvest == "A" {
+                    if trade.simInvestAdded == 0 && trade.simInvestTimes <= 2 && trade.stock.simAddInvest {
+                        trade.simInvestAdded = 1
+                    }
+                } else {
+                    trade.simInvestAdded = 0
+                }
+            }
+        }
+        if trade.simInvestAdded != 0 {  //若前筆賣股則這裡抽回加碼本金，或這裡加碼則增加本金
+            trade.simInvestTimes += trade.simInvestAdded
+            trade.simAmtBalance += (trade.simInvestAdded * trade.stock.simMoneyBase * 10000)
+        }
+
+        var buyIt:Bool = false
+        if trade.simAmtBalance > 0 && trade.simQtySell == 0 {    //有可能之前賠超過1個本金而不夠買
+            if trade.simRuleBuy == "" && (trade.simRule == "H" || trade.simRule == "L") {
+                trade.simRuleBuy = trade.simRule
+                buyIt = true
+            } else if trade.simInvestAdded > 0 {
+                buyIt = true
+            }
+            //== 考慮延後買的情況 ==
+        }
+        
+        let oneFee  = round(trade.priceClose * 1.425)    //1張的手續費
+        let oneCost = (trade.priceClose * 1000) + (oneFee > 20 ? oneFee : 20)  //只買1張的成本
+        if buyIt && trade.simAmtBalance < oneCost {
+           //錢不夠先清除buyRule以簡化後面反轉的判斷規則
+            buyIt = false
+        }
+
+        //== 反轉買 ==
+        if buyIt && trade.simQtyInventory == 0 && trade.simReversed == "不買" {
+            buyIt = false
+            trade.stock.simReversed = true
+        } else if buyIt == false && trade.simQtyInventory == 0 && trade.simReversed == "買" {
+            buyIt = true
+            trade.stock.simReversed = true
+            trade.simRuleBuy = "R"
+        } else if trade.simReversed != "賣" && trade.simReversed != "不賣" {
+            if trade.simQtyInventory == 0 { //都不是就不要改simReverse因為可能真的反轉「賣」「不賣」
+                trade.simReversed = ""
+            }
+        }
+
+        
+        if buyIt {
+  
+            var money:Double = (trade.simInvestTimes * trade.stock.simMoneyBase * 10000) - trade.simAmtCost
+            //反轉買錢又不夠時，會維持預設本金即給足1個本金的額度
+            if money > trade.simAmtBalance && (trade.simReversed != "買" || trade.simAmtBalance > oneCost) {
+                money = trade.simAmtBalance //否則即使餘額賠剩足以買1張，就只用賠後餘額繼續買
+            }
+            let unitCost:Double = trade.priceClose * 1000 * 1.001425 //每張含手續費的成本
+            var estimateQty = floor(money / unitCost)             //則可以買這麼多張
+            let feeQty:Double = ceil(20 / (trade.priceClose * 1.425))   //20元的手續費可買這麼多張
+            //手續費最少20元，買不到feeQty張數則手續費要算20元
+            if estimateQty < feeQty {
+                estimateQty = floor((money - 20) / (trade.priceClose * 1000))
+            }
+            trade.simQtyBuy = estimateQty
+
+            if trade.simQtyBuy == 0 && money > oneCost {
+                trade.simQtyBuy = 1    //剩餘資金剛好只夠購買1張，就買咩
+            }
+            if trade.simQtyBuy > 0 {
+                if trade.simQtyInventory == 0 { //首次買入
+                    trade.simDays = 1
+                    trade.rollRounds += 1
+                    trade.rollDays += 1
+                }
+                var cost = round(trade.priceClose * trade.simQtyBuy * 1000)
+                var fee = round(trade.priceClose * trade.simQtyBuy * 1000 * 0.001425)
+                if fee < 20 {
+                    fee = 20
+                }
+                cost += fee
+                trade.simAmtBalance -= cost
+                trade.simAmtCost += cost
+                trade.simQtyInventory += trade.simQtyBuy
+            }
+        }
+        if trade.simQtyInventory > 0 || trade.simQtySell > 0 {  //不管有沒有買賣，因為收盤價變了就需要重算報酬率
+            let qty = trade.simQtyInventory > 0 ? trade.simQtyInventory : trade.simQtySell
+            var fee = round(trade.priceClose * qty * 1000 * 0.001425)
+            if fee < 20 {   //這是賣時的手續費
+                fee = 20
+            }
+            let tax = round(trade.priceClose * qty * 1000 * 0.003)
+            trade.simAmtProfit = (trade.priceClose * qty * 1000) - trade.simAmtCost - fee - tax
+            trade.simAmtRoi = 100 * trade.simAmtProfit / trade.simAmtCost
+            trade.simUnitCost = trade.simAmtCost / (1000 * qty) //就是除以1000股然後四捨五入到小數2位
+            trade.simUnitRoi = 100 * (trade.priceClose - trade.simUnitCost) / trade.simUnitCost
+            if trade.simQtySell > 0 {
+                trade.simAmtBalance += (trade.priceClose * trade.simQtySell * 1000) - fee - tax
+            }
+        }
+        
+        //== 更新累計數值 ==
+        if trade.rollDays > 0 {
+            trade.rollAmtCost = (rollAmtCost + (trade.simAmtCost * trade.simDays)) / trade.rollDays
+        }
+        if trade.rollAmtCost > 0 {  
+			//即使simQtyInventory是0也可能是剛賣出，所以還是要重算累計損益
+			//剛賣時損益已計入simAmtBalance故不要重複計算
+			//算rollAmtProfit是先加總現值再扣本金，故需計入simAmtCost
+            trade.rollAmtProfit = (trade.simQtyInventory == 0 ? 0 : (trade.simAmtProfit + trade.simAmtCost)) + trade.simAmtBalance - (trade.simInvestTimes * trade.stock.simMoneyBase * 10000)
+            trade.rollAmtRoi = 100 * trade.rollAmtProfit / trade.rollAmtCost
+        }
+        DispatchQueue.main.async {
+            trade.objectWillChange.send()
+        }
+    }
 }

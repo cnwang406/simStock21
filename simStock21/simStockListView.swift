@@ -11,7 +11,6 @@ import SwiftUI
 struct simStockListView: View {
     
     @ObservedObject var list: simStockList
-    @Environment(\.horizontalSizeClass) var sizeClass
         
     var body: some View {
         NavigationView {
@@ -63,7 +62,7 @@ struct simStockListView: View {
                  if checkedStocks.count > 0 {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
-                    Button((sizeClass == .regular ? "自股群" : "") + "移除") {
+                    Button((list.widthClass != .compact ? "自股群" : "") + "移除") {
                         self.list.moveStocks(self.checkedStocks)
                         self.checkedStocks = []
                         self.isChoosing = false
@@ -99,7 +98,7 @@ struct simStockListView: View {
     .fixedSize()
             .frame(width:240.0, alignment: .leading)
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(0.6)
 
 
     }
@@ -107,12 +106,12 @@ struct simStockListView: View {
     var endChoosing: some View {
         HStack {
             if isChoosing {
-                Button("取消" + (sizeClass == .regular ? "編輯模式" : "")) {
+                Button("取消" + (list.widthClass != .compact ? "編輯模式" : "")) {
                     self.isChoosing = false
                     self.checkedStocks = []
                 }
             } else if self.list.searchGotResults {
-                Button("放棄" + (sizeClass == .regular ? "搜尋結果" : "")) {
+                Button("放棄" + (list.widthClass != .compact ? "搜尋結果" : "")) {
                     self.searchText = ""
                     self.list.searchText = nil
                     self.checkedStocks = []
@@ -120,9 +119,9 @@ struct simStockListView: View {
                 }
             }
         }
-        .frame(width:(sizeClass == .regular ? 100.0 : 50.0), alignment: .trailing)
+        .frame(width:(list.widthClass != .compact ? 100.0 : 50.0), alignment: .trailing)
         .lineLimit(1)
-        .minimumScaleFactor(0.5)
+        .minimumScaleFactor(0.6)
     }
 }
 
@@ -139,7 +138,7 @@ struct pickerGroups:View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("選取的股票要加入哪個股群？")) {
+                Section(header: Text((list.widthClass != .compact ? "選取的股票要" : "") + "新增股群或加入既有股群？")) {
                     Picker("", selection: self.$groupPicked) {
                         Text("新增股群").tag("新增股群")
                         ForEach(self.list.groups, id: \.self) { (gName:String) in
@@ -194,7 +193,6 @@ struct pickerGroups:View {
 
 struct stockSection : View {
     @ObservedObject var list: simStockList
-
     @State var stocks : [Stock]
     @Binding var isChoosing:Bool
     @Binding var isSeaching:Bool
@@ -202,9 +200,13 @@ struct stockSection : View {
 
 
     var header:some View {
-        Text((stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]"))
-            .font(.headline)
-//            .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.5))
+        HStack {
+            if isChoosing {
+                checkGroup(checkedStocks: self.$checkedStocks, stocks: self.$stocks)
+            }
+            Text((stocks[0].group == "" ? "<搜尋結果>" : "[\(stocks[0].group)]"))
+                .font(.headline)
+        }
     }
     var footer:some View {
         Text("\(stocks.count)支股")
@@ -220,26 +222,70 @@ struct stockSection : View {
     
 }
 
+struct checkGroup: View {
+    @State var isChecked:Bool = false
+    @Binding var checkedStocks:[Stock]
+    @Binding var stocks : [Stock]
+    
+    func checkGroup() {
+        self.isChecked = !self.isChecked
+        if self.isChecked {
+            self.checkedStocks = stocks
+        } else {
+            self.checkedStocks = []
+        }
+    }
+
+    var body: some View {
+        Group {
+            Button(action: checkGroup) {
+                Image(systemName: isChecked ? "checkmark.square" : "square")
+            }
+        }
+    }
+}
+
 
 struct stockCell : View {
     @ObservedObject var list: simStockList
-
-    var stock : Stock
+    @ObservedObject var stock : Stock
     @Binding var isChoosing:Bool
     @Binding var isSearching:Bool
     @Binding var checkedStocks:[Stock]
     @State   var prefix:String = ""
-        
+    
+    func checkStock() {
+        if self.checkedStocks.contains(self.stock) {
+            self.checkedStocks.removeAll(where: {$0 == stock})
+        } else {
+            self.checkedStocks.append(stock)
+        }
+    }
+    
     var body: some View {
         HStack {
             if isChoosing || (isSearching && stock.group == "") {
-                checkStock(stock: self.stock, isChecked: false, checkedStocks: self.$checkedStocks)
+                Button(action: checkStock) {
+                    Image(systemName: self.checkedStocks.contains(self.stock) ? "checkmark.square" : "square")
+                }
             }
             Text(stock.sId)
-                .frame(width : 50.0, alignment: .leading)
+                .frame(width : 60.0, alignment: .leading)
             Text(stock.sName)
-                .frame(width : 80.0, alignment: .leading)
+                .frame(width : (isSearching && stock.group == "" ? 150.0 : 110.0), alignment: .leading)
             if stock.group != "" && !isChoosing && !isSearching {
+                Group {
+                    if stock.trades.count > 0 {
+                        lastTrade(list: self.list, trade: stock.trades[0])
+                    } else {
+                        HStack{
+                            Text("")
+                        }
+                    }
+                }
+                    .frame(width: 80, alignment: .trailing)
+
+
                 NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
                     Text("")
                 }
@@ -249,35 +295,26 @@ struct stockCell : View {
 //                })
             }
         }
-        .lineLimit(1)
-        .minimumScaleFactor(0.5)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
             .foregroundColor(self.checkedStocks.contains(stock) ? .orange : ((isSearching && stock.group != "") ? .gray : .primary))
     }
 }
 
-struct checkStock: View {
-    var stock : Stock
-    @State var isChecked:Bool
-    @Binding var checkedStocks:[Stock]
-    
-    
-    func check() {
-        self.isChecked = !self.isChecked
-        if self.isChecked {
-            self.checkedStocks.append(stock)
-        } else {
-            self.checkedStocks.removeAll(where: {$0 == stock})
-        }
-    }
+struct lastTrade: View {
+    @ObservedObject var list: simStockList
+    @ObservedObject var trade:Trade
 
     var body: some View {
-        Group {
-            Button(action: check) {
-                Image(systemName: isChecked ? "checkmark.square" : "square")
-            }
+        HStack{
+            Text(String(format:"%.2f",trade.priceClose))
         }
+            .foregroundColor(twDateTime.inMarketingTime(trade.dateTime) ? .orange : .primary)
+
     }
 }
+
+
 
 
 struct SearchBar: View {
@@ -301,8 +338,9 @@ struct SearchBar: View {
             })
                 .padding(7)
                 .padding(.horizontal, 25)
+                .lineLimit(nil)
+                .minimumScaleFactor(0.6)
                 .background(Color(.systemGray6))
-                .minimumScaleFactor(0.5)
 //                .keyboardType(.webSearch)
                 .cornerRadius(8)
                 .onTapGesture {

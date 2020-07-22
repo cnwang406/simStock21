@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="16119" systemVersion="19F101" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="16119" systemVersion="19G73" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Stock" representedClassName=".Stock" syncable="YES">
-        <attribute name="amtInvestBase" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="dateFirst" attributeType="Date" defaultDateTimeInterval="31493808000" usesScalarValueType="NO"/>
         <attribute name="dateStart" attributeType="Date" defaultDateTimeInterval="31493808000" usesScalarValueType="NO"/>
         <attribute name="group" attributeType="String" defaultValueString=""/>
         <attribute name="sId" attributeType="String" defaultValueString=""/>
+        <attribute name="simAddInvest" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="simMoneyBase" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simReversed" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="sName" attributeType="String" defaultValueString=""/>
         <relationship name="stockTrades" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Trade" inverseName="stock" inverseEntity="Trade"/>
     </entity>
@@ -25,16 +27,23 @@
         <attribute name="simAmtProfit" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simAmtRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simDays" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simInvestAdded" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simInvestTimes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simQtyBuy" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simQtyInventory" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simQtySell" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="simReversed" attributeType="String" defaultValueString=""/>
+        <attribute name="simRule" attributeType="String" defaultValueString=""/>
+        <attribute name="simRuleBuy" attributeType="String" defaultValueString=""/>
+        <attribute name="simRuleInvest" attributeType="String" defaultValueString=""/>
         <attribute name="simUnitCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simUnitRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="tKdD" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdJ" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdK" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdKMax9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tKdKMin9" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdKZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdKZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdKZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -60,12 +69,14 @@
         <attribute name="tOscZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tOscZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tOscZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tPriceHighDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tPriceLowDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tSource" attributeType="String" defaultValueString=""/>
         <attribute name="tUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <relationship name="stock" maxCount="1" deletionRule="Nullify" destinationEntity="Stock" inverseName="stockTrades" inverseEntity="Stock"/>
     </entity>
     <elements>
-        <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="148"/>
-        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="838"/>
+        <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="178"/>
+        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="973"/>
     </elements>
 </model>

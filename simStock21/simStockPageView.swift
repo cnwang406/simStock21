@@ -10,14 +10,12 @@ import SwiftUI
 
 struct stockPageView: View {
     @ObservedObject var list: simStockList
-    @Environment(\.horizontalSizeClass) var sizeClass
-    
     @State var stock : Stock
     @State var prefix: String
     
     var body: some View {
         VStack (alignment: .center) {
-            tradeListView(list: self.list, stock: self.$stock)
+            tradeListView(list: self.list, stock: self.stock, selected: (stock.trades.count > 0 ? stock.trades[0].date : nil))
             Spacer()
             stockPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
         }
@@ -52,15 +50,13 @@ func pickerIndexRange(index:Int, count:Int, max: Int) -> (from:Int, to:Int) {
 
 struct prefixPicker: View {
     @ObservedObject var list: simStockList
-    @Environment(\.horizontalSizeClass) var sizeClass
-    
     @Binding var prefix: String
     @Binding var stock : Stock
 
     var prefixs:[String] {
             let prefixs = list.prefixs
             let prefixIndex = prefixs.firstIndex(of: prefix) ?? 0
-            let maxCount = (sizeClass == .regular ? 19 : 9) + (sizeClass == .compact && list.orientation == .landscape ? 8 : 0)
+        let maxCount = (list.widthClass == .widePad ? 33 : (list.widthClass == .compact ? 7 : (list.widthClass == .widePhone ? 15 : 17)))
             let index = pickerIndexRange(index: prefixIndex, count: prefixs.count, max: maxCount)
             return Array(prefixs[index.from...index.to])
     }
@@ -97,7 +93,6 @@ struct prefixPicker: View {
 
 struct stockPicker: View {
     @ObservedObject var list: simStockList
-    @Environment(\.horizontalSizeClass) var sizeClass
 
     @Binding var prefix:String
     @Binding var stock :Stock
@@ -105,7 +100,7 @@ struct stockPicker: View {
     var prefixStocks:[Stock] {
         let stocks = list.prefixStocks(prefix: self.prefix)
         let stockIndex = stocks.firstIndex(of: self.stock) ?? 0
-        let maxCount = (sizeClass == .regular ? 9 : 3) + (sizeClass == .compact && list.orientation == .landscape ? 4 : 0)
+        let maxCount = (list.widthClass == .widePad ? 13 : (list.widthClass == .compact ? 3 : 7))
         let index = pickerIndexRange(index: stockIndex, count: stocks.count, max: maxCount)
         return Array(stocks[index.from...index.to])
     }
@@ -139,41 +134,168 @@ struct stockPicker: View {
     
 }
 
+
 struct tradeListView: View {
     @ObservedObject var list: simStockList
-    @Binding var stock : Stock
+    @ObservedObject var stock : Stock
     @State var selected: Date?
-//    @State var tradeSelected: Trade?
+    @State var showReload:Bool = false
+    @State var showSetting: Bool = false
+    @State var showInformation:Bool = false
+        
+    var years:Double {
+        var years = Date().timeIntervalSince(stock.dateStart) / 86400 / 365
+        if years < 1 {
+            years = 1
+        }
+        return years
+    }
+    
+    var simSetting:String {
+        let years = String(format:"期間%.1f年", self.years)
+        let money = stock.simMoneyBase > 0 ? String(format:"起始本金%.f萬元",stock.simMoneyBase) : ""
+        let invest = stock.simAddInvest ? "自動2次加碼" : ""
+        return (years + " " + money + " " + invest)
+    }
+    
+    var simSummary: String {
+        if stock.trades.count == 0 {
+            return ""
+        } else {
+            let trade = stock.trades[0]
+            if trade.rollDays == 0 || trade.rollRounds == 0 {
+                return ""
+            } else {
+                let numberFormatter = NumberFormatter()
+                numberFormatter.numberStyle = .currency   //貨幣格式
+                numberFormatter.maximumFractionDigits = 0
+                let rollAmtProfit = "累計損益" + (numberFormatter.string(for: trade.rollAmtProfit) ?? "$0")
+                let rollAmtRoi = String(format:"年報酬率%.1f%%",trade.rollAmtRoi/years)
+                let rollDays = String(format:"平均週期%.f天",trade.rollDays/trade.rollRounds)
+                return (rollAmtProfit + " " + rollAmtRoi + " " + rollDays)
+            }
+        }
+    }
 
+    func openUrl(_ url:String) {
+        if let URL = URL(string: url) {
+            if UIApplication.shared.canOpenURL(URL) {
+                UIApplication.shared.open(URL, options:[:], completionHandler: nil)
+            }
+        }
+    }
+    
+    //== 表頭：股票名稱、模擬摘要 ==
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
+            HStack(alignment: .top) {
                 Text(stock.sId)
                 Text(stock.sName)
+                Spacer(minLength: 40)
+                HStack {
+                    //== 工具按鈕 1 ==
+                    Button(action: {self.showSetting = true}) {
+                        Image(systemName: "wrench")
+                            .font(.system(size: 20))
+                    }
+                        .sheet(isPresented: $showSetting) {
+                            settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
+                        }
+                    //== 工具按鈕 2 ==
+                    Spacer()
+                    Button(action: {self.showReload = true}) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 20))
+                    }
+                        .sheet(isPresented: $showReload) {
+                            Form {
+                                Section (header:
+                                    Group {
+                                        Text("立即更新")
+                                        .font(.title)
+                                    }) {
+                                    Button(action: {
+                                        self.list.reloadNow(stock:self.stock)
+                                        self.showReload = false
+                                    }) {
+                                        Text("重算統計數值")
+                                    }
+                                    Button(action: {self.showReload = false}) {
+                                        Text("沒事，不用了。")
+                                    }
+                                }
+                            }
+                        }
+                    //== 工具按鈕 3 ==
+                    Spacer()
+                    Button(action: {self.showInformation = true}) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 20))
+                    }
+                        .sheet(isPresented: $showInformation) {
+                            Form {
+                                Section (header:
+                                    Group {
+                                        Text("參考訊息")
+                                        .font(.title)
+                                    }) {
+                                    Button(action: {
+                                        self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
+                                        self.showInformation = false
+                                    }) {
+                                        HStack {
+                                            Text("Yahoo! 技術分析")
+                                            Spacer()
+                                            Image(systemName: "safari")
+                                        }
+                                    }
+                                    Button(action: {self.showInformation = false}) {
+                                        Text("沒事，不用了。")
+                                    }
+                                }
+                            }
+                        }
+                } //工具按鈕的HStack
+                    .frame(width: 100, alignment: .trailing)
+
             }
             .font(.title)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
             .padding()
-            VStack(alignment: .leading) {
-                Text("首：\(twDateTime.stringFromDate(stock.dateFirst))")
-                Text("起：\(twDateTime.stringFromDate(stock.dateStart))")
+            
+
+            Spacer()
+            
+            VStack(alignment: .trailing) {
+                HStack {
+                    Spacer()
+                    Text(simSetting)
+                }
+//                    .lineLimit(1)
+//                    .minimumScaleFactor(0.6)
+//                    .padding(.trailing)
+                HStack {
+                    Spacer()
+                    Text(simSummary)
+                }
             }
-            .font(.footnote)
-            .padding()
+                .font(.system(size: 14))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.trailing)
 
-
-//            List (selection: $tradeSelected) {
+            //== 日交易明細列表 ==
             List {
                 ForEach(stock.trades, id:\.self.dateTime) { trade in
-                    tradeCell(trade: trade, selected: self.$selected) // tradeSelected: self.$tradeSelected)
-                    .onTapGesture {
-                        if self.selected == trade.date {
-                            self.selected = nil
-                        } else {
-                            self.selected = trade.date
+                    tradeCell(list: self.list, trade: trade, selected: self.$selected)
+                        .onTapGesture {
+                            if self.selected == trade.date {
+                                self.selected = nil
+                            } else {
+                                self.selected = trade.date
+                            }
                         }
-                    }
                 }
             }
             .id(UUID())
@@ -185,67 +307,360 @@ struct tradeListView: View {
     }
 }
 
+struct settingForm: View {
+    @ObservedObject var list: simStockList
+    @ObservedObject var stock:Stock
+    @Binding var showSetting: Bool
+    @State var dateStart:Date
+    @State var moneyBase:Double
+    @State var addInvest:Bool
+    @State var applyToGroup:Bool = false
+    @State var applyToAll:Bool = false
+    @State var saveToDefaults:Bool = false
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("個股設定").font(.title)) {
+                    DatePicker(selection: $dateStart, in: (twDateTime.calendar.date(byAdding: .year, value: -15, to: Date()) ?? stock.dateFirst)...(twDateTime.calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()), displayedComponents: .date) {
+                        Text("起始日期")
+                    }
+                    .environment(\.locale, Locale(identifier: "zh_Hant_TW"))
+                    HStack {
+                        Text(String(format:"起始本金%.f萬元",self.moneyBase))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(width: 180, alignment: .leading)
+                        Slider(value: $moneyBase, in: 10...1000, step: 10)
+                    }
+                    Toggle("自動2次加碼", isOn: $addInvest)
+                }
+                Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults).font(.footnote)) {
+
+//                    VStack {
+//                        Text(" ")
+//                        Text("擴大設定範圍")
+//                    }
+//                        .font(.title)
+                    Toggle("套用到同股群", isOn: $applyToGroup)
+                        .disabled(self.applyToAll)
+                    Toggle("套用到全部股", isOn: $applyToAll)
+                    .onReceive([self.applyToAll].publisher.first()) { (value) in
+                        self.applyToGroup = value
+                    }
+                    Toggle("作為新股預設值", isOn: $saveToDefaults)
+                }
+
+            }
+            .navigationBarTitle("模擬設定")
+            .navigationBarItems(leading: cancel, trailing: done)
+
+        }
+            .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    var cancel: some View {
+        Button("取消") {
+            self.showSetting = false
+        }
+    }
+    var done: some View {
+        Button("確認") {
+            self.list.applySetting(self.stock, dateStart: self.dateStart, moneyBase: self.moneyBase, addInvest: self.addInvest, applyToGroup: self.applyToGroup, applyToAll: self.applyToAll, saveToDefaults: self.saveToDefaults)
+            self.showSetting = false
+        }
+    }
+    
+
+    
+}
+
+
+func tradeCellColor (_ trade:Trade, for key:String) -> Color {
+    switch key {
+    case "dateTime":
+        if twDateTime.inMarketingTime(trade.dateTime) {
+            return Color(UIColor.purple)
+        } else if trade.simRule == "_" {
+            return .gray
+        }
+    case "simRule":
+        switch trade.simRule {
+        case "L":
+            return .green
+        case "H":
+            return .red
+        default:
+            return .white
+        }
+    default:
+        return .primary
+    }
+    return .primary
+}
+
+
 struct tradeCell: View {
+    @ObservedObject var list: simStockList
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
-//    @Binding var tradeSelected: Trade?
     
      var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 Text(twDateTime.stringFromDate(trade.dateTime))
-                Text(String(trade.priceClose))
-//                if trade == tradeSelected {
-//                    Text("*")
-//                }
-            }
+                    .foregroundColor(tradeCellColor(trade,for: "dateTime"))
+                    .frame(width: 80.0, alignment: .leading)
+                Text(String(format:"%.2f",trade.priceClose))
+                    .foregroundColor(tradeCellColor(trade,for: "dateTime"))
+                    .frame(width: 70.0, alignment: .center)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: 0.6)
+                    )
+                if trade.simQtySell > 0 {
+                    Text("賣")
+                        .frame(width: 20.0, alignment: .trailing)
+                    Text(String(format:"%.f",trade.simQtySell))
+                        .frame(width: 36.0, alignment: .center)
+                } else if trade.simQtyBuy > 0 {
+                    Text("買")
+                        .frame(width: 20.0, alignment: .trailing)
+                    Text(String(format:"%.f",trade.simQtyBuy))
+                        .frame(width: 36.0, alignment: .center)
+                } else if trade.simQtyInventory > 0 {
+                    Text("餘")
+                        .frame(width: 20.0, alignment: .trailing)
+                    Text(String(format:"%.f",trade.simQtyInventory))
+                        .frame(width: 36.0, alignment: .center)
+                } else {
+                    EmptyView()
+//                    Text("")
+//                        .frame(width: 20.0, alignment: .trailing)
+//                    Text("")
+//                        .frame(width: 36.0, alignment: .center)
+                }
+                if trade.simQtyInventory > 0 || trade.simQtySell > 0 {
+                    Text(String(format:"%.f天",trade.simDays))
+                        .frame(width: 40.0, alignment: .trailing)
+                } else {
+                    EmptyView()
+                }
+                if trade.simQtySell > 0 {
+                    Text(String(format:"%.1f%%",trade.simAmtRoi))
+                        .frame(width: 50.0, alignment: .trailing)
+                } else if trade.simRuleInvest == "A" {
+                    Text(trade.simInvestAdded > 0 ? "已加碼" : "請加碼")
+                        .foregroundColor(.blue)
+                        .frame(width: 50.0, alignment: .trailing)
+                        .onTapGesture {
+                            self.list.addInvest(self.trade)
+                    }
+
+                } else {
+                    EmptyView()
+//                    Text("")
+//                        .frame(width: 40.0, alignment: .trailing)
+                }
+            }   //HStack
             if self.selected == trade.date {
-                HStack {
-                    Text(twDateTime.stringFromDate(trade.dateTime, format: "HH:mm:ss"))
+                VStack(alignment: .leading) {
+                    Text(twDateTime.stringFromDate(trade.dateTime, format: "EEE HH:mm:ss"))
                     Text(trade.tSource)
                 }
-                    .font(.custom("Courier", size: 16))
+                    .font(.system(size: 12))
+                    .foregroundColor(tradeCellColor(trade, for: "dateTime"))
                 Spacer()
+                if trade.simRule != "_" {
+                    HStack {
+                        Spacer()
+                        Group {
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("本金餘額")
+                                if trade.simDays > 0 {
+                                    Text("本輪損益")
+                                }
+                                Text("累計損益")
+                            }
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text(String(format:"%.f萬元",trade.simAmtBalance/10000))
+                                if trade.simDays > 0 {
+                                    Text(String(format:"%.f仟元",trade.simAmtProfit/1000))
+                                }
+                                Text(String(format:"%.f仟元",trade.rollAmtProfit/1000))
+                            }
+                        }
+                        Spacer()
+                        Group {
+                            VStack(alignment: .trailing,spacing: 2) {
+                                if trade.simDays > 0 {
+                                    Text("單位成本")
+                                    Text("本輪成本")
+                                } else {
+                                    Text("")
+                                }
+                                Text("累計成本")
+                            }
+                            VStack(alignment: .trailing,spacing: 2) {
+                                if trade.simDays > 0 {
+                                    Text(String(format:"%.2f",trade.simUnitCost))
+                                    Text(String(format:"%.1f萬元",trade.simAmtCost/10000))
+                                } else {
+                                    Text("")
+                                }
+                                Text(String(format:"%.1f萬元",trade.rollAmtCost/10000))
+                            }
+                        }
+                        Spacer()
+                        Group {
+                            VStack(alignment: .leading,spacing: 2) {
+                                if trade.simDays > 0 {
+                                    Text(String(format:"第%.f輪" + (trade.rollRounds > 10 ? "" : " ") + trade.simRuleBuy,trade.rollRounds))
+                                    Text("本輪ROI")
+                                } else {
+                                    Text("")
+                                }
+                                Text("累計ROI")
+                            }
+                            VStack(alignment: .trailing,spacing: 2) {
+                                if trade.simDays > 0 {
+                                    Text("")
+                                    Text(String(format:"%.1f%%",trade.simUnitRoi))
+                                } else {
+                                    Text("")
+                                }
+                                Text(String(format:"%.1f%%",trade.rollAmtRoi))
+                            }
+                        }
+                        Spacer()
+                    }
+                        .font(.custom("Courier", size: 12))
+                }   //if trade.simRule != "_"
                 HStack {
                     Spacer()
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text("開盤")
-                        Text("最高")
-                        Text("最低")
-                    }
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text(String(format:"%.2f",trade.priceOpen))
-                        Text(String(format:"%.2f",trade.priceHigh))
-                        Text(String(format:"%.2f",trade.priceLow))
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text("MA20")
-                        Text("MA60")
-                        Text("OSC")
-                    }
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text(String(format:"%.2f",trade.tMa20))
-                        Text(String(format:"%.2f",trade.tMa60))
-                        Text(String(format:"%.2f",trade.tOsc))
+                    Group {
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text("開盤")
+                            Text("最高")
+                            Text("最低")
+                        }
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text(String(format:"%.2f",trade.priceOpen))
+                            Text(String(format:"%.2f",trade.priceHigh))
+                            Text(String(format:"%.2f",trade.priceLow))
+                        }
                     }
                     Spacer()
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text("K")
-                        Text("D")
-                        Text("J")
-                    }
-                    VStack(alignment: .trailing,spacing: 2) {
-                        Text(String(format:"%.2f",trade.tKdK))
-                        Text(String(format:"%.2f",trade.tKdD))
-                        Text(String(format:"%.2f",trade.tKdJ))
+                    Group {
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text("MA20")
+                            Text("MA60")
+                            Text("OSC")
+                        }
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text(String(format:"%.2f",trade.tMa20))
+                            Text(String(format:"%.2f",trade.tMa60))
+                            Text(String(format:"%.2f",trade.tOsc))
+                        }
                     }
                     Spacer()
-
-                }
+                    Group {
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text("K")
+                            Text("D")
+                            Text("J")
+                        }
+                        VStack(alignment: .trailing,spacing: 2) {
+                            Text("")
+                            Text(String(format:"%.2f",trade.tKdK))
+                            Text(String(format:"%.2f",trade.tKdD))
+                            Text(String(format:"%.2f",trade.tKdJ))
+                        }
+                    }
+                    Spacer()
+                }   //HStack
                 .font(.custom("Courier", size: 16))
-            }
-        }
+                Spacer()    //以下是擴充技術數值
+                if list.widthClass != .widePhone {
+                    HStack {
+                        Spacer()
+                        Group {
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("")
+                                Text("value")
+                                Text("max9")
+                                .foregroundColor(trade.tMa20DiffMax9 == trade.tMa20Diff || trade.tMa60DiffMax9 == trade.tMa60Diff || trade.tOscMax9 == trade.tOsc || trade.tKdKMax9 == trade.tKdK ? .red : .primary)
+                                Text("min9")
+                                .foregroundColor(trade.tMa20DiffMin9 == trade.tMa20Diff || trade.tMa60DiffMin9 == trade.tMa60Diff || trade.tOscMin9 == trade.tOsc || trade.tKdKMin9 == trade.tKdK ? .red : .primary)
+                                Text("z125")
+                                Text("z250")
+                                Text("z375")
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("ma20x")
+                                Text(String(format:"%.2f",trade.tMa20Diff))
+                                Text(String(format:"%.2f",trade.tMa20DiffMax9))
+                                    .foregroundColor(trade.tMa20DiffMax9 == trade.tMa20Diff ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tMa20DiffMin9))
+                                    .foregroundColor(trade.tMa20DiffMin9 == trade.tMa20Diff ? .red : .primary)
+                                Text("-")
+                                Text("-")
+                                Text("-")
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("ma60x")
+                                Text(String(format:"%.2f",trade.tMa60Diff))
+                                Text(String(format:"%.2f",trade.tMa60DiffMax9))
+                                .foregroundColor(trade.tMa60DiffMax9 == trade.tMa60Diff ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tMa60DiffMin9))
+                                .foregroundColor(trade.tMa60DiffMin9 == trade.tMa60Diff ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tMa60DiffZ125))
+                                Text(String(format:"%.2f",trade.tMa60DiffZ250))
+                                Text(String(format:"%.2f",trade.tMa60DiffZ375))
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("osc")
+                                Text(String(format:"%.2f",trade.tOsc))
+                                Text(String(format:"%.2f",trade.tOscMax9))
+                                .foregroundColor(trade.tOscMax9 == trade.tOsc ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tOscMin9))
+                                .foregroundColor(trade.tOscMin9 == trade.tOsc ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tOscZ125))
+                                Text(String(format:"%.2f",trade.tOscZ250))
+                                Text(String(format:"%.2f",trade.tOscZ375))
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("k")
+                                Text(String(format:"%.2f",trade.tKdK))
+                                Text(String(format:"%.2f",trade.tKdKMax9))
+                                .foregroundColor(trade.tKdKMax9 == trade.tKdK ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tKdKMin9))
+                                .foregroundColor(trade.tKdKMin9 == trade.tKdK ? .red : .primary)
+                                Text(String(format:"%.2f",trade.tKdKZ125))
+                                Text(String(format:"%.2f",trade.tKdKZ250))
+                                Text(String(format:"%.2f",trade.tKdKZ375))
+                            }
+                        }
+                        Spacer()
+                    }   //HStack
+                    .font(.custom("Courier", size: 14))
+                }
+            }   //If
+        }   //VStack
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        
+
+
     }
 
 }

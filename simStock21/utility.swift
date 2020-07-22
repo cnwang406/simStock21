@@ -35,14 +35,14 @@ public struct twDateTime { //用於台灣當地日期時間的一些計算函數
 
     static let calendar:Calendar = {
         var c = Calendar(identifier: .gregorian)
-        c.locale = Locale(identifier: "zh-TW")
+        c.locale = Locale(identifier: "zh_Hant_TW")
         c.timeZone = TimeZone(identifier: "Asia/Taipei")!
         return c
     } ()
 
     static func formatter(_ format:String="yyyy/MM/dd") -> DateFormatter  {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh-TW")
+        formatter.locale = Locale(identifier: "zh_Hant_TW")
         formatter.timeZone = TimeZone(identifier: "Asia/Taipei")!
         formatter.dateFormat = format
         return formatter
@@ -146,10 +146,11 @@ public struct twDateTime { //用於台灣當地日期時間的一些計算函數
         return dt
     }
 
-    static func inMarketingTime(_ time:Date=Date(), delay:Int = 0) -> Bool {
+    static func inMarketingTime(_ time:Date=Date(), delay:Int = 0, forToday:Bool=false) -> Bool {
         let time1330 = self.time1330(time, delayMinutes:delay)
-        let time0900 = self.time0900(time, delayMinutes:delay)
-        if time < time1330 && time >= time0900 {
+        let time0900 = self.time0900(time, delayMinutes:0 - delay)
+        let inToday = self.isDateInToday(time)
+        if time < time1330 && time >= time0900 && (inToday || !forToday) {
             return true
         } else {
             return false    //盤外時間
