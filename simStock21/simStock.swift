@@ -53,12 +53,6 @@ struct simStock {
     mutating func fetchStocks(_ searchText:[String]?=nil) {
         self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
     }
-    
-//    mutating func fetchTrades(_ stock:Stock) {
-//        let context = stock.managedObjectContext ?? coreData.shared.context
-//        self.trades = Trade.fetch(context, stock: stock, asc: false)
-//    }
-
         
     mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
         let defaults = self.simDefaults
@@ -137,6 +131,14 @@ struct simStock {
         defaults.set(start, forKey: "simDateStart")
         defaults.set(money, forKey: "simMoneyBase")
         defaults.set(invest,forKey: "simAddInvest")
+    }
+    
+    var t00:Stock? {
+        let t00 = stocks.filter{$0.sId == "t00"}
+        if t00.count > 0 {
+            return t00[0]
+        }
+        return nil
     }
         
     

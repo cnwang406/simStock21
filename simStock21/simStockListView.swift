@@ -209,7 +209,7 @@ struct stockSection : View {
         }
     }
     var footer:some View {
-        Text("\(stocks.count)支股")
+        Text(list.stocksSummary(stocks))
     }
 
     var body: some View {
@@ -270,20 +270,20 @@ struct stockCell : View {
                 }
             }
             Text(stock.sId)
-                .frame(width : 60.0, alignment: .leading)
+                .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
             Text(stock.sName)
-                .frame(width : (isSearching && stock.group == "" ? 150.0 : 110.0), alignment: .leading)
+                .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 70.0 : 110.0)), alignment: .leading)
             if stock.group != "" && !isChoosing && !isSearching {
                 Group {
                     if stock.trades.count > 0 {
-                        lastTrade(list: self.list, trade: stock.trades[0])
+                        lastTrade(list: self.list, stock: self.stock, trade: stock.trades[0])
                     } else {
                         HStack{
                             Text("")
                         }
                     }
                 }
-                    .frame(width: 80, alignment: .trailing)
+//                    .frame(width: 80, alignment: .trailing)
 
 
                 NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
@@ -303,13 +303,64 @@ struct stockCell : View {
 
 struct lastTrade: View {
     @ObservedObject var list: simStockList
+    @ObservedObject var stock : Stock
     @ObservedObject var trade:Trade
 
     var body: some View {
         HStack{
             Text(String(format:"%.2f",trade.priceClose))
+                .frame(width: (list.widthClass == .compact ? 60.0 : 70.0), alignment: .center)
+                .foregroundColor(twDateTime.inMarketingTime(trade.dateTime) ? .purple : .primary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: 0.6)
+                )
+            if trade.rollDays > 0 && list.widthClass != .compact {
+                if trade.simQtySell > 0 {
+                    Text("賣")
+                        .frame(width: 20.0, alignment: .trailing)
+                        .foregroundColor(.blue)
+                    Text(String(format:"%.f",trade.simQtySell))
+                        .frame(width: 35.0, alignment: .trailing)
+                        .foregroundColor(.blue)
+                } else if trade.simQtyBuy > 0 {
+                    Text("買")
+                        .frame(width: 20.0, alignment: .trailing)
+                        .foregroundColor(.red)
+                    Text(String(format:"%.f",trade.simQtyBuy))
+                        .frame(width: 35.0, alignment: .trailing)
+                        .foregroundColor(.red)
+                } else if trade.simQtyInventory > 0 {
+                    Text("餘")
+                        .frame(width: 20.0, alignment: .trailing)
+                    Text(String(format:"%.f",trade.simQtyInventory))
+                        .frame(width: 35.0, alignment: .trailing)
+                } else {
+                    Text("")
+                        .frame(width: 20.0, alignment: .trailing)
+                    Text("")
+                        .frame(width: 35.0, alignment: .trailing)
+                }
+                Text(String(format:"%.1f年",stock.years))
+                    .frame(width: 60.0, alignment: .trailing)
+            }
+            if trade.simDays == 0 || list.widthClass == .compact {
+                Text(String(format:"%.f天",trade.rollDays/trade.rollRounds))
+                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
+                Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
+                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
+            } else if trade.rollDays > 0 && list.widthClass != .compact {
+                Text(String(format:"%.f/%.f天",trade.simDays,trade.rollDays/trade.rollRounds))
+                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
+                Text(String(format:"%.1f/%.1f%%",trade.simAmtRoi,trade.rollAmtRoi/stock.years))
+                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
+            } else {
+                Text("")
+                Text("")
+            }
+            
         }
-            .foregroundColor(twDateTime.inMarketingTime(trade.dateTime) ? .orange : .primary)
+            
 
     }
 }

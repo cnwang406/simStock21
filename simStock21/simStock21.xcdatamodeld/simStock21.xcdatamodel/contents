@@ -39,6 +39,10 @@
         <attribute name="simUnitCost" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simUnitRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="tHighDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tHighDiff125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tHighDiff250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tHighDiff375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdD" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdJ" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdK" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -47,6 +51,10 @@
         <attribute name="tKdKZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdKZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tKdKZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tLowDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tLowDiff125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tLowDiff250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tLowDiff375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tMa20" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tMa20Days" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tMa20Diff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -69,14 +77,12 @@
         <attribute name="tOscZ125" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tOscZ250" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tOscZ375" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="tPriceHighDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="tPriceLowDiff" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="tSource" attributeType="String" defaultValueString=""/>
         <attribute name="tUpdated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <relationship name="stock" maxCount="1" deletionRule="Nullify" destinationEntity="Stock" inverseName="stockTrades" inverseEntity="Stock"/>
     </entity>
     <elements>
         <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="178"/>
-        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="973"/>
+        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="1063"/>
     </elements>
 </model>

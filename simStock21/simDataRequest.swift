@@ -396,7 +396,7 @@ class simDataRequest {
             let d375 = tradeIndex(375, index: index)
 
             let maxDouble:Double = Double.greatestFiniteMagnitude
-//            let minDouble:Double = Double.leastNormalMagnitude
+            let minDouble:Double = Double.leastNormalMagnitude
             
             var sum60:Double = 0
             var sum20:Double = 0
@@ -438,8 +438,8 @@ class simDataRequest {
             }
             let nextLow  = 100 * (prev.priceClose - trade.priceLow + nextPriceDiff(trade.priceLow)) / prev.priceClose
             let nextHigh = 100 * (trade.priceHigh + nextPriceDiff(trade.priceHigh) - prev.priceClose) / prev.priceClose
-            trade.tPriceLowDiff  = (nextLow > 10 ? 10 : 100 * (prev.priceClose - trade.priceLow) / prev.priceClose)
-            trade.tPriceHighDiff = (nextHigh > 10 ? 10 : 100 * (trade.priceHigh - prev.priceClose) / prev.priceClose)
+            trade.tLowDiff  = (nextLow > 10 ? 10 : 100 * (prev.priceClose - trade.priceLow) / prev.priceClose)
+            trade.tHighDiff = (nextHigh > 10 ? 10 : 100 * (trade.priceHigh - prev.priceClose) / prev.priceClose)
 
             //ma60,ma20
             trade.tMa60 = sum60 / d60.thisCount
@@ -475,7 +475,7 @@ class simDataRequest {
             trade.tOscMin9 = trade.tOsc
             trade.tKdKMax9 = trade.tKdK
             trade.tKdKMin9 = trade.tKdK
-            for t in trades[d9.thisIndex...(index - 1)] {
+            for t in trades[d9.thisIndex...index] {
                 //9天最高最低
                 if t.tMa20Diff > trade.tMa20DiffMax9 {
                     trade.tMa20DiffMax9 = t.tMa20Diff
@@ -503,14 +503,39 @@ class simDataRequest {
                 }
             }
 
+            //半年、1年、1年半內的最高價、最低價到今天跌或漲了多少
+            func priceHighAndLow (_ dIndex:(prevIndex:Int,prevCount:Double,thisIndex:Int,thisCount:Double)) -> (highDiff:Double, lowDiff:Double) {
+                var high:Double = minDouble
+                var low:Double = maxDouble
+                for t in trades[dIndex.thisIndex...index] {
+                    if t.priceHigh > high {
+                        high = t.priceHigh
+                    }
+                    if t.priceLow < low {
+                        low = t.priceLow
+                    }
+                }
+                let highDiff:Double = 100 * (trade.priceClose - high) / high
+                let lowDiff:Double  = 100 * (trade.priceClose - low) / low
+                return (highDiff,lowDiff)
+            }
+            let pDiff125  = priceHighAndLow(d125)
+            let pDiff250  = priceHighAndLow(d250)
+            let pDiff375  = priceHighAndLow(d375)
+            trade.tHighDiff125 = pDiff125.highDiff
+            trade.tHighDiff250 = pDiff250.highDiff
+            trade.tHighDiff375 = pDiff375.highDiff
+            trade.tLowDiff125  = pDiff125.lowDiff
+            trade.tLowDiff250  = pDiff250.lowDiff
+            trade.tLowDiff375  = pDiff375.lowDiff
 
-            //ma60在半年、1年、1年半內的標準分數；K,Osc在半年內的標準分數
+            //ma60,Osc,K在半年、1年、1年半內的標準分數
             func standardDeviationZ(_ key:String, dIndex:(prevIndex:Int,prevCount:Double,thisIndex:Int,thisCount:Double)) -> Double {
                 var sum:Double = 0
                 for t in trades[dIndex.thisIndex...index] {
                     sum += (t.value(forKey: key) as? Double ?? 0)   //總計
                 }
-                let avg = sum / d375.thisCount  //平均值
+                let avg = sum / dIndex.thisCount  //平均值
                 var vsum:Double = 0
                 for t in trades[dIndex.thisIndex...index] {
                     let variance = pow(((t.value(forKey: key) as? Double ?? 0) - avg),2)  //偏差值

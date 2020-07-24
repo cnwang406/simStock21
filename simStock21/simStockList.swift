@@ -130,6 +130,23 @@ class simStockList:ObservableObject {
         return "預設：\(start) \(money) \(invest)"
     }
     
+    func stocksSummary(_ stocks:[Stock]) -> String {
+        var roi:Double = 0
+        var days:Double = 0
+        let s = stocks.filter{$0.sId != "t00"}
+        for stock in s {
+            let context = stock.managedObjectContext ?? coreData.shared.context
+            if let trade = stock.lastTrade(context) {
+                roi += trade.rollAmtRoi
+                days += (trade.rollDays / trade.rollRounds)
+            }
+        }
+        let sCount = "\(s.count)支股"
+        let sRoi = String(format:"平均ROI:%.1f%%",roi / Double(s.count))
+        let sDays = String(format:"平均週期:%.f天",days / Double(s.count))
+        return "\(sCount) \(sRoi) \(sDays)"
+    }
+    
     func reloadNow(stock: Stock) {
         if let context = stock.managedObjectContext, stock.simAddInvest == false {
             stock.simAddInvest = true
