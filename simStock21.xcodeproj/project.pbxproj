@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		E24E5E2B24B97A58000ED54D /* simDataRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E24E5E2A24B97A58000ED54D /* simDataRequest.swift */; };
 		E25ED3EF24A43DD0006C1332 /* utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = E25ED3EB24A40F63006C1332 /* utility.swift */; };
+		E267A58824CA797C0041369C /* simStock21.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E267A58624CA797C0041369C /* simStock21.xcdatamodeld */; };
 		E27B62B224A8774600092943 /* simStockPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27B62B124A8774600092943 /* simStockPageView.swift */; };
-		E27CBDED24A9C235005F6649 /* simStock21.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E27CBDEB24A9C235005F6649 /* simStock21.xcdatamodeld */; };
 		E2C4580C24A36CAA0036791E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4580B24A36CAA0036791E /* AppDelegate.swift */; };
 		E2C4580E24A36CAA0036791E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4580D24A36CAA0036791E /* SceneDelegate.swift */; };
 		E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4581224A36CAA0036791E /* simStockListView.swift */; };
@@ -33,9 +33,9 @@
 		E25ED3EC24A40F8C006C1332 /* pickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pickerViewController.swift; sourceTree = "<group>"; };
 		E25ED3ED24A40F95006C1332 /* settingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settingViewController.swift; sourceTree = "<group>"; };
 		E25ED3EE24A40FAF006C1332 /* cellObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cellObject.swift; sourceTree = "<group>"; };
-		E2718DAD24B885F400A45CE1 /* simStock 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 2.xcdatamodel"; sourceTree = "<group>"; };
+		E267A58724CA797C0041369C /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
 		E27B62B124A8774600092943 /* simStockPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockPageView.swift; sourceTree = "<group>"; };
-		E27CBDEC24A9C235005F6649 /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
+		E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 2.xcdatamodel"; sourceTree = "<group>"; };
 		E2C4580824A36CAA0036791E /* simStock21.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simStock21.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C4580B24A36CAA0036791E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E2C4580D24A36CAA0036791E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -104,7 +104,7 @@
 				E2C4580D24A36CAA0036791E /* SceneDelegate.swift */,
 				E2C4580B24A36CAA0036791E /* AppDelegate.swift */,
 				E25ED3EB24A40F63006C1332 /* utility.swift */,
-				E27CBDEB24A9C235005F6649 /* simStock21.xcdatamodeld */,
+				E267A58624CA797C0041369C /* simStock21.xcdatamodeld */,
 				E2C4581424A36CAA0036791E /* Assets.xcassets */,
 				E2C4581924A36CAA0036791E /* LaunchScreen.storyboard */,
 				E2C4581C24A36CAA0036791E /* Info.plist */,
@@ -195,9 +195,9 @@
 				E27B62B224A8774600092943 /* simStockPageView.swift in Sources */,
 				E2C4582524A36D1C0036791E /* simStockList.swift in Sources */,
 				E2C4580C24A36CAA0036791E /* AppDelegate.swift in Sources */,
+				E267A58824CA797C0041369C /* simStock21.xcdatamodeld in Sources */,
 				E2C4580E24A36CAA0036791E /* SceneDelegate.swift in Sources */,
 				E2C4582724A36D710036791E /* coreData.swift in Sources */,
-				E27CBDED24A9C235005F6649 /* simStock21.xcdatamodeld in Sources */,
 				E25ED3EF24A43DD0006C1332 /* utility.swift in Sources */,
 				E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */,
 				E2C4582324A36CC50036791E /* simStock.swift in Sources */,
@@ -397,13 +397,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCVersionGroup section */
-		E27CBDEB24A9C235005F6649 /* simStock21.xcdatamodeld */ = {
+		E267A58624CA797C0041369C /* simStock21.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
-				E2718DAD24B885F400A45CE1 /* simStock 2.xcdatamodel */,
-				E27CBDEC24A9C235005F6649 /* simStock21.xcdatamodel */,
+				E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */,
+				E267A58724CA797C0041369C /* simStock21.xcdatamodel */,
 			);
-			currentVersion = E27CBDEC24A9C235005F6649 /* simStock21.xcdatamodel */;
+			currentVersion = E267A58724CA797C0041369C /* simStock21.xcdatamodel */;
 			path = simStock21.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

@@ -12,6 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
+    var tUpdateAll:Bool = false
     let request = simDataRequest()
     let defaults = UserDefaults.standard
 
@@ -114,8 +115,10 @@ struct simStock {
                 stock.simMoneyBase = moneyBase
                 stock.simAddInvest = addInvest
             }
-            try? context.save()
-            request.runRequest(stocks: stocks, action: .simUpdateAll)
+            if !simTesting {
+                try? context.save()
+                request.runRequest(stocks: stocks, action: .simUpdateAll)
+            }
         }
     }
     
@@ -140,7 +143,51 @@ struct simStock {
         }
         return nil
     }
+    
+    func stocksSummary(_ stocks:[Stock]) -> String {
+        var roi:Double = 0
+        var days:Double = 0
+        let s = stocks.filter{$0.sId != "t00"}
+        for stock in s {
+            if let trade = stock.lastTrade(stock.context) {
+                roi += (trade.rollAmtRoi / stock.years)
+                days += (trade.rollDays / trade.rollRounds)
+            }
+        }
+        let sCount = "\(s.count)支股 "
+        let sRoi = String(format:"平均年報酬:%.1f%% ",roi / Double(s.count))
+        let sDays = String(format:"平均週期:%.f天",days / Double(s.count))
+        return "\(sCount)\(sRoi)\(sDays)"
+    }
+
         
+    var groupStocks:[[Stock]] {
+        Dictionary(grouping: stocks) { (stock:Stock)  in
+            stock.group
+        }.values
+            .map{$0.map{$0}.sorted{$0.sName < $1.sName}}
+            .sorted {$0[0].group < $1[0].group}
+    }
+    
+    func runTest(start:Date) {
+        if start <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
+            settingStocks(groupStocks[0], dateStart: start, moneyBase: 100, addInvest: true)
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
+                self.request.runRequest(stocks: self.groupStocks[0], action: .simTesting)
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
+                    let years:Int = Int(round(Date().timeIntervalSince(start) / 86400 / 365))
+                    NSLog("== \(twDateTime.stringFromDate(start,format:"yyyy")) \(self.stocksSummary(self.groupStocks[0])) == \(years)\((years - 1) % 5 == 0 ? "\n" : "")")
+                    let nextYear = (twDateTime.calendar.date(byAdding: .year, value: 1, to: start) ?? Date.distantPast)
+                    self.runTest(start: nextYear)
+                }
+            }
+        } else {
+//            let d = simDefaults
+//            settingStocks(stocks, dateStart: d.start, moneyBase: d.money, addInvest: d.invest, runTesting: true)
+            defaults.set(true, forKey: "updateAll")
+            NSLog("== simTesting finished. ==\n\n")
+        }
+    }
     
 //    var stocksJSON: Data? { try? JSONEncoder().encode(stocks) }
 //    init?(stocksJSON: Data?) {
@@ -163,10 +210,10 @@ struct simStock {
         }
     }
         
-    func downloadTrades(doItNow:Bool = false) {
-        if doItNow {
+    func downloadTrades(updateAll:Bool = false) {
+        if updateAll {
             NSLog("立即下載全部交易！")
-            request.runRequest(stocks: stocks, action: .tUpdateAll)
+            request.runRequest(stocks: stocks, action: (self.tUpdateAll ? .tUpdateAll : .simUpdateAll))
         } else if simTesting {
             NSLog("模擬測試...")
         } else {

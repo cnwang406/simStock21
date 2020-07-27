@@ -104,7 +104,7 @@ class simStockList:ObservableObject {
     }
     
     var groups:[String] {
-        groupStocks.map{$0[0].group}
+        groupStocks.map{$0[0].group}.filter{$0 != ""}
     }
         
     var searchGotResults:Bool {
@@ -131,20 +131,7 @@ class simStockList:ObservableObject {
     }
     
     func stocksSummary(_ stocks:[Stock]) -> String {
-        var roi:Double = 0
-        var days:Double = 0
-        let s = stocks.filter{$0.sId != "t00"}
-        for stock in s {
-            let context = stock.managedObjectContext ?? coreData.shared.context
-            if let trade = stock.lastTrade(context) {
-                roi += trade.rollAmtRoi
-                days += (trade.rollDays / trade.rollRounds)
-            }
-        }
-        let sCount = "\(s.count)支股"
-        let sRoi = String(format:"平均ROI:%.1f%%",roi / Double(s.count))
-        let sDays = String(format:"平均週期:%.f天",days / Double(s.count))
-        return "\(sCount) \(sRoi) \(sDays)"
+        return sim.stocksSummary(stocks)
     }
     
     func reloadNow(stock: Stock) {
@@ -197,9 +184,16 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive ===")
-            sim.downloadStocks()
-            sim.downloadTrades()
-//            sim.downloadTrades(doItNow: true)
+            if sim.simTesting {
+                let start = (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
+                NSLog("\n\n== simTesting \(twDateTime.stringFromDate(start)) ==")
+                sim.runTest(start: start)
+            } else {
+                sim.downloadStocks()
+                let updateAll:Bool = sim.defaults.bool(forKey: "updateAll") || sim.tUpdateAll
+                sim.downloadTrades(updateAll: updateAll)
+                sim.defaults.removeObject(forKey: "updateAll")
+            }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")
         default:

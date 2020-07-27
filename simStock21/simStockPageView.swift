@@ -378,6 +378,16 @@ func tradeCellColor (_ trade:Trade, for key:String) -> Color {
         default:
             return .white
         }
+    case "simQty":
+        if trade.simQtySell > 0 {
+            return .blue
+        } else if trade.simQtyBuy > 0 {
+            return .red
+        } else if trade.simQtyInventory > 0 {
+            return .primary
+        } else {
+            return .primary
+        }
     default:
         return .primary
     }
@@ -406,6 +416,7 @@ struct tradeCell: View {
                         }
                         Text("累計損益")
                     }
+                    .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                     VStack(alignment: .trailing,spacing: 2) {
                         Text(String(format:"%.f萬元",trade.simAmtBalance/10000))
                         if trade.simDays > 0 {
@@ -423,6 +434,7 @@ struct tradeCell: View {
                         }
                         Text("單輪成本")
                     }
+                    .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                     VStack(alignment: .trailing,spacing: 2) {
                         if trade.simDays > 0 {
                             Text(String(format:"%.2f元",trade.simUnitCost))
@@ -437,12 +449,14 @@ struct tradeCell: View {
                     VStack(alignment: .leading,spacing: 2) {
                         if trade.simDays > 0 {
                             Text(String(format:"第%.f輪" + (trade.rollRounds > 10 ? "" : " ") + trade.simRuleBuy,trade.rollRounds))
-                            Text("本輪ROI")
+                            Text("本輪報酬")
                         } else {
                             Text("")
+                            Text("")
                         }
-                        Text("累計ROI")
+                        Text("累計報酬")
                     }
+                        .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                     VStack(alignment: .trailing,spacing: 2) {
                         if trade.simDays > 0 {
                             Text("")
@@ -510,53 +524,60 @@ struct tradeCell: View {
             HStack {
                 Text(twDateTime.stringFromDate(trade.dateTime))
                     .foregroundColor(tradeCellColor(trade,for: "dateTime"))
-                    .frame(width: 80.0, alignment: .leading)
+                    .frame(width: (list.widthClass == .compact ? 80.0 : 100.0), alignment: .leading)
                 Text(String(format:"%.2f",trade.priceClose))
                     .foregroundColor(tradeCellColor(trade,for: "dateTime"))
-                    .frame(width: 70.0, alignment: .center)
+                    .frame(width: (list.widthClass == .compact ? 80.0 : 100.0), alignment: .center)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: 0.6)
                     )
-                if trade.simQtySell > 0 {
-                    Text("賣")
-                        .frame(width: 20.0, alignment: .trailing)
-                        .foregroundColor(.blue)
-                    Text(String(format:"%.f",trade.simQtySell))
-                        .frame(width: 36.0, alignment: .center)
-                        .foregroundColor(.blue)
-                } else if trade.simQtyBuy > 0 {
-                    Text("買")
-                        .frame(width: 20.0, alignment: .trailing)
-                    .foregroundColor(.red)
-                    Text(String(format:"%.f",trade.simQtyBuy))
-                        .frame(width: 36.0, alignment: .center)
-                    .foregroundColor(.red)
-                } else if trade.simQtyInventory > 0 {
-                    Text("餘")
-                        .frame(width: 20.0, alignment: .trailing)
-                    Text(String(format:"%.f",trade.simQtyInventory))
-                        .frame(width: 36.0, alignment: .center)
-                } else {
-                    EmptyView()
-//                    Text("")
+                Text(trade.simQty.action)
+                    .frame(width: (list.widthClass == .compact ? 20.0 : 30.0), alignment: .center)
+                    .foregroundColor(tradeCellColor(trade, for: "simQty"))
+                Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
+                    .frame(width: (list.widthClass == .compact ? 35.0 : 40.0), alignment: .center)
+                    .foregroundColor(tradeCellColor(trade, for: "simQty"))
+
+//                if trade.simQtySell > 0 {
+//                    Text("賣")
 //                        .frame(width: 20.0, alignment: .trailing)
-//                    Text("")
+//                        .foregroundColor(.blue)
+//                    Text(String(format:"%.f",trade.simQtySell))
 //                        .frame(width: 36.0, alignment: .center)
-                }
+//                        .foregroundColor(.blue)
+//                } else if trade.simQtyBuy > 0 {
+//                    Text("買")
+//                        .frame(width: 20.0, alignment: .trailing)
+//                    .foregroundColor(.red)
+//                    Text(String(format:"%.f",trade.simQtyBuy))
+//                        .frame(width: 36.0, alignment: .center)
+//                    .foregroundColor(.red)
+//                } else if trade.simQtyInventory > 0 {
+//                    Text("餘")
+//                        .frame(width: 20.0, alignment: .trailing)
+//                    Text(String(format:"%.f",trade.simQtyInventory))
+//                        .frame(width: 36.0, alignment: .center)
+//                } else {
+//                    EmptyView()
+////                    Text("")
+////                        .frame(width: 20.0, alignment: .trailing)
+////                    Text("")
+////                        .frame(width: 36.0, alignment: .center)
+//                }
                 if trade.simQtyInventory > 0 || trade.simQtySell > 0 {
                     Text(String(format:"%.f天",trade.simDays))
-                        .frame(width: 40.0, alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .trailing)
                 } else {
                     EmptyView()
                 }
                 if trade.simQtySell > 0 {
                     Text(String(format:"%.1f%%",trade.simAmtRoi))
-                        .frame(width: 50.0, alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 40.0 : 60.0), alignment: .trailing)
                 } else if trade.simRuleInvest == "A" {
-                    Text(trade.simInvestAdded > 0 ? "已加碼" : "請加碼")
+                    Text(trade.simInvestAdded > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼")
                         .foregroundColor(.blue)
-                        .frame(width: 50.0, alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 50.0 : 80.0), alignment: .trailing)
                         .onTapGesture {
                             self.list.addInvest(self.trade)
                     }
@@ -587,7 +608,7 @@ struct tradeCell: View {
                         }
                     }
                 } else {
-                    HStack (alignment: .top) {
+                    HStack (alignment: .center) {
                         self.priceAndKDJ
                         Spacer()
                         self.simSummary
@@ -617,9 +638,9 @@ struct tradeCell: View {
                                     .foregroundColor(trade.tMa20DiffMax9 == trade.tMa20Diff ? .red : .primary)
                                 Text(String(format:"%.2f",trade.tMa20DiffMin9))
                                     .foregroundColor(trade.tMa20DiffMin9 == trade.tMa20Diff ? .red : .primary)
-                                Text("-")
-                                Text("-")
-                                Text("-")
+                                Text(String(format:"%.2f",trade.tMa20DiffZ125))
+                                Text(String(format:"%.2f",trade.tMa20DiffZ250))
+                                Text(String(format:"%.2f",trade.tMa20DiffZ375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {

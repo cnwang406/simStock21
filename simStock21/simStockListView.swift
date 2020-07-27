@@ -167,6 +167,10 @@ struct pickerGroups:View {
     var cancel: some View {
         Button("取消") {
             self.isPresented = false
+            self.isMoving = false
+            self.searchText = ""
+            self.list.searchText = nil
+            self.checkedStocks = []            
         }
     }
     var done: some View {
@@ -270,34 +274,28 @@ struct stockCell : View {
                 }
             }
             Text(stock.sId)
+                .font(.system(list.widthClass == .compact ? .callout : .body))
                 .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
             Text(stock.sName)
-                .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 70.0 : 110.0)), alignment: .leading)
-            if stock.group != "" && !isChoosing && !isSearching {
+                .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 75.0 : 110.0)), alignment: .leading)
+            if stock.group != "" {
                 Group {
                     if stock.trades.count > 0 {
-                        lastTrade(list: self.list, stock: self.stock, trade: stock.trades[0])
+                        lastTrade(list: self.list, stock: self.stock, trade: stock.trades[0], isChoosing: self.$isChoosing, isSearching: self.$isSearching)
                     } else {
-                        HStack{
-                            Text("")
-                        }
+                        EmptyView()
                     }
                 }
-//                    .frame(width: 80, alignment: .trailing)
-
-
-                NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
-                    Text("")
+                if !isChoosing && !isSearching {
+                    NavigationLink(destination: stockPageView(list: self.list, stock: stock, prefix: stock.prefix)) {
+                        Text("")
+                    }
                 }
-//                .simultaneousGesture(TapGesture().onEnded{
-//                    self.list.stock = self.stock
-//                    print("hello hello hello")
-//                })
             }
         }
             .lineLimit(1)
             .minimumScaleFactor(0.6)
-            .foregroundColor(self.checkedStocks.contains(stock) ? .orange : ((isSearching && stock.group != "") ? .gray : .primary))
+            .foregroundColor(self.checkedStocks.contains(stock) ? .orange : (isSearching && stock.group != "" ? .gray : .primary))
     }
 }
 
@@ -305,62 +303,44 @@ struct lastTrade: View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @ObservedObject var trade:Trade
+    @Binding var isChoosing:Bool
+    @Binding var isSearching:Bool
+    
 
     var body: some View {
         HStack{
             Text(String(format:"%.2f",trade.priceClose))
-                .frame(width: (list.widthClass == .compact ? 60.0 : 70.0), alignment: .center)
-                .foregroundColor(twDateTime.inMarketingTime(trade.dateTime) ? .purple : .primary)
+                .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .center)
+                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "dateTime"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: 0.6)
+                        .stroke((isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simRule")), lineWidth: 0.6)
                 )
-            if trade.rollDays > 0 && list.widthClass != .compact {
-                if trade.simQtySell > 0 {
-                    Text("賣")
-                        .frame(width: 20.0, alignment: .trailing)
-                        .foregroundColor(.blue)
-                    Text(String(format:"%.f",trade.simQtySell))
-                        .frame(width: 35.0, alignment: .trailing)
-                        .foregroundColor(.blue)
-                } else if trade.simQtyBuy > 0 {
-                    Text("買")
-                        .frame(width: 20.0, alignment: .trailing)
-                        .foregroundColor(.red)
-                    Text(String(format:"%.f",trade.simQtyBuy))
-                        .frame(width: 35.0, alignment: .trailing)
-                        .foregroundColor(.red)
-                } else if trade.simQtyInventory > 0 {
-                    Text("餘")
-                        .frame(width: 20.0, alignment: .trailing)
-                    Text(String(format:"%.f",trade.simQtyInventory))
-                        .frame(width: 35.0, alignment: .trailing)
-                } else {
-                    Text("")
-                        .frame(width: 20.0, alignment: .trailing)
-                    Text("")
-                        .frame(width: 35.0, alignment: .trailing)
-                }
-                Text(String(format:"%.1f年",stock.years))
-                    .frame(width: 60.0, alignment: .trailing)
-            }
-            if trade.simDays == 0 || list.widthClass == .compact {
-                Text(String(format:"%.f天",trade.rollDays/trade.rollRounds))
-                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
-                Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
-                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
-            } else if trade.rollDays > 0 && list.widthClass != .compact {
-                Text(String(format:"%.f/%.f天",trade.simDays,trade.rollDays/trade.rollRounds))
-                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
-                Text(String(format:"%.1f/%.1f%%",trade.simAmtRoi,trade.rollAmtRoi/stock.years))
-                    .frame(width: (list.widthClass == .compact ? 50.0 : 100.0), alignment: .trailing)
+            if list.widthClass != .compact {
+                Text(trade.simQty.action)
+                .frame(width: 30.0, alignment: .trailing)
+                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simQty"))
+                Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
+                .frame(width: (list.widthClass == .compact ? 35.0 : 50.0), alignment: .trailing)
+                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simQty"))
+
             } else {
-                Text("")
-                Text("")
+                EmptyView()
             }
-            
+            Text(String(format:"%.1f年",stock.years))
+                .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)
+            if trade.rollDays > 0 {
+                Text(String(format:"%.f天",trade.rollDays/trade.rollRounds))
+                    .frame(width: (list.widthClass == .compact ? 35.0 : 70.0), alignment: .trailing)
+                Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
+                    .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)
+            } else {
+                EmptyView()
+            }
         }
-            
+            .font(.system(list.widthClass == .compact ? .footnote : .body))
+            .foregroundColor(isChoosing || isSearching ? .gray : .primary)
+
 
     }
 }
