@@ -43,14 +43,11 @@ class simDataRequest {
                     q.addOperation {
                         self.simTechnical(stock: stock, action: action)
                         self.yahooRequest(stock)
-                        if action == .simUpdateAll || action == .tUpdateAll {
-                            DispatchQueue.main.async {
-                                stock.objectWillChange.send()
-                                if stock.trades.count > 0 {
-                                    stock.trades[0].objectWillChange.send()
-                                }
-                            }
-                        }
+//                        if action == .simUpdateAll || action == .tUpdateAll {
+//                            DispatchQueue.main.async {
+//                                stock.objectWillChange.send()
+//                            }
+//                        }
                     }
                 }
             }
@@ -399,6 +396,7 @@ class simDataRequest {
             }
             if action != .simTesting {
                 try? context.save()
+                NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])
             }
         }
     }
@@ -780,19 +778,20 @@ class simDataRequest {
             //== 賣出 ==
             var wantS:Double = 0
             wantS += (trade.tKdJ > 101 ? 1 : 0)
-            wantS += (trade.tKdJ > 90  ? 1 : 0)
+            wantS += (trade.tKdJZ125 > 1.0 && trade.tKdJZ250 > 1.0 ? 1 : 0)
             wantS += (trade.tKdKZ125 > 0.9 && trade.tKdKZ250 > 0.9 ? 1 : 0)
+            wantS += (trade.tKdDZ125 > 0.9 && trade.tKdDZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tOscZ125 > 0.9 && trade.tOscZ250 > 0.9 ? 1 : 0)
-            
-            let sRoi9 = trade.simUnitRoi > 9.5 && trade.simDays < 20
-            let sRoi7 = trade.simUnitRoi > 7.5 && trade.simDays < 10 //&& trade.simRule == "H"
-            let sRoi4 = trade.simUnitRoi > 4.5 && trade.simDays > 35 && trade.simDays < 45
-            let sRoi3 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
-//            let sRoi2 = trade.simUnitRoi > 2.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5) && trade.simDays > 45
-            let sRoi0 = trade.simUnitRoi > 0.45
-            let sBase4 = wantS >= 4 && sRoi0
-            let sBase3 = wantS >= 3 && sRoi0 && trade.simDays > 75
-            let sBase2 = wantS >= 2 && (sRoi9 || sRoi7 || sRoi4 || sRoi3)
+
+//            let weekendDays:Double = (twDateTime.calendar.component(.weekday, from: trade.dateTime) <= 2 ? 2 : 0)
+            let sRoi15 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 15.5 : 11.5) && trade.simDays < 30
+            let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
+            let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
+            let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
+            let sBase0 = trade.simUnitRoi > 0.45 //&& trade.simDays > (5 + weekendDays)
+            let sBase4 = wantS >= 4 && sBase0
+            let sBase3 = wantS >= 3 && (sBase0 && trade.simDays > 75)
+            let sBase2 = wantS >= 2 && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
             let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 25 && trade.simDays > 150 && trade.simUnitRoi > -10
             let cut2 = trade.tLowDiff250 - trade.tHighDiff250 < 25 && trade.simDays > 150 && trade.simUnitRoi > -15
@@ -863,6 +862,10 @@ class simDataRequest {
 //                    buyIt = false
 //                    break
 //                }
+//            }
+//            if prev.simQtySell > 0 {
+//                buyIt = false
+//                trade.simRuleBuy = ""
 //            }
         }
         
@@ -951,8 +954,8 @@ class simDataRequest {
             trade.rollAmtProfit = (trade.simQtyInventory == 0 ? 0 : (trade.simAmtProfit + trade.simAmtCost)) + trade.simAmtBalance - (trade.simInvestTimes * trade.stock.simMoneyBase * 10000)
             trade.rollAmtRoi = 100 * trade.rollAmtProfit / trade.rollAmtCost
         }
-        DispatchQueue.main.async {
-            trade.objectWillChange.send()
-        }
+//        DispatchQueue.main.async {
+//            trade.objectWillChange.send()
+//        }
     }
 }

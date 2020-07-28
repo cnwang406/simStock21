@@ -12,12 +12,12 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
+    let simTestStart:Date? = nil //twDateTime.dateFromString("2005/7/27")
     var tUpdateAll:Bool = false
     let request = simDataRequest()
     let defaults = UserDefaults.standard
 
     private(set) var stocks:[Stock] = []
-//    private(set) var trades:[Trade] = []
 
     init() {
         if defaults.double(forKey: "simMoneyBase") == 0 {

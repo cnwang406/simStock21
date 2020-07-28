@@ -197,53 +197,72 @@ struct tradeListView: View {
                     Button(action: {self.showReload = true}) {
                         Image(systemName: "arrow.clockwise")
                     }
-                        .sheet(isPresented: $showReload) {
-                            Form {
-                                Section (header:
-                                    Group {
-                                        Text("立即更新")
-                                        .font(.title)
-                                    }) {
-                                    Button(action: {
-                                        self.list.reloadNow(stock:self.stock)
-                                        self.showReload = false
-                                    }) {
-                                        Text("重算統計數值")
-                                    }
-                                    Button(action: {self.showReload = false}) {
-                                        Text("沒事，不用了。")
-                                    }
-                                }
-                            }
+                        .actionSheet(isPresented: $showReload) {
+                            ActionSheet(title: Text("立即更新"), message: Text("重新下載或重算？"), buttons: [
+                                .default(Text("重算統計數值")) {
+                                    self.list.reloadNow(stock:self.stock)
+                                    self.showReload = false
+                                },
+                                .destructive(Text("沒事，不用了。"))
+                            ])
                         }
+//                        .sheet(isPresented: $showReload) {
+//                            Form {
+//                                Section (header:
+//                                    Group {
+//                                        Text("立即更新")
+//                                        .font(.title)
+//                                    }) {
+//                                    Button(action: {
+//                                        self.list.reloadNow(stock:self.stock)
+//                                        self.showReload = false
+//                                    }) {
+//                                        Text("重算統計數值")
+//                                    }
+//                                    Button(action: {self.showReload = false}) {
+//                                        Text("沒事，不用了。")
+//                                    }
+//                                }
+//                            }
+//                        }
                     //== 工具按鈕 3 ==
                     Spacer()
                     Button(action: {self.showInformation = true}) {
                         Image(systemName: "questionmark.circle")
                     }
-                        .sheet(isPresented: $showInformation) {
-                            Form {
-                                Section (header:
-                                    Group {
-                                        Text("參考訊息")
-                                        .font(.title)
-                                    }) {
-                                    Button(action: {
-                                        self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
-                                        self.showInformation = false
-                                    }) {
-                                        HStack {
-                                            Text("Yahoo! 技術分析")
-                                            Spacer()
-                                            Image(systemName: "safari")
-                                        }
-                                    }
-                                    Button(action: {self.showInformation = false}) {
-                                        Text("沒事，不用了。")
-                                    }
-                                }
-                            }
+                        .actionSheet(isPresented: $showInformation) {
+                            ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"), buttons: [
+                                .default(Text("Yahoo! 技術分析 ")) {
+                                    self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
+                                    self.showInformation = false
+                                },
+                                .destructive(Text("沒事，不用了。"))
+                            ])
                         }
+
+//                        .sheet(isPresented: $showInformation) {
+//                            Form {
+//                                Section (header:
+//                                    Group {
+//                                        Text("參考訊息")
+//                                        .font(.title)
+//                                    }) {
+//                                    Button(action: {
+//                                        self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
+//                                        self.showInformation = false
+//                                    }) {
+//                                        HStack {
+//                                            Text("Yahoo! 技術分析")
+//                                            Spacer()
+//                                            Image(systemName: "safari")
+//                                        }
+//                                    }
+//                                    Button(action: {self.showInformation = false}) {
+//                                        Text("沒事，不用了。")
+//                                    }
+//                                }
+//                            }
+//                        }
                 } //工具按鈕的HStack
                     .frame(width: 100, alignment: .trailing)
                     .font(.body)
@@ -327,12 +346,12 @@ struct settingForm: View {
                     Toggle("自動2次加碼", isOn: $addInvest)
                 }
                 Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults).font(.footnote)) {
-                    Toggle("套用到同股群", isOn: $applyToGroup)
-                        .disabled(self.applyToAll)
                     Toggle("套用到全部股", isOn: $applyToAll)
                     .onReceive([self.applyToAll].publisher.first()) { (value) in
                         self.applyToGroup = value
                     }
+                    Toggle("套用到同股群", isOn: $applyToGroup)
+                        .disabled(self.applyToAll)
                     Toggle("作為新股預設值", isOn: $saveToDefaults)
                 }
 
@@ -530,7 +549,7 @@ struct tradeCell: View {
                     .frame(width: (list.widthClass == .compact ? 80.0 : 100.0), alignment: .center)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: 0.6)
+                            .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: (tradeCellColor(trade, for: "simRule") == .white ? 0 : 0.6))
                     )
                 Text(trade.simQty.action)
                     .frame(width: (list.widthClass == .compact ? 20.0 : 30.0), alignment: .center)
@@ -538,33 +557,6 @@ struct tradeCell: View {
                 Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
                     .frame(width: (list.widthClass == .compact ? 35.0 : 40.0), alignment: .center)
                     .foregroundColor(tradeCellColor(trade, for: "simQty"))
-
-//                if trade.simQtySell > 0 {
-//                    Text("賣")
-//                        .frame(width: 20.0, alignment: .trailing)
-//                        .foregroundColor(.blue)
-//                    Text(String(format:"%.f",trade.simQtySell))
-//                        .frame(width: 36.0, alignment: .center)
-//                        .foregroundColor(.blue)
-//                } else if trade.simQtyBuy > 0 {
-//                    Text("買")
-//                        .frame(width: 20.0, alignment: .trailing)
-//                    .foregroundColor(.red)
-//                    Text(String(format:"%.f",trade.simQtyBuy))
-//                        .frame(width: 36.0, alignment: .center)
-//                    .foregroundColor(.red)
-//                } else if trade.simQtyInventory > 0 {
-//                    Text("餘")
-//                        .frame(width: 20.0, alignment: .trailing)
-//                    Text(String(format:"%.f",trade.simQtyInventory))
-//                        .frame(width: 36.0, alignment: .center)
-//                } else {
-//                    EmptyView()
-////                    Text("")
-////                        .frame(width: 20.0, alignment: .trailing)
-////                    Text("")
-////                        .frame(width: 36.0, alignment: .center)
-//                }
                 if trade.simQtyInventory > 0 || trade.simQtySell > 0 {
                     Text(String(format:"%.f天",trade.simDays))
                         .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .trailing)
@@ -573,19 +565,16 @@ struct tradeCell: View {
                 }
                 if trade.simQtySell > 0 {
                     Text(String(format:"%.1f%%",trade.simAmtRoi))
-                        .frame(width: (list.widthClass == .compact ? 40.0 : 60.0), alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .trailing)
                 } else if trade.simRuleInvest == "A" {
                     Text(trade.simInvestAdded > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼")
                         .foregroundColor(.blue)
                         .frame(width: (list.widthClass == .compact ? 50.0 : 80.0), alignment: .trailing)
                         .onTapGesture {
                             self.list.addInvest(self.trade)
-                    }
-
+                        }
                 } else {
                     EmptyView()
-//                    Text("")
-//                        .frame(width: 40.0, alignment: .trailing)
                 }
             }   //HStack
                 .font(.body)

@@ -13,8 +13,13 @@ import MobileCoreServices
 class simStockList:ObservableObject {
     @Environment(\.horizontalSizeClass) var sizeClass
     @Published private var sim:simStock = simStock()
-    @Published var tradesUpdated:Date = Date.distantPast
+    @Published var dataUpdatedTime:Date = Date.distantPast
     @Published var widthClass:WidthClass
+    
+    let buildNo:String = Bundle.main.infoDictionary!["CFBundleVersion"] as! String
+    let versionNo:String = Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
+    var versionNow:String = ""
+
     
     enum WidthClass {
         case compact
@@ -26,7 +31,6 @@ class simStockList:ObservableObject {
     private var isPad  = UIDevice.current.userInterfaceIdiom == .pad
     private var hClass = UITraitCollection.current.horizontalSizeClass
     private var vClass = UITraitCollection.current.verticalSizeClass
-    private var _observer: NSObjectProtocol?
     
     init() {
         if UIDevice.current.orientation.isLandscape {
@@ -37,7 +41,7 @@ class simStockList:ObservableObject {
         }
         
         // unowned self because we unregister before self becomes invalid
-        _observer = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [unowned self] note in
+        NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [unowned self] note in
             guard let device = note.object as? UIDevice else {
                 return
             }
@@ -52,14 +56,9 @@ class simStockList:ObservableObject {
             name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification),
             name: UIApplication.willResignActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.setDataUpdatedTime), name: NSNotification.Name("dataUpdated") , object: nil)
     }
-    
-    deinit {
-        if let observer = _observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-    
+        
     var searchText:[String]? = nil {    //搜尋String以空格逗號分離為關鍵字Array
         didSet {
             sim.fetchStocks(searchText)
@@ -179,18 +178,27 @@ class simStockList:ObservableObject {
             sim.setDefaults(start: dateStart, money: moneyBase, invest: addInvest)
         }
     }
+    
+    @objc func setDataUpdatedTime(_ notification: Notification) {
+        if let userInfo = notification.userInfo, let time = userInfo["dataUpdatedTime"] as? Date {
+            self.dataUpdatedTime = time
+        }
+    }
 
     @objc func appNotification(_ notification: Notification) {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive ===")
             if sim.simTesting {
-                let start = (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
+                let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
                 NSLog("\n\n== simTesting \(twDateTime.stringFromDate(start)) ==")
                 sim.runTest(start: start)
             } else {
+                versionNow = versionNo + (buildNo <= "1" ? "" : "(\(buildNo))")
+                let versionLast = sim.defaults.string(forKey: "simStockVersion") ?? ""
+                sim.defaults.set(versionNow, forKey: "simStockVersion")
                 sim.downloadStocks()
-                let updateAll:Bool = sim.defaults.bool(forKey: "updateAll") || sim.tUpdateAll
+                let updateAll:Bool = sim.defaults.bool(forKey: "updateAll") || sim.tUpdateAll || (versionLast != versionNow)
                 sim.downloadTrades(updateAll: updateAll)
                 sim.defaults.removeObject(forKey: "updateAll")
             }

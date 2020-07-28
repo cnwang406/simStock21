@@ -133,7 +133,7 @@ struct pickerGroups:View {
     @Binding var isPresented:Bool
     @Binding var searchText:String
     @State   var groupPicked:String = "新增股群"
-    @State   var newGroup:String = ""
+    @State   var newGroup:String = "股群_"
     
     var body: some View {
         NavigationView {
@@ -197,7 +197,7 @@ struct pickerGroups:View {
 
 struct stockSection : View {
     @ObservedObject var list: simStockList
-    @State var stocks : [Stock]
+    @State var stocks: [Stock]
     @Binding var isChoosing:Bool
     @Binding var isSeaching:Bool
     @Binding var checkedStocks: [Stock]
@@ -212,6 +212,7 @@ struct stockSection : View {
                 .font(.headline)
         }
     }
+    
     var footer:some View {
         Text(list.stocksSummary(stocks))
     }
@@ -274,7 +275,7 @@ struct stockCell : View {
                 }
             }
             Text(stock.sId)
-                .font(.system(list.widthClass == .compact ? .callout : .body))
+                .font(list.widthClass == .compact ? .callout : .body)
                 .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
             Text(stock.sName)
                 .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 75.0 : 110.0)), alignment: .leading)
@@ -314,7 +315,7 @@ struct lastTrade: View {
                 .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "dateTime"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke((isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simRule")), lineWidth: 0.6)
+                        .stroke((isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simRule")), lineWidth: (tradeCellColor(trade, for: "simRule") == .white ? 0 : 0.6))
                 )
             if list.widthClass != .compact {
                 Text(trade.simQty.action)
@@ -338,7 +339,7 @@ struct lastTrade: View {
                 EmptyView()
             }
         }
-            .font(.system(list.widthClass == .compact ? .footnote : .body))
+            .font(list.widthClass == .compact ? .footnote : .body)
             .foregroundColor(isChoosing || isSearching ? .gray : .primary)
 
 
