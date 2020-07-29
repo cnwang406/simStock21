@@ -758,12 +758,14 @@ class simDataRequest {
         } else {
             //== 低買 ==
             var wantL:Double = 0
-            wantL += (trade.tKdKZ125 < -0.85 || trade.tKdKZ250 < -0.85 ? 1 : 0)
-            wantL += (trade.tOscZ125 < -0.85 || trade.tOscZ250 < -0.85 ? 1 : 0)
-            wantL += (trade.tKdJ < -1 ? 1 : 0) + (trade.tKdJ < -9 ? 1 : 0)
+            wantL += (trade.tKdJ < -1 ? 1 : 0)
+            wantL += (trade.tKdJ < -7 ? 1 : 0)
             wantL += (trade.tKdK < 9 ? 1 : 0)
-            wantL += (trade.tMa20Days < -30 && trade.tMa20Days > -60 ? -1 : 0)
-            if wantL >= 3 {
+            wantL += (trade.tKdKZ125 < -0.9 && trade.tKdKZ250 < -0.9 ? 1 : 0)
+            wantL += (trade.tOscZ125 < -0.9 && trade.tOscZ250 < -0.9 ? 1 : 0)
+            wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
+            wantL += (trade.tMa20Days < -30 ? -1 : 0)
+            if wantL >= 5 {
                 trade.simRule = "L"
             }
         }
@@ -777,21 +779,22 @@ class simDataRequest {
             wantS += (trade.tKdDZ125 > 0.9 && trade.tKdDZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tOscZ125 > 0.9 && trade.tOscZ250 > 0.9 ? 1 : 0)
 
-//            let weekendDays:Double = (twDateTime.calendar.component(.weekday, from: trade.dateTime) <= 2 ? 2 : 0)
+            let weekendDays:Double = (twDateTime.calendar.component(.weekday, from: trade.dateTime) <= 2 ? 2 : 0)
             let sRoi15 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 15.5 : 11.5) && trade.simDays < 30
             let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
             let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
             let sBase0 = trade.simUnitRoi > 0.45 //&& trade.simDays > (5 + weekendDays)
-            let sBase4 = wantS >= 4 && sBase0
-            let sBase3 = wantS >= 3 && (sBase0 && trade.simDays > 75)
+            let sBase5 = wantS >= 5 && sBase0
+            let sBase4 = wantS >= 4 && sBase0 && (trade.simDays > (2 + weekendDays) || trade.simUnitRoi > 3.5)
+            let sBase3 = wantS >= 3 && sBase0 && trade.simDays > 75
             let sBase2 = wantS >= 2 && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
-            let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 25 && trade.simDays > 150 && trade.simUnitRoi > -10
-            let cut2 = trade.tLowDiff250 - trade.tHighDiff250 < 25 && trade.simDays > 150 && trade.simUnitRoi > -15
-            let sCut = cut1 || cut2
+            let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 25 && trade.simUnitRoi > -10
+            let cut2 = trade.tLowDiff250 - trade.tHighDiff250 < 30 && trade.simUnitRoi > -15
+            let sCut = wantS >= 2 && trade.simDays > 150 && (cut1 || cut2 || trade.simDays > 360)
             
-            var sell:Bool = sBase4 || sBase3 || sBase2 || sCut
+            var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut
             
             //== 反轉賣 ==
             if sell && trade.simReversed == "S-" {

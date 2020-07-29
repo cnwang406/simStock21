@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = nil //twDateTime.dateFromString("2005/7/27")
+    let simTestStart:Date? = twDateTime.dateFromString("2005/7/28")
     var tUpdateAll:Bool = false
     let request = simDataRequest()
     let defaults = UserDefaults.standard

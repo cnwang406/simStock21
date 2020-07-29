@@ -468,7 +468,6 @@ struct tradeCell: View {
                         Text("本輪報酬")
                     } else {
                         Text("")
-                        Text("")
                     }
                     Text("累計報酬")
                 }
@@ -508,26 +507,28 @@ struct tradeCell: View {
             VStack(alignment: .trailing,spacing: 2) {
                 Text("MA20")
                 Text("MA60")
-                Text("OSC")
+//                Text("OSC")
+                Text("")
             }
             VStack(alignment: .trailing,spacing: 2) {
                 Text(String(format:"%.2f",trade.tMa20))
                 Text(String(format:"%.2f",trade.tMa60))
-                Text(String(format:"%.2f",trade.tOsc))
+//                Text(String(format:"%.2f",trade.tOsc))
+                Text("")
             }
             .frame(minWidth: 55 , alignment: .trailing)
-            Spacer()
-            VStack(alignment: .trailing,spacing: 2) {
-                Text("K")
-                Text("D")
-                Text("J")
-            }
-            VStack(alignment: .trailing,spacing: 2) {
-                Text(String(format:"%.2f",trade.tKdK))
-                Text(String(format:"%.2f",trade.tKdD))
-                Text(String(format:"%.2f",trade.tKdJ))
-            }
-            .frame(minWidth: 50 , alignment: .trailing)
+//            Spacer()
+//            VStack(alignment: .trailing,spacing: 2) {
+//                Text("K")
+//                Text("D")
+//                Text("J")
+//            }
+//            VStack(alignment: .trailing,spacing: 2) {
+//                Text(String(format:"%.2f",trade.tKdK))
+//                Text(String(format:"%.2f",trade.tKdD))
+//                Text(String(format:"%.2f",trade.tKdJ))
+//            }
+//            .frame(minWidth: 50 , alignment: .trailing)
             Spacer()
         }
         .font(.custom("Courier", size: textSize(textStyle: .callout)))
@@ -605,6 +606,7 @@ struct tradeCell: View {
                     .font(.caption)
                     .foregroundColor(tradeCellColor(trade, for: "dateTime"))
                 Spacer()
+                //== 單價和模擬摘要 ==
                 if list.widthClass == .compact {
                     VStack {
                         HStack {
@@ -621,12 +623,12 @@ struct tradeCell: View {
                     HStack (alignment: .center) {
                         Text("").frame(width: 20.0, alignment: .center)
                         self.priceAndKDJ
-                        Spacer()
+//                        Spacer()
                         self.simSummary
                     }
                 }
                 Spacer()    //以下是擴充技術數值
-                if list.widthClass != .widePhone {
+                if list.widthClass != .compact {
                     HStack {
                         Text("").frame(width: 20.0, alignment: .center)
                         Group {
@@ -665,6 +667,8 @@ struct tradeCell: View {
                                 Text(String(format:"%.2f",trade.tMa60DiffZ250))
                                 Text(String(format:"%.2f",trade.tMa60DiffZ375))
                             }
+                        }
+                        Group {
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
                                 Text("osc")
@@ -688,6 +692,26 @@ struct tradeCell: View {
                                 Text(String(format:"%.2f",trade.tKdKZ125))
                                 Text(String(format:"%.2f",trade.tKdKZ250))
                                 Text(String(format:"%.2f",trade.tKdKZ375))
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("d")
+                                Text(String(format:"%.2f",trade.tKdD))
+                                Text("-")
+                                Text("-")
+                                Text(String(format:"%.2f",trade.tKdDZ125))
+                                Text(String(format:"%.2f",trade.tKdDZ250))
+                                Text(String(format:"%.2f",trade.tKdDZ375))
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing,spacing: 2) {
+                                Text("j")
+                                Text(String(format:"%.2f",trade.tKdJ))
+                                Text("-")
+                                Text("-")
+                                Text(String(format:"%.2f",trade.tKdJZ125))
+                                Text(String(format:"%.2f",trade.tKdJZ250))
+                                Text(String(format:"%.2f",trade.tKdJZ375))
                             }
                         }
                         Spacer()
