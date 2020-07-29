@@ -107,6 +107,33 @@ struct simStock {
         }
     }
     
+    func setReversed(_ trade: Trade) {
+        if let context = trade.managedObjectContext {
+            let simQty = trade.simQty
+            if trade.simReversed == "" {
+                switch simQty.action {
+                case "買":
+                    trade.simReversed = "B-"
+                case "賣":
+                    trade.simReversed = "S-"
+                case "餘":
+                    trade.simReversed = "S+"
+                default:
+                    trade.simReversed = "B+"
+                }
+            } else {
+                let trades = Trade.fetch(context, stock: trade.stock, dateTime: trade.date, simReversed:true)
+                for tr in trades {
+                    tr.simReversed = ""
+                }
+            }
+            try? context.save()
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
+            }
+        }
+    }
+    
     func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) {
         if let context = stocks[0].managedObjectContext {
             for stock in stocks {

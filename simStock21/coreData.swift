@@ -189,9 +189,17 @@ public class Stock: NSManagedObject {
 
 @objc(Trade)
 public class Trade: NSManagedObject {
-    static func fetchRequest (stock:Stock, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
+    static func fetchRequest (stock:Stock, dateTime:Date?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
+        var predicates:[NSPredicate] = []
+        predicates.append(NSPredicate(format: "stock == %@", stock))
+        if let dt = dateTime {
+            predicates.append(NSPredicate(format: "dateTime >= %@", dt as CVarArg))
+        }
+        if let r = simReversed, r == true  {
+            predicates.append(NSPredicate(format: "simReversed != %@", ""))
+        }
         let fetchRequest = NSFetchRequest<Trade>(entityName: "Trade")
-        fetchRequest.predicate = NSPredicate(format: "stock == %@", stock)
+        fetchRequest.predicate = NSCompoundPredicate(type: .and, subpredicates: predicates)
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "dateTime", ascending: asc)]
         if let limit = fetchLimit {
             fetchRequest.fetchLimit = limit
@@ -199,8 +207,8 @@ public class Trade: NSManagedObject {
         return fetchRequest
     }
     
-    static func fetch (_ context:NSManagedObjectContext, stock:Stock, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
-        let fetchRequest = self.fetchRequest(stock: stock, fetchLimit: fetchLimit, asc: asc)
+    static func fetch (_ context:NSManagedObjectContext, stock:Stock, dateTime:Date?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
+        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dateTime, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
         return (try? context.fetch(fetchRequest)) ?? []
     }
 
@@ -329,7 +337,7 @@ public class Trade: NSManagedObject {
         self.simRule = ""
         self.simRuleBuy = ""
         self.simRuleInvest = ""
-        self.simReversed = ""
+//        self.simReversed = ""
     }
     
     func setDefaultValues() {
@@ -342,6 +350,6 @@ public class Trade: NSManagedObject {
         self.resetSimValues()
         self.simInvestTimes = 0
         self.simAmtBalance = 0
-
+        self.simReversed = ""
     }
 }

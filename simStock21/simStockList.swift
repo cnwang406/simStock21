@@ -11,16 +11,14 @@ import SwiftUI
 import MobileCoreServices
 
 class simStockList:ObservableObject {
-    @Environment(\.horizontalSizeClass) var sizeClass
     @Published private var sim:simStock = simStock()
     @Published var dataUpdatedTime:Date = Date.distantPast
-    @Published var widthClass:WidthClass
+    @Published var widthClass:WidthClass = .compact
     
-    let buildNo:String = Bundle.main.infoDictionary!["CFBundleVersion"] as! String
-    let versionNo:String = Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
+    private let buildNo:String = Bundle.main.infoDictionary!["CFBundleVersion"] as! String
+    private let versionNo:String = Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
     var versionNow:String = ""
 
-    
     enum WidthClass {
         case compact
         case widePhone
@@ -32,30 +30,20 @@ class simStockList:ObservableObject {
     private var hClass = UITraitCollection.current.horizontalSizeClass
     private var vClass = UITraitCollection.current.verticalSizeClass
     
-    init() {
+    var deviceWidthClass: WidthClass {
         if UIDevice.current.orientation.isLandscape {
-            self.widthClass = (self.vClass == .regular ? .widePad : .widePhone)
+            return (self.vClass == .regular ? .widePad : .widePhone)
         }
         else {
-            self.widthClass = (self.hClass == .regular ? .regular : .compact)
+            return (self.hClass == .regular ? .regular : .compact)
         }
-        
-        // unowned self because we unregister before self becomes invalid
-        NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { [unowned self] note in
-            guard let device = note.object as? UIDevice else {
-                return
-            }
-            if device.orientation.isLandscape {
-                self.widthClass = (self.vClass == .regular ? .widePad : .widePhone)
-            } else if device.orientation.isPortrait {
-                self.widthClass = (self.hClass == .regular ? .regular : .compact)
-            }
-        }
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification),
-            name: UIApplication.didBecomeActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification),
-            name: UIApplication.willResignActiveNotification, object: nil)
+    }
+    
+    init() {
+        widthClass = deviceWidthClass
+        NotificationCenter.default.addObserver(self, selector: #selector(self.setWidthClass), name: UIDevice.orientationDidChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.willResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.setDataUpdatedTime), name: NSNotification.Name("dataUpdated") , object: nil)
     }
         
@@ -64,19 +52,6 @@ class simStockList:ObservableObject {
             sim.fetchStocks(searchText)
         }
     }
-    
-//    var stock:Stock? = nil {
-//        didSet {
-//            if let stock = stock {
-//                sim.fetchTrades(stock)
-//            }
-//        }
-//    }
-//    
-//    var trades:[Trade] {
-//        sim.trades
-//    }
-    
     
     private var prefixedStocks:[[Stock]] {
         Dictionary(grouping: sim.stocks) { (stock:Stock)  in
@@ -119,6 +94,10 @@ class simStockList:ObservableObject {
     
     func addInvest(_ trade: Trade) {
         sim.addInvest(trade)
+    }
+    
+    func setReversed(_ trade: Trade) {
+        sim.setReversed(trade)
     }
 
     var simDefaults:String {
@@ -179,9 +158,13 @@ class simStockList:ObservableObject {
         }
     }
     
+    @objc func setWidthClass(_ notification: Notification) {
+        widthClass = deviceWidthClass
+    }
+    
     @objc func setDataUpdatedTime(_ notification: Notification) {
         if let userInfo = notification.userInfo, let time = userInfo["dataUpdatedTime"] as? Date {
-            self.dataUpdatedTime = time
+            dataUpdatedTime = time
         }
     }
 

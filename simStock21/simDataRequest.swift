@@ -39,15 +39,10 @@ class simDataRequest {
             } else {
                 let requestGroup:DispatchGroup = DispatchGroup()
                 self.cnyesPrice(stock: stock, dGroup: requestGroup)
-                requestGroup.notify(queue: .main) {
+                requestGroup.notify(queue: .global()) {
                     q.addOperation {
                         self.simTechnical(stock: stock, action: action)
                         self.yahooRequest(stock)
-//                        if action == .simUpdateAll || action == .tUpdateAll {
-//                            DispatchQueue.main.async {
-//                                stock.objectWillChange.send()
-//                            }
-//                        }
                     }
                 }
             }
@@ -360,11 +355,11 @@ class simDataRequest {
     }
     
     enum simTechnicalAction {
-        case newTrades
-        case tUpdateAll
-        case simUpdateAll
-        case realtime
-        case simTesting
+        case realtime       //下載了盤中價
+        case newTrades      //下載了歷史價
+        case tUpdateAll     //重算技術數值
+        case simUpdateAll   //重算模擬
+        case simTesting     //模擬測試
     }
 
     func simTechnical(stock:Stock, action:simTechnicalAction = .newTrades) {
@@ -379,9 +374,6 @@ class simDataRequest {
                 var sCount:Int = 0
                 for (index,trade) in trades.enumerated() {
                     if trade.tUpdated == false || action == .tUpdateAll {
-//                        let d375 = tradeIndex(375, index: index)
-//                        let tr = Array(trades[d375.thisIndex...index])
-//                        self.tUpdate(tr, index: Int(d375.thisCount) - 1)
                         self.tUpdate(trades, index: index)
                         self.simUpdate(trades, index: index)
                         tCount += 1
@@ -396,7 +388,9 @@ class simDataRequest {
             }
             if action != .simTesting {
                 try? context.save()
-                NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])
+                }
             }
         }
     }
@@ -800,13 +794,11 @@ class simDataRequest {
             var sell:Bool = sBase4 || sBase3 || sBase2 || sCut
             
             //== 反轉賣 ==
-            if sell && trade.simReversed == "不賣" {
+            if sell && trade.simReversed == "S-" {
                 sell = false
-                trade.stock.simReversed = true
-            } else if sell == false && trade.simReversed == "賣" {
+            } else if sell == false && trade.simReversed == "S+" {
                 sell = true
-                trade.stock.simReversed = true
-            } else if trade.simReversed != "買" && trade.simReversed != "不買" {
+            } else if trade.simReversed != "B+" && trade.simReversed != "B-" {
                 trade.simReversed = ""
             }
             
@@ -877,14 +869,12 @@ class simDataRequest {
         }
 
         //== 反轉買 ==
-        if buyIt && trade.simQtyInventory == 0 && trade.simReversed == "不買" {
+        if buyIt && trade.simQtyInventory == 0 && trade.simReversed == "B-" {
             buyIt = false
-            trade.stock.simReversed = true
-        } else if buyIt == false && trade.simQtyInventory == 0 && trade.simReversed == "買" {
+        } else if buyIt == false && trade.simQtyInventory == 0 && trade.simReversed == "B+" {
             buyIt = true
-            trade.stock.simReversed = true
             trade.simRuleBuy = "R"
-        } else if trade.simReversed != "賣" && trade.simReversed != "不賣" {
+        } else if trade.simReversed != "S+" && trade.simReversed != "S-" {
             if trade.simQtyInventory == 0 { //都不是就不要改simReverse因為可能真的反轉「賣」「不賣」
                 trade.simReversed = ""
             }
@@ -895,7 +885,7 @@ class simDataRequest {
   
             var money:Double = (trade.simInvestTimes * trade.stock.simMoneyBase * 10000) - trade.simAmtCost
             //反轉買錢又不夠時，會維持預設本金即給足1個本金的額度
-            if money > trade.simAmtBalance && (trade.simReversed != "買" || trade.simAmtBalance > oneCost) {
+            if money > trade.simAmtBalance && (trade.simReversed == "" || trade.simAmtBalance > oneCost) {
                 money = trade.simAmtBalance //否則即使餘額賠剩足以買1張，就只用賠後餘額繼續買
             }
             let unitCost:Double = trade.priceClose * 1000 * 1.001425 //每張含手續費的成本
@@ -954,8 +944,5 @@ class simDataRequest {
             trade.rollAmtProfit = (trade.simQtyInventory == 0 ? 0 : (trade.simAmtProfit + trade.simAmtCost)) + trade.simAmtBalance - (trade.simInvestTimes * trade.stock.simMoneyBase * 10000)
             trade.rollAmtRoi = 100 * trade.rollAmtProfit / trade.rollAmtCost
         }
-//        DispatchQueue.main.async {
-//            trade.objectWillChange.send()
-//        }
     }
 }
