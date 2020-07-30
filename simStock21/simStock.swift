@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = twDateTime.dateFromString("2005/7/28")
+    let simTestStart:Date? = twDateTime.dateFromString("2005/7/30")
     var tUpdateAll:Bool = false
     let request = simDataRequest()
     let defaults = UserDefaults.standard
@@ -96,12 +96,14 @@ struct simStock {
         if let context = trade.managedObjectContext {
             if trade.simInvestAdded > 0 {
                 trade.simInvestAdded = 0
-                trade.stock.simAddInvest = false
+                if trade.simInvestTimes <= 3 {
+                    trade.stock.simAddInvest = false    //取消前兩次加碼時，關閉自動加碼
+                }
             } else {
                 trade.simInvestAdded = 1
             }
             try? context.save()
-            DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.global().async {
                 self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
             }
         }
@@ -122,13 +124,13 @@ struct simStock {
                     trade.simReversed = "B+"
                 }
             } else {
-                let trades = Trade.fetch(context, stock: trade.stock, dateTime: trade.date, simReversed:true)
+                let trades = Trade.fetch(context, stock: trade.stock, simReversed:true)
                 for tr in trades {
                     tr.simReversed = ""
                 }
             }
             try? context.save()
-            DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.global().async {
                 self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
             }
         }
@@ -144,7 +146,7 @@ struct simStock {
             }
             if !simTesting {
                 try? context.save()
-                request.runRequest(stocks: stocks, action: .simUpdateAll)
+                request.runRequest(stocks: stocks, action: .simResetAll)
             }
         }
     }
@@ -203,7 +205,7 @@ struct simStock {
                 self.request.runRequest(stocks: self.groupStocks[0], action: .simTesting)
                 DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
                     let years:Int = Int(round(Date().timeIntervalSince(start) / 86400 / 365))
-                    NSLog("== \(twDateTime.stringFromDate(start,format:"yyyy")) \(self.stocksSummary(self.groupStocks[0])) == \(years)\((years - 1) % 5 == 0 ? "\n" : "")")
+                    NSLog("\(twDateTime.stringFromDate(start,format:"yyyy")) == \(self.stocksSummary(self.groupStocks[0])) == \(years)\((years - 1) % 5 == 0 ? "\n" : "")")
                     let nextYear = (twDateTime.calendar.date(byAdding: .year, value: 1, to: start) ?? Date.distantPast)
                     self.runTest(start: nextYear)
                 }

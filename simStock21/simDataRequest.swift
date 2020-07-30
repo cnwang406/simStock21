@@ -30,7 +30,9 @@ class simDataRequest {
             NSLog((realtime && action == .realtime ? "下載盤中價..." : "下載歷史價...") + (realtime ? " timer scheduled." : " timer invalidated."))
         }
         let q = OperationQueue()
-        q.maxConcurrentOperationCount = 4
+        if action != .simTesting {
+            q.maxConcurrentOperationCount = 1
+        }
         for stock in stocks {
             if realtime && action == .realtime {
                 self.yahooRequest(stock)
@@ -357,12 +359,13 @@ class simDataRequest {
     enum simTechnicalAction {
         case realtime       //下載了盤中價
         case newTrades      //下載了歷史價
-        case tUpdateAll     //重算技術數值
-        case simUpdateAll   //重算模擬
-        case simTesting     //模擬測試
+        case tUpdateAll     //重算技術數值，也包含simResetAll的工作
+        case simTesting     //模擬測試，也包含simResetAll的工作
+        case simUpdateAll   //更新模擬
+        case simResetAll    //重算模擬
     }
 
-    func simTechnical(stock:Stock, action:simTechnicalAction = .newTrades) {
+    func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
         let trades = Trade.fetch(context, stock: stock, asc:true)
         if trades.count > 0 {
@@ -373,11 +376,15 @@ class simDataRequest {
                 var tCount:Int = 0
                 var sCount:Int = 0
                 for (index,trade) in trades.enumerated() {
-                    if trade.tUpdated == false || action == .tUpdateAll {
+                    if action == .tUpdateAll || action == .simResetAll || action == .simTesting {
+                        trade.simReversed = ""
+                        trade.simInvestAdded = 0
+                    }
+                    if trade.tUpdated == false || action == .tUpdateAll {   //.newTrades當然tUpdated == false是這裡
                         self.tUpdate(trades, index: index)
                         self.simUpdate(trades, index: index)
                         tCount += 1
-                    } else if action == .simUpdateAll || action == .simTesting {
+                    } else {    //這裡剩下的就是 .simUpdateAll, .simResetAll, .simTesting
                         self.simUpdate(trades, index: index)
                         sCount += 1
                     }
@@ -389,6 +396,7 @@ class simDataRequest {
             if action != .simTesting {
                 try? context.save()
                 DispatchQueue.main.async {
+                    stock.objectWillChange.send()
                     NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])
                 }
             }
@@ -706,8 +714,6 @@ class simDataRequest {
         if prev.simQtyInventory > 0 { //前筆有庫存，更新結餘
             trade.simAmtCost = prev.simAmtCost
             trade.simQtyInventory = prev.simQtyInventory
-//            trade.simAmtProfit = (trade.priceClose * trade.simQtyInventory * 1000) - trade.simAmtCost
-//            trade.simAmtRoi = 100 * trade.simAmtProfit / trade.simAmtCost
             trade.simUnitCost = prev.simUnitCost
             trade.simUnitRoi = 100 * (trade.priceClose - trade.simUnitCost) / trade.simUnitCost
             let intervalDays = round(Double(trade.date.timeIntervalSince(prev.date)) / 86400)
@@ -790,9 +796,8 @@ class simDataRequest {
             let sBase3 = wantS >= 3 && sBase0 && trade.simDays > 75
             let sBase2 = wantS >= 2 && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
-            let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 25 && trade.simUnitRoi > -10
-            let cut2 = trade.tLowDiff250 - trade.tHighDiff250 < 30 && trade.simUnitRoi > -15
-            let sCut = wantS >= 2 && trade.simDays > 150 && (cut1 || cut2 || trade.simDays > 360)
+            let cut1 = (trade.tLowDiff375 - trade.tHighDiff375 < 20) || (trade.tLowDiff250 - trade.tHighDiff250 < 20)
+            let sCut = wantS >= 2 && trade.simDays > 150 && trade.simUnitRoi > -15 && (cut1 || trade.simDays > 360)
             
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut
             
@@ -813,24 +818,25 @@ class simDataRequest {
             } else {
                 //==加碼條件==
                 var aWant:Double = 0
-                aWant += (trade.simRule == "L" ? 1 : 0)
-                aWant += (trade.simUnitRoi < -35 || (trade.simUnitRoi < -30 && trade.tMa60DiffZ250 > -1) ? 1 : 0)
-                aWant += (trade.tLowDiff125 < 10 && trade.tHighDiff125 < -20 ? 1 : 0)
-                aWant += (trade.tMa60Diff < -15 && trade.tMa20Diff < -10 ? 1 : 0)
-                aWant += (trade.tMa60DiffZ125 < -2.5 && trade.tMa60DiffZ250 < -2.5 ? 1 : 0)
-                aWant += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0)
-
-//                aWant += (trade.tLowDiff125 < 5 && trade.tLowDiff250 < 5 ? 1 : 0)
-//                aWant += (trade.tHighDiff125 < -25 || trade.tHighDiff250 < -25 ? 1 : 0)
-//                aWant += (trade.tMa20Diff < -10 && trade.tMa20DiffZ125 < -3 ? 1 : 0)
-//                aWant += (trade.tMa60DiffZ125 < -3.3 && trade.tMa60DiffZ250 < -3.3 ? 1 : 0)
-//                aWant += (trade.tMa20DiffZ125 < -3.3 && trade.tMa20DiffZ250 < -3.3 ? 1 : 0)
-//                aWant += (trade.tMa20DiffZ125 < -3.5 ? 1 : 0)
-                if aWant >= 5  {
+                aWant += (trade.simUnitRoi < -35 ? 1 : 0)
+                aWant += (trade.tMa20Diff < -20 && trade.tMa60Diff < -20 ? 1 : 0)
+                aWant += (trade.tHighDiff125 < -35 ? 1 : 0)
+                let aMust11 = (trade.tKdKZ125 < -1 || trade.tKdDZ125 < -1 || trade.tKdJZ125 < -1 || trade.tOscZ125 < -1)
+                let aMust12 = (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9)
+                let aMust13 = (trade.tMa20Diff < -15 && trade.tMa60Diff < -15)
+                let aMust1  = aMust11 && aMust12 && aMust13
+                let aMust21 = (trade.tKdKZ125 < 0.8 || trade.tKdDZ125 < 0.8 || trade.tKdJZ125 < 0.8 || trade.tOscZ125 < 0.8)
+                let aMust23 = (trade.tMa20Diff < -10 && trade.tMa60Diff < -10)
+                let aMust2  = aMust21 && aMust23 && trade.simDays > 180
+                let aRoi30 = trade.simUnitRoi < -30
+                let aRoi25 = trade.simUnitRoi < -25 && trade.simDays < 180
+                let addInvest = (aMust1 || aMust2) && (aRoi30 || aRoi25) && aWant >= 1
+                
+                if addInvest {
                     trade.simRuleInvest = "A"
                 }
                 if trade.simRuleInvest == "A" {
-                    if trade.simInvestAdded == 0 && trade.simInvestTimes <= 2 && trade.stock.simAddInvest {
+                    if trade.stock.simAddInvest && trade.simInvestTimes <= 2  { //兩次自動加碼
                         trade.simInvestAdded = 1
                     }
                 } else {

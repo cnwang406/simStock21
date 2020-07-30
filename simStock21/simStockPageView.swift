@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct stockPageView: View {
-    @ObservedObject var list: simStockList
+    @State var list: simStockList
     @State var stock : Stock
     @State var prefix: String
     
@@ -49,7 +49,7 @@ func pickerIndexRange(index:Int, count:Int, max: Int) -> (from:Int, to:Int) {
 }
 
 struct prefixPicker: View {
-    @ObservedObject var list: simStockList
+    @State var list: simStockList
     @Binding var prefix: String
     @Binding var stock : Stock
 
@@ -91,8 +91,7 @@ struct prefixPicker: View {
 }
 
 struct stockPicker: View {
-    @ObservedObject var list: simStockList
-
+    @State var list: simStockList
     @Binding var prefix:String
     @Binding var stock :Stock
     
@@ -135,7 +134,7 @@ struct stockPicker: View {
 
 
 struct tradeListView: View {
-    @ObservedObject var list: simStockList
+    @State var list: simStockList
     @ObservedObject var stock : Stock
     @State var selected: Date?
     @State var showReload:Bool = false
@@ -317,7 +316,7 @@ struct tradeListView: View {
 }
 
 struct settingForm: View {
-    @ObservedObject var list: simStockList
+    @State var list: simStockList
     @ObservedObject var stock:Stock
     @Binding var showSetting: Bool
     @State var dateStart:Date
@@ -414,7 +413,7 @@ func tradeCellColor (_ trade:Trade, for key:String) -> Color {
 
 
 struct tradeCell: View {
-    @ObservedObject var list: simStockList
+    @State var list: simStockList
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
     
@@ -582,7 +581,7 @@ struct tradeCell: View {
                 } else if trade.simRuleInvest == "A" {
                     Text(trade.simInvestAdded > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼")
                         .foregroundColor(.blue)
-                        .frame(width: (list.widthClass == .compact ? 40.0 : 64.0), alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 48.0 : 72.0), alignment: .trailing)
                         .onTapGesture {
                             self.list.addInvest(self.trade)
                         }

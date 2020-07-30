@@ -326,9 +326,6 @@ public class Trade: NSManagedObject {
         self.simAmtProfit = 0
         self.simAmtRoi = 0
         self.simDays = 0
-        if self.simRuleInvest != "A" {
-            self.simInvestAdded = 0
-        }
         self.simQtyBuy = 0         //買入張數
         self.simQtyInventory = 0   //庫存張數
         self.simQtySell = 0        //賣出張數
@@ -337,7 +334,7 @@ public class Trade: NSManagedObject {
         self.simRule = ""
         self.simRuleBuy = ""
         self.simRuleInvest = ""
-//        self.simReversed = ""
+        //模擬中不能清除反轉或加碼，只由.tUpdateAll或.simResetAll負責清除
     }
     
     func setDefaultValues() {
@@ -348,6 +345,7 @@ public class Trade: NSManagedObject {
         self.rollRounds = 0
         
         self.resetSimValues()
+        self.simInvestAdded = 0
         self.simInvestTimes = 0
         self.simAmtBalance = 0
         self.simReversed = ""
