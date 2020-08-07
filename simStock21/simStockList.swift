@@ -53,6 +53,15 @@ class simStockList:ObservableObject {
         }
     }
     
+    var searchTextInGroup:Bool {
+        if let search = searchText, search.count == 1 {
+            if sim.stocks.map({$0.sId}).contains(search[0]) || sim.stocks.map({$0.sName}).contains(search[0]) {
+                return true
+            }
+        }
+        return false
+    }
+    
     private var prefixedStocks:[[Stock]] {
         Dictionary(grouping: sim.stocks) { (stock:Stock)  in
             stock.prefix
@@ -80,12 +89,27 @@ class simStockList:ObservableObject {
     var groups:[String] {
         groupStocks.map{$0[0].group}.filter{$0 != ""}
     }
+    
+    func csvStocksIdName(_ stocks:[Stock]) -> String {
+        var csv:String = ""
+        for stock in stocks {
+            if csv.count > 0 {
+                csv += ", "
+            }
+            csv += stock.sId + " " + stock.sName
+        }
+        return csv
+    }
         
     var searchGotResults:Bool {
         if let firstGroup = groupStocks.first?[0].group, firstGroup == "" {
             return true
         }
         return false
+    }
+    
+    var requestRunning:Bool {
+        sim.request.running
     }
 
     func moveStocks(_ stocks:[Stock], toGroup:String = "") {
@@ -109,15 +133,19 @@ class simStockList:ObservableObject {
     }
     
     func stocksSummary(_ stocks:[Stock]) -> String {
-        return sim.stocksSummary(stocks)
+        let summary = sim.stocksSummary(stocks)
+        let count = String(format:"%.f支股 ",summary.count)
+        let roi = String(format:"平均年報酬:%.1f%% ",summary.roi)
+        let days = String(format:"平均週期:%.f天",summary.days)
+        return "\(count) \(roi) \(days)"
     }
     
-    func reloadNow(stock: Stock) {
+    func reloadNow(stock: Stock, action:simDataRequest.simTechnicalAction) {
         if let context = stock.managedObjectContext, stock.simAddInvest == false {
             stock.simAddInvest = true
             try? context.save()
         }
-        self.sim.request.runRequest(stocks: [stock], action: .tUpdateAll)
+        self.sim.request.runRequest(stocks: [stock], action: action)
         /*
         let d = DispatchGroup()
         d.enter()
@@ -171,19 +199,30 @@ class simStockList:ObservableObject {
     @objc func appNotification(_ notification: Notification) {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
-            NSLog ("=== appDidBecomeActive ===")
+            versionNow = versionNo + (buildNo == "0" ? "" : "(\(buildNo))")
+            NSLog ("=== appDidBecomeActive v\(versionNow) ===")
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
-                NSLog("\n\n== simTesting \(twDateTime.stringFromDate(start)) ==")
                 sim.runTest(start: start)
             } else {
-                versionNow = versionNo + (buildNo <= "1" ? "" : "(\(buildNo))")
                 let versionLast = sim.defaults.string(forKey: "simStockVersion") ?? ""
                 sim.defaults.set(versionNow, forKey: "simStockVersion")
                 sim.downloadStocks()
-                let updateAll:Bool = sim.defaults.bool(forKey: "updateAll") || sim.tUpdateAll || (versionLast != versionNow)
-                sim.downloadTrades(updateAll: updateAll)
-                sim.defaults.removeObject(forKey: "updateAll")
+                var requestAction:simDataRequest.simTechnicalAction? {
+                    if sim.defaults.bool(forKey: "updateAll") {
+                        sim.defaults.removeObject(forKey: "updateAll")
+                        return .tUpdateAll
+                    } else if versionLast != versionNow {
+                        if buildNo == "0" {
+                            return .tUpdateAll
+                        } else {
+                            return .simResetAll
+                        }
+                    }
+                    return nil
+                }
+                sim.downloadTrades(requestAction: requestAction)
+                
             }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")

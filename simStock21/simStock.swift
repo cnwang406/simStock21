@@ -12,8 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = twDateTime.dateFromString("2005/7/30")
-    var tUpdateAll:Bool = false
+    let simTestStart:Date? = twDateTime.dateFromString("2005/7/31")
     let request = simDataRequest()
     let defaults = UserDefaults.standard
 
@@ -28,26 +27,19 @@ struct simStock {
         if self.stocks.count == 0 {
             let group1:[(sId:String,sName:String)] = [
                 (sId:"1590", sName:"亞德客-KY"),
+                (sId:"3653", sName:"健策"),
+                (sId:"1515", sName:"力山"),
                 (sId:"2330", sName:"台積電"),
+                (sId:"2327", sName:"國巨"),
+                (sId:"3037", sName:"欣興")]
+            self.newStock(stocks: group1, group: "股群_1")
+            
+            let group2:[(sId:String,sName:String)] = [
+                (sId:"2324", sName:"仁寶"),
+                (sId:"1301", sName:"台塑"),
                 (sId:"2201", sName:"裕隆"),
                 (sId:"2317", sName:"鴻海")]
-            self.newStock(stocks: group1, group: "股群1")
-
-//            let group1:[(sId:String,sName:String)] = [
-//                (sId:"1590", sName:"亞德客-KY"),
-//                (sId:"3406", sName:"玉晶光"),
-//                (sId:"2327", sName:"國巨"),
-//                (sId:"2330", sName:"台積電"),
-//                (sId:"2474", sName:"可成")]
-//            self.newStock(stocks: group1, group: "股群1")
-//
-//            let group2:[(sId:String,sName:String)] = [
-//                (sId:"9914", sName:"美利達"),
-//                (sId:"2377", sName:"微星"),
-//                (sId:"1476", sName:"儒鴻"),
-//                (sId:"2912", sName:"統一超"),
-//                (sId:"9910", sName:"豐泰")]
-//            self.newStock(stocks: group2, group: "股群2")
+            self.newStock(stocks: group2, group: "股群_2")
         }
     }
         
@@ -56,13 +48,12 @@ struct simStock {
     }
         
     mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
-        let defaults = self.simDefaults
         let context = coreData.shared.context
         for stock in stocks {
             let s = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
-            s.dateFirst = defaults.first
-            s.dateStart = defaults.start
-            s.simMoneyBase = defaults.money
+            s.dateFirst = self.simDefaults.first
+            s.dateStart = self.simDefaults.start
+            s.simMoneyBase = self.simDefaults.money
         }
         try? context.save()
         self.fetchStocks()
@@ -72,22 +63,23 @@ struct simStock {
     mutating func moveStocksToGroup(_ stocks:[Stock], group:String) {
         var requestStocks:[Stock] = []
         if let context = stocks.first?.context {
-            let defaults = self.simDefaults
             for stock in stocks {
                 if stock.group == "" && group != "" {
-                    if defaults.first < stock.dateFirst {
-                        stock.dateFirst = defaults.first
-                        stock.dateStart = defaults.start
+                    if simDefaults.first < stock.dateFirst {
+                        stock.dateFirst = self.simDefaults.first
+                        stock.dateStart = self.simDefaults.start
                     }
-                    stock.simMoneyBase = defaults.money
+                    stock.simMoneyBase = self.simDefaults.money
                     requestStocks.append(stock)
                 }
                 stock.group = group
             }
             try? context.save()
-            self.fetchStocks()
             if requestStocks.count > 0 {
-                request.runRequest(stocks: requestStocks, action: .simUpdateAll)
+                self.request.runRequest(stocks: requestStocks, action: .simResetAll)
+            }
+            if group == "" {    //整群改群同時重讀會因雙重UI變動當掉
+                self.fetchStocks()
             }
         }
     }
@@ -145,7 +137,9 @@ struct simStock {
                 stock.simAddInvest = addInvest
             }
             if !simTesting {
-                try? context.save()
+                DispatchQueue.main.async {
+                    try? context.save()
+                }
                 request.runRequest(stocks: stocks, action: .simResetAll)
             }
         }
@@ -173,22 +167,6 @@ struct simStock {
         return nil
     }
     
-    func stocksSummary(_ stocks:[Stock]) -> String {
-        var roi:Double = 0
-        var days:Double = 0
-        let s = stocks.filter{$0.sId != "t00"}
-        for stock in s {
-            if let trade = stock.lastTrade(stock.context) {
-                roi += (trade.rollAmtRoi / stock.years)
-                days += (trade.rollDays / trade.rollRounds)
-            }
-        }
-        let sCount = "\(s.count)支股 "
-        let sRoi = String(format:"平均年報酬:%.1f%% ",roi / Double(s.count))
-        let sDays = String(format:"平均週期:%.f天",days / Double(s.count))
-        return "\(sCount)\(sRoi)\(sDays)"
-    }
-
         
     var groupStocks:[[Stock]] {
         Dictionary(grouping: stocks) { (stock:Stock)  in
@@ -198,24 +176,62 @@ struct simStock {
             .sorted {$0[0].group < $1[0].group}
     }
     
-    func runTest(start:Date) {
-        if start <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
-            settingStocks(groupStocks[0], dateStart: start, moneyBase: 100, addInvest: true)
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
-                self.request.runRequest(stocks: self.groupStocks[0], action: .simTesting)
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
-                    let years:Int = Int(round(Date().timeIntervalSince(start) / 86400 / 365))
-                    NSLog("\(twDateTime.stringFromDate(start,format:"yyyy")) == \(self.stocksSummary(self.groupStocks[0])) == \(years)\((years - 1) % 5 == 0 ? "\n" : "")")
-                    let nextYear = (twDateTime.calendar.date(byAdding: .year, value: 1, to: start) ?? Date.distantPast)
-                    self.runTest(start: nextYear)
-                }
-            }
-        } else {
-//            let d = simDefaults
-//            settingStocks(stocks, dateStart: d.start, moneyBase: d.money, addInvest: d.invest, runTesting: true)
-            defaults.set(true, forKey: "updateAll")
-            NSLog("== simTesting finished. ==\n\n")
+    func stocksSummary(_ stocks:[Stock]) -> (count:Double, roi:Double, days:Double) {
+        if stocks.count == 0 {
+            return (0,0,0)
         }
+        var sumRoi:Double = 0
+        var sumDays:Double = 0
+        let s = stocks.filter{$0.sId != "t00"}
+        for stock in s {
+            if let trade = stock.lastTrade(stock.context) {
+                sumRoi += (trade.rollAmtRoi / stock.years)
+                sumDays += trade.days
+            }
+        }
+        let count = Double(s.count)
+        let roi = sumRoi / count
+        let days = sumDays / count
+        return (count, roi, days)
+    }
+    
+    func runTest(start:Date) {
+        defaults.set(true, forKey: "updateAll")
+        NSLog("")
+        NSLog("== simTesting \(twDateTime.stringFromDate(start)) ==")
+        var groupRoi:String = ""
+        var groupDays:String = ""
+        for g in 0...(groupStocks.count - 1) {
+            let stocks = groupStocks[g].filter{$0.sId != "t00"}
+            let group  = stocks[0].group
+            let result = testStocks(stocks, group: group, start: start)
+            groupRoi = groupRoi + (groupRoi.count > 0 ? ",, " : "") + result.roi
+            groupDays = groupDays + (groupDays.count > 0 ? ",, " : "") + result.days
+        }
+        print("\n")
+        print(groupRoi)
+        print(groupDays)
+        print("\n")
+        NSLog("== simTesting finished. ==")
+        NSLog("")
+    }
+    
+    func testStocks(_ stocks:[Stock], group:String, start:Date) -> (roi:String, days:String) {
+        var roi:String = ""
+        var days:String = ""
+        let years:Int = Int(round(Date().timeIntervalSince(start) / 86400 / 365))
+        print("\n\n\(group)： 自\(twDateTime.stringFromDate(start,format:"yyyy"))第\(years)年起 ... ", terminator:"")
+        var nextYear:Date = start
+        while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
+            settingStocks(stocks, dateStart: nextYear, moneyBase: 100, addInvest: true)
+            self.request.runRequest(stocks: stocks, action: .simTesting)
+            let summary = stocksSummary(stocks)
+            roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi
+            days = String(format:"%.f", summary.days) + (days.count > 0 ? ", " : "") + days
+            print("\(twDateTime.stringFromDate(nextYear, format: "yyyy"))" + String(format:"(%.1f/%.f) ",summary.roi,summary.days), terminator:"")
+            nextYear = (twDateTime.calendar.date(byAdding: .year, value: 1, to: nextYear) ?? Date.distantPast)
+        }
+        return (roi,days)
     }
     
 //    var stocksJSON: Data? { try? JSONEncoder().encode(stocks) }
@@ -239,10 +255,10 @@ struct simStock {
         }
     }
         
-    func downloadTrades(updateAll:Bool = false) {
-        if updateAll {
-            NSLog("立即下載全部交易！")
-            request.runRequest(stocks: stocks, action: (self.tUpdateAll ? .tUpdateAll : .simUpdateAll))
+    func downloadTrades(requestAction:simDataRequest.simTechnicalAction?=nil) {
+        if let action = requestAction {
+            NSLog(action == .tUpdateAll ? "重算技術數值！" : "重算模擬！")
+            request.runRequest(stocks: stocks, action: action)
         } else if simTesting {
             NSLog("模擬測試...")
         } else {

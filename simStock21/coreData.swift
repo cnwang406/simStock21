@@ -309,6 +309,19 @@ public class Trade: NSManagedObject {
         twDateTime.startOfDay(dateTime)
     }
     
+    var years:Double {
+        var years = Date().timeIntervalSince(self.dateTime) / 86400 / 365
+        if years < 1 {
+            years = 1
+        }
+        return years
+    }
+    
+    var days:Double {
+        return (self.rollRounds > 0 ? self.rollDays / self.rollRounds : 0)
+    }
+
+    
     var simQty:(action:String,qty:Double) {
         if self.simQtySell > 0 {
             return ("賣", simQtySell)

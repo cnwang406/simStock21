@@ -20,8 +20,13 @@ struct simStockListView: View {
                     .disabled(self.isChoosing)
                 HStack(alignment: .bottom){
                     if self.isSearching && list.searchText != nil && !self.list.searchGotResults {
-                        Text("未加入股群的股票中查無符合者，試以部分的代號或簡稱來查詢？")
-                            .foregroundColor(.orange)
+                        if list.searchTextInGroup {
+                            Text("\(list.searchText?[0] ?? "搜尋的股票")已在股群中。")
+                                .foregroundColor(.orange)
+                        } else {
+                            Text("查無符合者，試以部分的代號或簡稱來查詢？")
+                                .foregroundColor(.orange)
+                        }
                         Button("[知道了]") {
                             self.searchText = ""
                             self.list.searchText = nil
@@ -51,43 +56,78 @@ struct simStockListView: View {
     @State var showFilter:Bool = false      //顯示pickerGroups
     @State var checkedStocks: [Stock] = []  //已選取的股票們
     @State var searchText:String = ""       //輸入的搜尋文字
-
-
+    @State var showExport:Bool = false      //顯示匯出選單
+    @State var showShare:Bool = false       //分享代號簡稱
+    @State var shareText:String = ""        //要匯出的文字內容
+    
+    func isChoosingOff() {
+        self.isChoosing = false
+        self.checkedStocks = []
+    }
     
     var choose: some View {
         HStack {
             if isChoosing {
                 Text("請勾選")
                     .foregroundColor(Color(.darkGray))
+                 Image(systemName: "chevron.right")
+                     .foregroundColor(.gray)
                  if checkedStocks.count > 0 {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
                     Button((list.widthClass != .compact ? "自股群" : "") + "移除") {
                         self.list.moveStocks(self.checkedStocks)
-                        self.checkedStocks = []
-                        self.isChoosing = false
+                        self.isChoosingOff()
                     }
                     Divider()
-                    Button("加入股群") {
+                    Button("加入" + (list.widthClass != .compact ? "股群" : "")) {
                         self.showFilter = true
                     }
                     .sheet(isPresented: $showFilter) {
                         pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText)
                     }
+                    Divider()
+                    Button(action: {self.showExport = true}) {
+                        Text("匯出" + (list.widthClass != .compact ? "CSV" : ""))
+                        .actionSheet(isPresented: $showExport) {
+                            ActionSheet(title: Text("匯出"), message: Text("文字內容？"), buttons: [
+                                .default(Text("代號和名稱")) {
+                                    self.shareText = self.list.csvStocksIdName(self.checkedStocks)
+                                    self.showShare = true
+                                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
+                                        self.isChoosingOff()
+                                    }
+                                },
+                                .destructive(Text("沒事，不用了。")) {
+                                    self.isChoosingOff()
+                                }
+                            ])
+                        }
+                        .sheet(isPresented: $showShare) {
+                            ShareSheet(activityItems: [self.shareText]) //分享窗
+                        }
+                    }
+                } else {
+                    Button("全選") {
+                        for stocks in self.list.groupStocks {
+                            for stock in stocks {
+                                self.checkedStocks.append(stock)
+                            }
+                        }
+                    }
                 }
             } else if self.list.searchGotResults {
                 Text("請勾選")
                 if checkedStocks.count > 0 {
-                    Text(">")
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
                     Button("加入股群") {
                             self.showFilter = true
                         }
                         .sheet(isPresented: $showFilter) {
                             pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isSearching, isPresented: self.$showFilter, searchText: self.$searchText)
-                        }
+                    }
                 }
             } else if !isSearching {
-                Button("編輯") {
+                Button("選取") {
                     self.isChoosing = true
                     self.searchText = ""
                     self.list.searchText = nil
@@ -106,16 +146,15 @@ struct simStockListView: View {
     var endChoosing: some View {
         HStack {
             if isChoosing {
-                Button("取消" + (list.widthClass != .compact ? "編輯模式" : "")) {
-                    self.isChoosing = false
-                    self.checkedStocks = []
+                Button("取消" + (list.widthClass != .compact ? "選取模式" : "")) {
+                    self.isChoosingOff()
                 }
             } else if self.list.searchGotResults {
                 Button("放棄" + (list.widthClass != .compact ? "搜尋結果" : "")) {
                     self.searchText = ""
                     self.list.searchText = nil
-                    self.checkedStocks = []
                     self.isSearching = false
+                    self.isChoosingOff()
                 }
             }
         }
@@ -125,6 +164,43 @@ struct simStockListView: View {
     }
 }
 
+struct ShareSheet: UIViewControllerRepresentable {
+    typealias Callback = (_ activityType: UIActivity.ActivityType?, _ completed: Bool, _ returnedItems: [Any]?, _ error: Error?) -> Void
+
+    let activityItems: [Any]
+    let applicationActivities: [UIActivity]? = nil
+    let excludedActivityTypes: [UIActivity.ActivityType]? = [    //標為註解以排除可用的，留下不要的
+                    .addToReadingList,
+                    .airDrop,
+                    .assignToContact,
+    //                .copyToPasteboard,
+    //                .mail,
+    //                .markupAsPDF,   //iOS11之後才有
+    //                .message,
+                    .openInIBooks,
+                    .postToFacebook,
+                    .postToFlickr,
+                    .postToTencentWeibo,
+                    .postToTwitter,
+                    .postToVimeo,
+                    .postToWeibo,
+                    .print,
+                    .saveToCameraRoll]
+    let callback: Callback? = nil
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: applicationActivities)
+        controller.excludedActivityTypes = excludedActivityTypes
+        controller.completionWithItemsHandler = callback
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // nothing to do here
+    }
+}
 
 struct pickerGroups:View {
     @ObservedObject var list: simStockList
@@ -138,23 +214,24 @@ struct pickerGroups:View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text((list.widthClass != .compact ? "選取的股票要" : "") + "新增股群或加入既有股群？")) {
+                Section(header: Text((list.widthClass != .compact ? "選取的股票要" : "") + "新增股群或加入既有股群？"), footer: Text(self.groupPicked == "新增股群" ? "加入新增的[\(self.newGroup)]。\n\n" : "加入[\(self.groupPicked)]。")) {
                     Picker("", selection: self.$groupPicked) {
                         Text("新增股群").tag("新增股群")
                         ForEach(self.list.groups, id: \.self) { (gName:String) in
                             Text(gName).tag(gName)
                         }
                     }
-//                        .pickerStyle(WheelPickerStyle())
                         .labelsHidden()
+//                        .pickerStyle(SegmentedPickerStyle())
+//                        .fixedSize()
                 }
-
                 if self.groupPicked == "新增股群" {
-                    Section (header: Text("加入新增的股群：")) {
+                    Section (header: Text("新的股群名稱：").font(.title)) {
                         TextField("輸入股群名稱", text: self.$newGroup, onEditingChanged: { _ in    //began or end (bool)
                             }, onCommit: {
                             })
                     }
+                    .disabled(self.groupPicked != "新增股群")
                 }
             }
             .navigationBarTitle("加入股群")
@@ -274,11 +351,14 @@ struct stockCell : View {
                     Image(systemName: self.checkedStocks.contains(self.stock) ? "checkmark.square" : "square")
                 }
             }
-            Text(stock.sId)
-                .font(list.widthClass == .compact ? .callout : .body)
-                .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
-            Text(stock.sName)
-                .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 75.0 : 110.0)), alignment: .leading)
+            Group {
+                Text(stock.sId)
+                    .font(list.widthClass == .compact ? .callout : .body)
+                    .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
+                Text(stock.sName)
+                    .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 75.0 : 110.0)), alignment: .leading)
+            }
+                .foregroundColor(list.requestRunning ? .gray : .primary)
             if stock.group != "" {
                 Group {
                     if stock.trades.count > 0 {
