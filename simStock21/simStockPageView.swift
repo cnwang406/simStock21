@@ -574,9 +574,10 @@ struct tradeCell: View {
                     Text(String(format:"%.1f%%",trade.simAmtRoi))
                         .frame(width: (list.widthClass == .compact ? 40.0 : 64.0), alignment: .trailing)
                 } else if trade.simRuleInvest == "A" {
-                    Text(trade.simInvestAdded > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼")
+                    Text((trade.invested > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼") + (trade.simInvestByUser > 0 ? "+" : (trade.simInvestByUser < 0 ? "-" : " ")))
                         .foregroundColor(.blue)
-                        .frame(width: (list.widthClass == .compact ? 48.0 : 72.0), alignment: .trailing)
+                        .font(.callout)
+                        .frame(width: (list.widthClass == .compact ? 55.0 : 88.0), alignment: .leading)
                         .onTapGesture {
                             self.list.addInvest(self.trade)
                         }

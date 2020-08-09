@@ -28,7 +28,6 @@
         <attribute name="simAmtRoi" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simDays" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simInvestAdded" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
-        <attribute name="simInvestByUser" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simInvestTimes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simQtyBuy" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="simQtyInventory" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -93,6 +92,6 @@
     </entity>
     <elements>
         <element name="Stock" positionX="-29.0859375" positionY="-540.51953125" width="128" height="178"/>
-        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="1213"/>
+        <element name="Trade" positionX="400.90625" positionY="-308.765625" width="128" height="1198"/>
     </elements>
 </model>

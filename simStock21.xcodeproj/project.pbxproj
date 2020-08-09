@@ -47,6 +47,7 @@
 		E2C4582224A36CC50036791E /* simStock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStock.swift; sourceTree = "<group>"; };
 		E2C4582424A36D1C0036791E /* simStockList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockList.swift; sourceTree = "<group>"; };
 		E2C4582624A36D710036791E /* coreData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = coreData.swift; sourceTree = "<group>"; };
+		E2EAECCA24DD5C6700BC88A8 /* simStock 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 3.xcdatamodel"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -338,7 +339,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;
@@ -360,7 +361,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;
@@ -404,6 +405,7 @@
 		E267A58624CA797C0041369C /* simStock21.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				E2EAECCA24DD5C6700BC88A8 /* simStock 3.xcdatamodel */,
 				E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */,
 				E267A58724CA797C0041369C /* simStock21.xcdatamodel */,
 			);

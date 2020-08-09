@@ -243,6 +243,7 @@ public class Trade: NSManagedObject {
     @NSManaged public var simAmtRoi: Double
     @NSManaged public var simDays: Double
     @NSManaged public var simInvestAdded: Double
+    @NSManaged public var simInvestByUser: Double
     @NSManaged public var simInvestTimes: Double
     @NSManaged public var simQtyBuy: Double         //買入張數
     @NSManaged public var simQtyInventory: Double   //庫存張數
@@ -318,7 +319,19 @@ public class Trade: NSManagedObject {
     }
     
     var days:Double {
-        return (self.rollRounds > 0 ? self.rollDays / self.rollRounds : 0)
+        if self.rollRounds <= 1 {
+            return self.rollDays
+        } else {
+            return (self.rollDays - (self.simQtyInventory > 0 ? self.simDays : 0)) / (self.rollRounds - (self.simQtyInventory > 0 ? 1 : 0))
+        }
+    }
+    
+    var weak:Bool {
+        (self.days > 60 || self.rollAmtRoi < -1)
+    }
+    
+    var invested:Double {
+        return self.simInvestByUser + self.simInvestAdded
     }
 
     
@@ -347,6 +360,7 @@ public class Trade: NSManagedObject {
         self.simRule = ""
         self.simRuleBuy = ""
         self.simRuleInvest = ""
+        self.simInvestAdded = 0
         //模擬中不能清除反轉或加碼，只由.tUpdateAll或.simResetAll負責清除
     }
     
@@ -358,7 +372,8 @@ public class Trade: NSManagedObject {
         self.rollRounds = 0
         
         self.resetSimValues()
-        self.simInvestAdded = 0
+        self.simInvestByUser = 0
+//        self.simInvestAdded = 0
         self.simInvestTimes = 0
         self.simAmtBalance = 0
         self.simReversed = ""

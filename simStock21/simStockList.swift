@@ -209,9 +209,9 @@ class simStockList:ObservableObject {
                 sim.defaults.set(versionNow, forKey: "simStockVersion")
                 sim.downloadStocks()
                 var requestAction:simDataRequest.simTechnicalAction? {
-                    if sim.defaults.bool(forKey: "updateAll") {
-                        sim.defaults.removeObject(forKey: "updateAll")
-                        return .tUpdateAll
+                    if sim.defaults.bool(forKey: "simResetAll") {
+                        sim.defaults.removeObject(forKey: "simResetAll")
+                        return .simResetAll
                     } else if versionLast != versionNow {
                         if buildNo == "0" {
                             return .tUpdateAll

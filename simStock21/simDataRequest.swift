@@ -29,7 +29,7 @@ class simDataRequest {
         running = true
         let realtime:Bool = twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
         if action == .realtime || action == .newTrades {
-            NSLog((realtime && action == .realtime ? "下載盤中價..." : "下載歷史價...") + (realtime ? " timer scheduled." : " timer invalidated."))
+            NSLog((realtime && action == .realtime ? "下載盤中價..." : "下載歷史價...") + (isOffDay ? "(休市日)" : "") + (realtime ? " timer scheduled." : " timer invalidated."))
         }
         let q = OperationQueue()
         if action != .simTesting {
@@ -57,8 +57,11 @@ class simDataRequest {
         requestGroup.notify(queue: .main) {
             self.running = false    //解除「背景作業中」的提示
             NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])  //最後才通知股群清單的summary要更新了
+            if action != .simTesting {
+                NSLog("\(self.isOffDay ? "休市日" : "")\(action)\(self.isOffDay ? "" : "共\(stocks.count)股")完成。\n")
+            }
         }
-        if realtime && action != .simTesting {
+        if realtime && !isOffDay && action != .simTesting {
             self.timer = Timer.scheduledTimer(withTimeInterval: 2 * 60, repeats: false) {_ in
                 self.runRequest(stocks: stocks, action: .realtime)
             }
@@ -403,7 +406,7 @@ class simDataRequest {
                 for (index,trade) in trades.enumerated() {
                     if action == .tUpdateAll || action == .simResetAll || action == .simTesting {
                         trade.simReversed = ""
-                        trade.simInvestAdded = 0
+                        trade.simInvestByUser = 0
                     }
                     if trade.tUpdated == false || action == .tUpdateAll {   //.newTrades當然tUpdated == false是這裡
                         self.tUpdate(trades, index: index)
@@ -733,8 +736,10 @@ class simDataRequest {
     }
 
     func simUpdate(_ trades:[Trade], index:Int) {
+//        if twDateTime.stringFromDate(trade.dateTime) == "2020/05/27" && trade.stock.sId == "1476" {
+//            NSLog("\(trade.stock.sId)\(trade.stock.sName) debug ... ")
+//        }
         let trade = trades[index]
-        
         if index == 0 || trade.date < trade.stock.dateStart {
             trade.setDefaultValues()
             trade.simRule = "_"
@@ -761,8 +766,13 @@ class simDataRequest {
             trade.simRuleBuy = prev.simRuleBuy
             rollAmtCost -= (prev.simAmtCost * prev.simDays)
         } else { //前筆沒有庫存，就沒有成本什麼的
-            if prev.simQtySell > 0 && trade.simInvestTimes > 1 {
-                trade.simInvestAdded = 1 - trade.simInvestTimes
+            if prev.simQtySell > 0 {
+                trade.simInvestByUser = 0
+                if trade.simInvestTimes > 1 {
+                    trade.simInvestAdded = 1 - trade.simInvestTimes
+                } else {
+                    trade.simInvestAdded = 0                    
+                }
             } else if trade.simInvestTimes == 0 {
                 trade.simInvestTimes = 1
             }
@@ -785,63 +795,24 @@ class simDataRequest {
         wantH += (trade.tMa60DiffZ125 > 0.85 ? 1 : 0)
         wantH += (trade.tKdKZ125 > -0.8 ? 1 : 0)
         wantH += (trade.tOscZ125 > -0.5 ? 1 : 0)
-        wantH += (trade.tMa60Diff > trade.tMa60DiffMin9 && trade.tMa20Diff > trade.tMa20DiffMin9 && trade.tOsc > trade.tOscMin9 && trade.tKdK > trade.tKdKMin9 ? 1 : 0)
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
-        
+
         wantH += (trade.tKdJZ125 > 2 ? -1 : 0)
         wantH += (trade.tHighDiff125 < -20 ? -1 : 0)
         wantH += (trade.tMa60DiffZ125 < -2 || trade.tMa20DiffZ125 > 3 ? -1 : 0) //Ma60過低, Ma20過高
         wantH += (trade.tLowDiff125 - trade.tHighDiff125 < 15 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa60DiffZ125 > 2.5 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
-
-
-        
-//        var maxCount:Int = 0
-//        var minCount:Int = 0
-//        var allDrop:Bool = true
-//        var d3Prev:Trade? = nil
-//        let d3 = tradeIndex(3, index: index)
-//        if d3.thisIndex > 0 {
-//            d3Prev = trades[d3.thisIndex - 1]
-//        }
-//        for t in trades[d3.thisIndex...index] { //包括自己這一筆
-//            if t.tOsc == t.tOscMin9 {
-//                minCount += 1  //k和macd下跌時
-//            }
-//            if t.tKdK == t.tKdKMin9 {
-//                minCount += 1
-//            }
-//
-//            if t.tOsc == t.tOscMax9 {
-//                maxCount += 1  //k和macd攀高時
-//            }
-//            if t.tKdK == t.tKdKMax9 {
-//                maxCount += 1
-//            }
-//
-//            if let p = d3Prev {   //d3的前1天
-//                if p.tOsc < t.tOsc || p.tKdK < t.tKdK {
-//                    allDrop = false     //跟前1天比一直都是跌，就是全跌
-//                }
-//            }
-//            d3Prev = t
-//        }
-//        //bothMin和bothMax只看自己也就是最新這一筆
-//        let bothMin = trade.tOsc == trade.tOscMin9 && trade.tKdK == trade.tKdKMin9
-//        let bothMax = trade.tOsc == trade.tOscMax9 && trade.tKdK == trade.tKdKMax9
-//        wantH += ((minCount >= 5 && bothMin) || allDrop ? -1 : 0)
-
-
-//        wantH += (trade.tLowDiff > 5 && prev.tHighDiff > 5 ? -1 : 0)
-//        wantH += (trade.tLowDiff125 > 15 || trade.tLowDiff250 > 15 ? 1 : 0)
-//        wantH += (trade.tKdK == trade.tKdKMin9 || trade.tOsc == trade.tOscMin9 ? -1 : 0)
-//        let MMdd:String = twDateTime.stringFromDate(trade.dateTime, format: "MMdd")
-//        wantH += (MMdd >= "0715" && MMdd <= "0831" ? -1 : 0)
+        wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
+//        wantH += (trade.days > 150 && trade.rollAmtRoi < -3 ? -1 : 0)
         
         
         
-        if wantH >= 3 {
-            trade.simRule = "H"
+        if wantH >= 2 {
+            if trade.weak && prev.priceClose < trade.priceClose && (prev.simRule == "H" || prev.simRule == "I") {
+                trade.simRule = "I"
+            } else {
+                trade.simRule = "H"
+            }
         }
         if trade.simRule == "" {
             //== 低買 ==================================================
@@ -874,7 +845,7 @@ class simDataRequest {
             let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
             let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
-            let sBase0 = trade.simUnitRoi > 0.45 //&& trade.simDays > (5 + weekendDays)
+            let sBase0 = trade.simUnitRoi > 0.45
             let sBase5 = wantS >= topWantS && sBase0
             let sBase4 = wantS >= (topWantS - 1) && sBase0 && (trade.simDays > (2 + weekendDays) || trade.simUnitRoi > 2.5)
             let sBase3 = wantS >= (topWantS - 2) && sBase0 && trade.simDays > 75
@@ -925,8 +896,8 @@ class simDataRequest {
                     if trade.stock.simAddInvest && trade.simInvestTimes <= 2  { //兩次自動加碼
                         var noAddIn45:Bool = true
                         let d45 = tradeIndex(45, index: index)
-                        for t in trades[d45.prevIndex...index - 1] {
-                            if t.simInvestAdded == 1 {
+                        for t in trades[d45.prevIndex...index - 1].reversed() {
+                            if t.invested == 1 {
                                 noAddIn45 = false
                                 break
                             } else if t.simDays <= 1 {
@@ -939,12 +910,13 @@ class simDataRequest {
                     }
                 } else {
                     trade.simInvestAdded = 0
+                    trade.simInvestByUser = 0
                 }
             }
         }
-        if trade.simInvestAdded != 0 {  //若前筆賣股則這裡抽回加碼本金，或這裡加碼則增加本金
-            trade.simInvestTimes += trade.simInvestAdded
-            trade.simAmtBalance += (trade.simInvestAdded * trade.stock.simMoneyBase * 10000)
+        if trade.invested != 0 {  //若前筆賣股則這裡抽回加碼本金，或這裡加碼則增加本金
+            trade.simInvestTimes += trade.invested
+            trade.simAmtBalance += (trade.invested * trade.stock.simMoneyBase * 10000)
         }
 
         var buyIt:Bool = false
@@ -952,7 +924,7 @@ class simDataRequest {
             if trade.simRuleBuy == "" && (trade.simRule == "H" || trade.simRule == "L") {
                 trade.simRuleBuy = trade.simRule
                 buyIt = true
-            } else if trade.simInvestAdded > 0 {
+            } else if trade.invested > 0 {
                 buyIt = true
             }
             //== 考慮延後買的情況 ==
@@ -1043,6 +1015,9 @@ class simDataRequest {
         }
         
         //== 更新累計數值 ==
+//        if twDateTime.stringFromDate(trade.dateTime) == "2020/05/28" && trade.stock.sId == "1476" {
+//            NSLog("\(trade.stock.sId)\(trade.stock.sName) debug ... ")
+//        }
         if trade.rollDays > 0 {
             trade.rollAmtCost = (rollAmtCost + (trade.simAmtCost * trade.simDays)) / trade.rollDays
         }

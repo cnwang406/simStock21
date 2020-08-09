@@ -11,7 +11,7 @@ import Foundation
 
 struct simStock {
     
-    let simTesting:Bool = false
+    let simTesting:Bool = true
     let simTestStart:Date? = twDateTime.dateFromString("2005/7/31")
     let request = simDataRequest()
     let defaults = UserDefaults.standard
@@ -21,17 +21,15 @@ struct simStock {
     init() {
         if defaults.double(forKey: "simMoneyBase") == 0 {
             let dateStart = twDateTime.calendar.date(byAdding: .year, value: -3, to: twDateTime.startOfDay()) ?? Date.distantFuture
-            setDefaults(start: dateStart, money: 50.0, invest: true)
+            setDefaults(start: dateStart, money: 70.0, invest: true)
         }
         self.stocks = Stock.fetch(coreData.shared.context)
         if self.stocks.count == 0 {
             let group1:[(sId:String,sName:String)] = [
                 (sId:"1590", sName:"亞德客-KY"),
-                (sId:"3653", sName:"健策"),
                 (sId:"1515", sName:"力山"),
                 (sId:"2330", sName:"台積電"),
-                (sId:"2327", sName:"國巨"),
-                (sId:"3037", sName:"欣興")]
+                (sId:"2327", sName:"國巨")]
             self.newStock(stocks: group1, group: "股群_1")
             
             let group2:[(sId:String,sName:String)] = [
@@ -86,14 +84,19 @@ struct simStock {
     
     func addInvest(_ trade: Trade) {
         if let context = trade.managedObjectContext {
-            if trade.simInvestAdded > 0 {
-                trade.simInvestAdded = 0
-                if trade.simInvestTimes <= 3 {
-                    trade.stock.simAddInvest = false    //取消前兩次加碼時，關閉自動加碼
+            if trade.simInvestByUser == 0 {
+                if trade.simInvestAdded > 0 {
+                    trade.simInvestByUser = -1
+                } else if trade.simInvestAdded == 0 {
+                    trade.simInvestByUser = 1
                 }
             } else {
-                trade.simInvestAdded = 1
+                trade.simInvestByUser = 0
             }
+//                if trade.simInvestTimes <= 3 {
+//                    trade.stock.simAddInvest = false    //取消前兩次加碼時，關閉自動加碼
+//                }
+            
             try? context.save()
             DispatchQueue.global().async {
                 self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
@@ -103,6 +106,7 @@ struct simStock {
     
     func setReversed(_ trade: Trade) {
         if let context = trade.managedObjectContext {
+            let trades = Trade.fetch(context, stock: trade.stock, simReversed:true)
             let simQty = trade.simQty
             if trade.simReversed == "" {
                 switch simQty.action {
@@ -115,8 +119,12 @@ struct simStock {
                 default:
                     trade.simReversed = "B+"
                 }
+                for tr in trades {
+                    if tr.date > trade.date {
+                        tr.simReversed = ""
+                    }
+                }
             } else {
-                let trades = Trade.fetch(context, stock: trade.stock, simReversed:true)
                 for tr in trades {
                     tr.simReversed = ""
                 }
@@ -196,7 +204,7 @@ struct simStock {
     }
     
     func runTest(start:Date) {
-        defaults.set(true, forKey: "updateAll")
+        defaults.set(true, forKey: "simResetAll")
         NSLog("")
         NSLog("== simTesting \(twDateTime.stringFromDate(start)) ==")
         var groupRoi:String = ""
