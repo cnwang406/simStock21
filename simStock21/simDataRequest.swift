@@ -9,67 +9,84 @@
 import Foundation
 
 class simDataRequest {
-    let defaults = UserDefaults.standard
-    var isOffDay:Bool = false
     var timer:Timer?
-    var timeTradesDownloaded:Date
+    var isOffDay:Bool = false
     var running:Bool = false
-    
-    func tradesUpdated(time:Date) {
-        timeTradesDownloaded = time
-        defaults.set(time, forKey: "timeTradesDownloaded")
-    }
-
+    var timeTradesUpdated:Date
+    let requestInterval:TimeInterval = 120
 
     init() {
-        timeTradesDownloaded = defaults.object(forKey: "timeTradesDownloaded") as? Date ?? Date.distantPast
+        timeTradesUpdated = UserDefaults.standard.object(forKey: "timeTradesUpdated") as? Date ?? Date.distantPast
     }
     
     func runRequest(stocks:[Stock], action:simTechnicalAction = .realtime) {
-        running = true
-        let realtime:Bool = twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
-        if action == .realtime || action == .newTrades {
-            NSLog((realtime && action == .realtime ? "下載盤中價..." : "下載歷史價...") + (isOffDay ? "(休市日)" : "") + (realtime ? " timer scheduled." : " timer invalidated."))
+        self.running = true
+        self.twseCount = 0
+        let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
+        var realtime:Bool {
+            twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
+        }
+        if !simActions {
+            NSLog("\(action) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
         }
         let q = OperationQueue()
         if action != .simTesting {
             q.maxConcurrentOperationCount = 1
         }
-        let requestGroup:DispatchGroup = DispatchGroup()  //這是stocks共用的group，等候全部的背景作業完成時通知主畫面
+        let allGroup:DispatchGroup = DispatchGroup()  //這是stocks共用的group，等候全部的背景作業完成時通知主畫面
+        let twseGroup:DispatchGroup = DispatchGroup() //這是控制twse依序下載以避免同時多條連線被拒
         for stock in stocks {
+            allGroup.enter()
             if realtime && action == .realtime {
-                requestGroup.enter()
-                self.yahooRequest(stock, yahooGroup: requestGroup)
-            } else if action == .simTesting || action == .simUpdateAll {
+                self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+            } else if simActions {
                 self.simTechnical(stock: stock, action: action)
+                allGroup.leave()
             } else {
                 let cnyesGroup:DispatchGroup = DispatchGroup()  //這是個股專用的group，等候cnyes下載完成才統計技術數值
                 self.cnyesPrice(stock: stock, cnyesGroup: cnyesGroup)
-                cnyesGroup.notify(queue: .global()) {
-                    requestGroup.enter()
-                    q.addOperation {
-                        self.simTechnical(stock: stock, action: action)
-                        self.yahooRequest(stock, yahooGroup: requestGroup)
-                    }
+                q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
+                    cnyesGroup.wait()
+                    self.simTechnical(stock: stock, action: action)
+                    self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+                }   //即使已經收盤後也需要yahoo，才收盤時cnyes未及把當日收盤價納入查詢結果
+            }
+        }
+        allGroup.notify(queue: .main) {
+            if !simActions {
+                self.running = false    //解除UI「背景作業中」的提示
+                self.timeTradesUpdated = Date()
+                NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":self.timeTradesUpdated])  //通知股群清單的summary要更新了
+                UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
+                NSLog("\(self.isOffDay ? "休市日" : "完成") \(action) \(self.isOffDay ? "" : "共\(stocks.count)股") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))。\n")
+                self.runP10(stocks)
+            }
+            if realtime && action != .simTesting {
+                self.timer?.invalidate()
+                self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
+                    self.runRequest(stocks: stocks, action: .realtime)
                 }
+                if let t = self.timer, t.isValid {
+                    NSLog("timer scheduled in \(t.fireDate.timeIntervalSinceNow)s")
+                }
+            } else if let t = self.timer, t.isValid {
+                t.invalidate()
+                self.timer = nil
+                NSLog("timer invalidated.")
             }
-        }
-        requestGroup.notify(queue: .main) {
-            self.running = false    //解除「背景作業中」的提示
-            NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":Date()])  //最後才通知股群清單的summary要更新了
-            if action != .simTesting {
-                NSLog("\(self.isOffDay ? "休市日" : "")\(action)\(self.isOffDay ? "" : "共\(stocks.count)股")完成。\n")
-            }
-        }
-        if realtime && !isOffDay && action != .simTesting {
-            self.timer = Timer.scheduledTimer(withTimeInterval: 2 * 60, repeats: false) {_ in
-                self.runRequest(stocks: stocks, action: .realtime)
-            }
-        } else {
-            self.timer?.invalidate()
-            self.timer = nil
         }
     }
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     func twseDailyMI() {
         //        let y = calendar.component(.Year, fromDate: qDate) - 1911
@@ -82,9 +99,9 @@ class simDataRequest {
         //http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=20170523&type=ALLBUT0999
 
         let url = URL(string: "http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&type=ALLBUT0999")
-        let request = URLRequest(url: url!,timeoutInterval: 30)
+        let urlRequest = URLRequest(url: url!,timeoutInterval: 30)
 
-        let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
+        let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
             if error == nil {
                 let big5 = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.dosChineseTrad.rawValue))
                 if let downloadedData = String(data:data!, encoding:String.Encoding(rawValue: big5)) {
@@ -143,23 +160,33 @@ class simDataRequest {
                         }   //if line != ""
                     } //for
                     try? context.save()
-                    self.defaults.set(Date(), forKey: "timeStocksDownloaded")
+                    UserDefaults.standard.set(Date(), forKey: "timeStocksDownloaded")
                     NSLog("twseDailyMI(ALLBUT0999): \(allStockCount)筆")
                 }   //if let downloadedData
             } else {  //if error == nil
-                self.defaults.removeObject(forKey: "timeStocksDownloaded")
+                UserDefaults.standard.removeObject(forKey: "timeStocksDownloaded")
                 NSLog("twseDailyMI(ALLBUT0999) error:\(String(describing: error))")
             }
         })
         task.resume()
     }
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
-    func cnyesRequest(_ stock:Stock, ymdStart:String, ymdEnd:String, dGroup:DispatchGroup) {
-        dGroup.enter()
+    func cnyesRequest(_ stock:Stock, ymdStart:String, ymdEnd:String, cnyesGroup:DispatchGroup) {
+        cnyesGroup.enter()
         let url = URL(string: "http://www.cnyes.com/twstock/ps_historyPrice.aspx?code=\(stock.sId)&ctl00$ContentPlaceHolder1$startText=\(ymdStart)&ctl00$ContentPlaceHolder1$endText=\(ymdEnd)")
-        let request = URLRequest(url: url!,timeoutInterval: 30)
-        let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
+        let urlRequest = URLRequest(url: url!,timeoutInterval: 30)
+        let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
             if error == nil {
                 if let downloadedData = String(data:data!, encoding:.utf8) {
 
@@ -180,7 +207,7 @@ class simDataRequest {
                         let context = coreData.shared.context
                         var tradesCount:Int = 0
                         var firstDate:Date = Date.distantFuture
-                        for line in lines {
+                        for line in lines.reversed() {
                             if let dt0 = twDateTime.dateFromString(line.components(separatedBy: ",")[0]) {
                                 let dateTime = twDateTime.time1330(dt0)
                                 if let close = Double(line.components(separatedBy: ",")[4]) {
@@ -236,11 +263,10 @@ class simDataRequest {
                 } else {  //if let downloadedData 下無資料故touch
                     NSLog("\(stock.sId)\(stock.sName)\tcnyes \(ymdStart)~\(ymdEnd) 下載無資料。")
                 }
-                self.tradesUpdated(time: Date())
             } else {  //if error == nil 下載有失誤也要touch
                 NSLog("\(stock.sId)\(stock.sName)\tcnyes \(ymdStart)~\(ymdEnd) 下載有誤 \(String(describing: error))")
             }
-            dGroup.leave()
+            cnyesGroup.leave()
         })
         task.resume()
     }
@@ -250,29 +276,39 @@ class simDataRequest {
         if stock.trades.count == 0 {  //資料庫是空的
             let ymdS = twDateTime.stringFromDate(stock.dateFirst)
             let ymdE = twDateTime.stringFromDate()  //今天
-            cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, dGroup: cnyesGroup)
+            cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
         } else {
             if let firstTrade = stock.firstTrade(stock.context) {
                 if stock.dateFirst < twDateTime.startOfDay(firstTrade.dateTime)  {    //起日在首日之前
                     let ymdS = twDateTime.stringFromDate(stock.dateFirst)
                     let ymdE = twDateTime.stringFromDate(firstTrade.dateTime)
-                    cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, dGroup: cnyesGroup)
+                    cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
                 }
             }
             if let lastTrade = stock.lastTrade(stock.context) {
                 if lastTrade.dateTime < twDateTime.startOfDay()  {    //末日在今天之前
                     let ymdS = twDateTime.stringFromDate(lastTrade.dateTime)
                     let ymdE = twDateTime.stringFromDate(twDateTime.startOfDay())
-                    cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, dGroup: cnyesGroup)
+                    cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
                 }
             }
         }
     }
     
-    func yahooRequest(_ stock:Stock, yahooGroup:DispatchGroup) {
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    func yahooRequest(_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
         let url = URL(string: "https://tw.stock.yahoo.com/q/q?s=" + stock.sId)
-        let request = URLRequest(url: url!,timeoutInterval: 30)
-        let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
+        let urlRequest = URLRequest(url: url!,timeoutInterval: 30)
+        let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
             if error == nil {
                 let big5 = CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.dosChineseTrad.rawValue))
                 if let downloadedData = String(data:data!, encoding:String.Encoding(rawValue: big5)) {
@@ -325,17 +361,20 @@ class simDataRequest {
                                                     trade.stock = s
                                                 }
                                             }
-                                            trade.dateTime = dt1
-                                            trade.priceClose = close
-                                            trade.priceOpen = yNumber(yColumn[6])
-                                            trade.priceHigh = yNumber(yColumn[7])
-                                            trade.priceLow = yNumber(yColumn[8])
-    //                                        let volume = yNumber(yColumn[5])
-                                            trade.tSource = "yahoo"
-                                            try? context.save() //由simTechnical執行trade.objectWillChange.send()
+                                            if dt1 > trade.dateTime || trade.priceClose != close {
+                                                trade.dateTime = dt1
+                                                trade.priceClose = close
+                                                trade.priceOpen = yNumber(yColumn[6])
+                                                trade.priceHigh = yNumber(yColumn[7])
+                                                trade.priceLow = yNumber(yColumn[8])
+        //                                        let volume = yNumber(yColumn[5])
+                                                trade.tSource = "yahoo"
+                                                try? context.save() //由simTechnical執行trade.objectWillChange.send()
+                                                NSLog("\(stock.sId)\(stock.sName)\tyahoo 成交價 \(String(format:"%.2f ",close))" + twDateTime.stringFromDate(dt1, format: "HH:mm:ss"))
+                                            } else {
+                                                NSLog("\(stock.sId)\(stock.sName)\tyahoo 未更新 \(String(format:"%.2f",close))")
+                                            }
                                             self.simTechnical(stock: stock, action: .realtime)
-                                            NSLog("\(stock.sId)\(stock.sName)\tyahoo " + twDateTime.stringFromDate(dt1, format: "HH:mm:ss") + String(format:" %.2f",close))
-                                            
                                         }
                                     }
                                 }   //if let dt0
@@ -347,11 +386,31 @@ class simDataRequest {
                 }  else { //if let downloadedData =
                     NSLog("\(stock.sId)\(stock.sName)\tyahoo：下載無資料。")
                 }   //if let downloadedData
-                self.tradesUpdated(time: Date())
             } else {
                 NSLog("\(stock.sId)\(stock.sName)\tyahoo：下載有誤 \(String(describing: error))")
             }   //if error == nil
-            yahooGroup.leave()
+            //== 下載twse的限制 ==
+            //* 連續下載完成後，下一批次須間隔??分鐘
+            //* 連續下載每??股須間隔??秒
+            var twseCooled:Bool {
+                Date().timeIntervalSince(self.timeTradesUpdated) >= self.requestInterval
+            }
+            let twseGo:Bool = twDateTime.inMarketingTime(delay: 2, forToday: true) && !self.isOffDay && twseCooled
+            if twseGo {
+                let delay:Int = (self.twseCount / 9) * 3
+                self.twseCount += 1
+                DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
+                    twseGroup.wait()
+                    twseGroup.enter()
+                    if twseCooled {
+                        self.twseRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+                    } else {
+                        allGroup.leave()
+                    }
+                }
+            } else {
+                allGroup.leave()
+            }
         })  //let task =
         task.resume()
     }
@@ -380,6 +439,251 @@ class simDataRequest {
     
     
     
+    var twseCount:Int = 0    
+    func twseRequest (_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
+        enum twseError: Error {
+            case error(msg:String)
+            case warning(msg:String)
+        }
+        let now = String(format:"%.f",Date().timeIntervalSince1970 * 1000)
+        guard let url = URL(string: "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_\(stock.sId).tw&json=1&delay=0&_=\(now)") else {return}
+        let urlRequest = URLRequest(url: url,timeoutInterval: 30)
+        let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
+            do {
+                guard let jdata = data else { throw twseError.error(msg:"no data") }
+                guard let jroot = try JSONSerialization.jsonObject(with: jdata, options: .allowFragments) as? [String:Any] else {throw twseError.error(msg: "invalid jroot") }
+                guard let rtmessage = jroot["rtmessage"] as? String else {throw twseError.error(msg:"no rtmessage") }
+                if rtmessage != "OK" {
+                    throw twseError.error(msg:"invalid rtmessage")
+                }
+                guard let msgArray = jroot["msgArray"] as? [[String:Any]] else {throw twseError.error(msg:"no msgArray")}
+
+                /*
+                 {
+                 "msgArray":[
+                 {
+                 "ts":"0",
+                 "tk0":"2330.tw_tse_20170116_B_9999925914",
+                 "tk1":"2330.tw_tse_20170116_B_9999925580",
+                 "tlong":"1484528728000",                     //目前時間
+                 "f":"217_1784_1144_1788_1190_",            //五檔賣量
+                 "ex":"tse",                                //tse:上市 otc:上櫃
+                 "g":"2165_1133_3126_1611_1962_",           //五檔買量
+                 "d":"20170116",                            //日期 <<
+                 "it":"12",
+                 "b":"179.00_178.50_178.00_177.50_177.00_", //五檔賣價
+                 "c":"2330",
+                 "mt":"549353",
+                 "a":"179.50_180.00_180.50_181.00_181.50_", //五檔賣價
+                 "n":"台積電",
+                 "o":"180.00",  //開盤價    <<
+                 "l":"179.00",  //最低成交價 <<
+                 "h":"180.50",  //最高成交價 <<
+                 "ip":"0",      //1:趨跌,2:趨漲,4:暫緩收盤,5:暫緩開盤
+                 "i":"24",
+                 "w":"163.50",  //跌停價
+                 "v":"6359",    //累積成交量，未含盤後交易
+                 "u":"199.50",  //漲停價
+                 "t":"09:05:28",//揭示時間 <<
+                 "s":"34",      //當盤成交量
+                 "pz":"180.00",
+                 "tv":"34",     //當盤成交量
+                 "p":"0",
+                 "nf":"台灣積體電路製造股份有限公司",
+                 "ch":"2330.tw",
+                 "z":"179.50",  //最近成交價 <<
+                 "y":"181.50",  //昨日成交價 <<
+                 "ps":"2459"    //試算參考成交量
+                 }
+                 ],
+                 "userDelay":...
+                 ...
+                 },
+                 "rtcode":"0000"
+                 }
+                 */
+
+                guard let stockInfo = msgArray.first else {throw twseError.error(msg:"no msgArray.first")}
+                let o = Double(stockInfo["o"] as? String ?? "0") ?? 0   //開盤價
+                guard o != Double.nan && o != 0 else {throw  twseError.error(msg:"invalid open price")}
+                let d = stockInfo["d"] as? String ?? ""   //日期 "20170116"
+                let t = stockInfo["t"] as? String ?? ""   //時間 "09:05:28"
+                guard let dateTime = twDateTime.dateFromString(d+t, format: "yyyyMMddHH:mm:ss") else {throw twseError.error(msg:"invalid dateTime")}
+                
+                if (!twDateTime.isDateInToday(dateTime)) && Date() > twDateTime.time0900(delayMinutes: 5) {
+                    self.isOffDay = true    //不是今天價格，現在又已過今天的開盤時間，那今天就是休市日
+                } else {
+                    self.isOffDay = false
+                    let h = Double(stockInfo["h"] as? String ?? "0") ?? 0    //最高
+                    let l = Double(stockInfo["l"] as? String ?? "0") ?? 0    //最低
+                    let z = Double(stockInfo["z"] as? String ?? "0") ?? 0    //最新
+//                    let y = Double(stockInfo["y"] as? String ?? "0") ?? 0    //昨日
+//                    let v = (stock.sId == "t00" ? 0 : Double(stockInfo["v"] as? String ?? "0") ?? 0)    //總量，未含盤後交易
+                    let dt0 = twDateTime.startOfDay(dateTime)
+                    let context = coreData.shared.context
+                    var trade:Trade
+                    if let lastTrade = stock.lastTrade(context), lastTrade.date == dt0 {
+                        trade = lastTrade
+                    } else {
+                        trade = Trade(context: context)
+                        if let s = Stock.fetch(context, sId:[stock.sId]).first {
+                            trade.stock = s
+                        }
+                    }
+                    trade.dateTime = dateTime
+                    trade.priceOpen = o
+                    trade.priceHigh = h
+                    trade.priceLow = l
+                    trade.tSource = "twse"
+                    if z > 0 {
+                        if z != trade.priceClose {
+                            trade.dateTime = dateTime
+                            trade.priceClose = z
+                            trade.priceOpen = o
+                            trade.priceHigh = h
+                            trade.priceLow = l
+                            trade.tSource = "twse"
+                            try? context.save() //由simTechnical執行trade.objectWillChange.send()
+                            self.simTechnical(stock: stock, action: .realtime)
+                            NSLog("\(stock.sId)\(stock.sName)\ttwse 成交價 \(String(format:"%.2f ",z))" + twDateTime.stringFromDate(dateTime, format: "HH:mm:ss"))
+                        } else {
+                            NSLog("\(stock.sId)\(stock.sName)\ttwse 未更新 \(String(format:"%.2f",z))")
+                        }
+                    } else {
+                        NSLog("\(stock.sId)\(stock.sName)\ttwse 無交易 \(String(format:"%.2f",trade.priceClose))")
+                    }
+                }   //self.isOffDay = false
+                    
+            } catch twseError.error(let msg) {   //error就放棄結束
+                self.timeTradesUpdated = Date()
+                NSLog("\(stock.sId)\(stock.sName)\ttwse timeout? \(msg)")
+                //可能是被TWSE拒絕連線而逾時
+            } catch twseError.warning(let msg) {    //warn可能只是cookie失敗，重試
+                NSLog("\(stock.sId)\(stock.sName)\ttwse warning: \(msg)")
+            } catch {
+                NSLog("\(stock.sId)\(stock.sName)\ttwse error: \(error)")
+            }   //do
+            twseGroup.leave()
+            allGroup.leave()
+        })
+        task.resume()
+    }
+
+    func twseCookie() {
+        //1.先取得cookie
+        guard let url = URL(string: "http://mis.twse.com.tw/stock/fibest.jsp?lang=zh_tw") else {return}
+        let request = URLRequest(url: url,timeoutInterval: 30)
+        let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
+            guard error == nil else {
+                NSLog("twse cookie error? \(String(describing: error))\n")
+                return
+            }
+            //2.再抓指數過場
+            let now = String(format:"%.f",Date().timeIntervalSince1970 * 1000)
+            let uString = "http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_t00.tw%7cotc_o00.tw%7ctse_FRMSA.tw&json=1&delay=0&_=\(now)"
+            guard let url = URL(string: uString) else {return}
+            let request = URLRequest(url: url,timeoutInterval: 30)
+            URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
+                guard error == nil else {
+                    NSLog("twse cookie error? \(String(describing: error))\n")
+                    return
+                }
+            }).resume()
+        })
+        task.resume()
+    }
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    func runP10(_ stocks:[Stock]) {
+        DispatchQueue.global().async {
+            let s = stocks.filter{$0.sId != "t00"}
+            for stock in s {
+                stock.p10 = self.p10(stock)
+                if stock.p10.action != "" {
+                    DispatchQueue.main.async {
+                        NSLog("\(stock.sId)\(stock.sName)\tP10:\(stock.p10.action)(L\(stock.p10.L.count)),H\(stock.p10.H.count))")
+                        stock.objectWillChange.send()
+                    }
+                }
+            }
+        }
+    }
+    
+    func p10(_ stock:Stock) -> P10 {
+        var p10:P10 = P10()
+        if twDateTime.inMarketingTime() {
+            let context = coreData.shared.context
+            let trades:[Trade] = Trade.fetch(context, stock: stock, fetchLimit: 376, asc:false).reversed()
+            if trades.count > 0 {
+                let trade = trades[trades.count - 1]
+                let price = trade.priceClose
+                let diff = priceDiff(price)
+                p10.date = trade.date
+                for i in 1...10 {
+                    let d = Double(i > 5 ? i - 5 : i - 6) //-5到-1，1到5
+                    trade.priceClose = price + (d * diff)
+                    tUpdate(trades, index: trades.count - 1)
+                    simUpdate(trades, index: trades.count - 1)
+                    let simQty = trade.simQty
+                    if simQty.action == "買" || simQty.action == "賣" {
+                        if trade.priceClose < price {
+                            p10.L.append((trade.priceClose, simQty.action, simQty.qty, simQty.roi))
+                        } else {
+                            p10.H.append((trade.priceClose, simQty.action, simQty.qty, simQty.roi))
+                        }
+                    }
+                }
+                if p10.L.count > 0 {
+                    p10.action = p10.L[0].action
+                } else if p10.H.count > 0 {
+                    p10.action = p10.H[0].action
+                }
+                context.rollback()
+            }
+        }
+        return p10
+    }
+
+    func priceDiff(_ price:Double) -> Double {  //每檔差額
+        switch price {
+        case let p where p < 10:
+            return 0.01
+        case let p where p < 50:
+            return 0.05
+        case let p where p < 100:
+            return 0.1
+        case let p where p < 500:
+            return 0.5
+        case let p where p < 1000:
+            return 1
+        default:
+            return 5    //1000元以上檔位
+        }
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -395,11 +699,12 @@ class simDataRequest {
 
     func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
-        let trades = Trade.fetch(context, stock: stock, asc:true)
+        let trades = Trade.fetch(context, stock: stock, fetchLimit: (action == .realtime ? 376 : nil), asc:(action == .realtime ? false : true))
         if trades.count > 0 {
             if action == .realtime {
-                tUpdate(trades, index: trades.count - 1)
-                simUpdate(trades, index: trades.count - 1)
+                let tr376:[Trade] = trades.reversed()
+                tUpdate(tr376, index: trades.count - 1)
+                simUpdate(tr376, index: trades.count - 1)
             } else {
                 var tCount:Int = 0
                 var sCount:Int = 0
@@ -429,7 +734,6 @@ class simDataRequest {
             }
         }
     }
-    
     
     
     
@@ -483,24 +787,8 @@ class simDataRequest {
                 ma60Sum += t.tMa60Diff  //但是自己的ma60Diff還是0
             }
             //最高價差、最低價差
-            func nextPriceDiff(_ thisPrice:Double) -> Double {  //每檔差額
-                switch thisPrice {
-                case let p where p < 10:
-                    return 0.01
-                case let p where p < 50:
-                    return 0.05
-                case let p where p < 100:
-                    return 0.1
-                case let p where p < 500:
-                    return 0.5
-                case let p where p < 1000:
-                    return 1
-                default:
-                    return 5    //1000元以上檔位
-                }
-            }
-            let nextLow  = 100 * (prev.priceClose - trade.priceLow + nextPriceDiff(trade.priceLow)) / prev.priceClose
-            let nextHigh = 100 * (trade.priceHigh + nextPriceDiff(trade.priceHigh) - prev.priceClose) / prev.priceClose
+            let nextLow  = 100 * (prev.priceClose - trade.priceLow + priceDiff(trade.priceLow)) / prev.priceClose
+            let nextHigh = 100 * (trade.priceHigh + priceDiff(trade.priceHigh) - prev.priceClose) / prev.priceClose
             trade.tLowDiff  = (nextLow > 10 ? 10 : 100 * (prev.priceClose - trade.priceLow) / prev.priceClose)
             trade.tHighDiff = (nextHigh > 10 ? 10 : 100 * (trade.priceHigh - prev.priceClose) / prev.priceClose)
 

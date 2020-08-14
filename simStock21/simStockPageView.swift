@@ -134,7 +134,7 @@ struct stockPicker: View {
 
 
 struct tradeListView: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var selected: Date?
     @State var showReload:Bool = false
@@ -304,7 +304,7 @@ struct tradeListView: View {
             //== 日交易明細列表 ==
             List {
                 ForEach(stock.trades, id:\.self.dateTime) { trade in
-                    tradeCell(list: self.list, trade: trade, selected: self.$selected)
+                    tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                         .onTapGesture {
                             if self.selected == trade.date {
                                 self.selected = nil
@@ -387,42 +387,9 @@ struct settingForm: View {
 }
 
 
-func tradeCellColor (_ trade:Trade, for key:String) -> Color {
-    switch key {
-    case "dateTime":
-        if twDateTime.inMarketingTime(trade.dateTime) {
-            return Color(UIColor.purple)
-        } else if trade.simRule == "_" {
-            return .gray
-        }
-    case "simRule":
-        switch trade.simRule {
-        case "L":
-            return .green
-        case "H":
-            return .red
-        default:
-            return .white
-        }
-    case "simQty":
-        if trade.simQtySell > 0 {
-            return .blue
-        } else if trade.simQtyBuy > 0 {
-            return .red
-        } else if trade.simQtyInventory > 0 {
-            return .primary
-        } else {
-            return .primary
-        }
-    default:
-        return .primary
-    }
-    return .primary
-}
-
-
 struct tradeCell: View {
     @State var list: simStockList
+    @State var stock: Stock
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
     
@@ -546,22 +513,24 @@ struct tradeCell: View {
                 .frame(width: 20, alignment: .center)
                 //== 2日期,3單價 ==
                 Text(twDateTime.stringFromDate(trade.dateTime))
-                    .foregroundColor(tradeCellColor(trade,for: "dateTime"))
+                    .foregroundColor(trade.color(.time))
                     .frame(width: (list.widthClass == .compact ? 80.0 : 128.0), alignment: .leading)
                 Text(String(format:"%.2f",trade.priceClose))
-                    .foregroundColor(tradeCellColor(trade,for: "dateTime"))
                     .frame(width: (list.widthClass == .compact ? 64.0 : 104.0), alignment: .center)
+                    .foregroundColor(trade.color(.ruleF))
+                    .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB)))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(tradeCellColor(trade, for: "simRule"), lineWidth: (tradeCellColor(trade, for: "simRule") == .white ? 0 : 0.6))
+                            .stroke(trade.color(.ruleR), lineWidth: 1)
                     )
+
                 //== 4買賣,5數量 ==
                 Text(trade.simQty.action)
                     .frame(width: (list.widthClass == .compact ? 16.0 : 24.0), alignment: .center)
-                    .foregroundColor(tradeCellColor(trade, for: "simQty"))
+                    .foregroundColor(trade.color(.qty))
                 Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
                     .frame(width: (list.widthClass == .compact ? 32.0 : 56.0), alignment: .center)
-                    .foregroundColor(tradeCellColor(trade, for: "simQty"))
+                    .foregroundColor(trade.color(.qty))
                 //== 6天數 ==
                 if trade.simQtyInventory > 0 || trade.simQtySell > 0 {
                     Text(String(format:"%.f天",trade.simDays))
@@ -587,19 +556,40 @@ struct tradeCell: View {
             }   //HStack
                 .font(.body)
             if self.selected == trade.date {
-                
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text("").frame(width: 20.0, alignment: .center)
-                        Text(twDateTime.stringFromDate(trade.dateTime, format: "EEE HH:mm:ss"))
+                HStack {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("").frame(width: 20.0, alignment: .center)
+                            Text(twDateTime.stringFromDate(trade.dateTime, format: "EEE HH:mm:ss"))
+                            .frame(width: (list.widthClass == .compact ? 80.0 : 128.0), alignment: .leading)
+                        }
+                        HStack {
+                            Text("").frame(width: 20.0, alignment: .center)
+                            Text(trade.tSource)
+                            .frame(width: (list.widthClass == .compact ? 80.0 : 128.0), alignment: .leading)
+                        }
                     }
-                    HStack {
-                        Text("").frame(width: 20.0, alignment: .center)
-                        Text(trade.tSource)
+                        .font(.caption)
+                        .foregroundColor(trade.color(.time))
+                    VStack(alignment: .leading) {
+                        if trade.date == stock.p10.date {
+                            HStack {
+                                ForEach(self.stock.p10.L , id:\.self.price) {
+                                    (p10: (price:Double,action:String,qty:Double,roi:Double)) in
+                                        Text(String(format:"%.2f\(p10.action)",p10.price) + (self.list.widthClass != .compact ? String(format:(p10.action == "買" ? "%.f" : "%.1f%%"),(p10.action == "買" ? p10.qty : p10.roi)) : ""))
+                                }
+                            }
+                            HStack {
+                                ForEach(self.stock.p10.H , id:\.self.price) {
+                                    (p10: (price:Double,action:String,qty:Double,roi:Double)) in
+                                        Text(String(format:"%.2f\(p10.action)",p10.price) + (self.list.widthClass != .compact ? String(format:(p10.action == "買" ? "%.f" : "%.1f%%"),(p10.action == "買" ? p10.qty : p10.roi)) : ""))
+                                }
+                            }
+                        }
                     }
+                        .font(.custom("Courier", size: textSize(textStyle: .footnote)))
+                    .foregroundColor(trade.color(.ruleB))
                 }
-                    .font(.caption)
-                    .foregroundColor(tradeCellColor(trade, for: "dateTime"))
                 Spacer()
                 //== 單價和模擬摘要 ==
                 if list.widthClass == .compact {

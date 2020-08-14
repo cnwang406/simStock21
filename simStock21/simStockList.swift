@@ -213,7 +213,7 @@ class simStockList:ObservableObject {
                         sim.defaults.removeObject(forKey: "simResetAll")
                         return .simResetAll
                     } else if versionLast != versionNow {
-                        if buildNo == "0" {
+                        if buildNo == "0" || versionLast == "" {
                             return .tUpdateAll
                         } else {
                             return .simResetAll
@@ -222,7 +222,6 @@ class simStockList:ObservableObject {
                     return nil
                 }
                 sim.downloadTrades(requestAction: requestAction)
-                
             }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")

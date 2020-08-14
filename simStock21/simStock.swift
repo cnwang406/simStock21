@@ -11,7 +11,7 @@ import Foundation
 
 struct simStock {
     
-    let simTesting:Bool = true
+    let simTesting:Bool = false
     let simTestStart:Date? = twDateTime.dateFromString("2005/7/31")
     let request = simDataRequest()
     let defaults = UserDefaults.standard
@@ -74,7 +74,7 @@ struct simStock {
             }
             try? context.save()
             if requestStocks.count > 0 {
-                self.request.runRequest(stocks: requestStocks, action: .simResetAll)
+                self.request.runRequest(stocks: requestStocks, action: .tUpdateAll)
             }
             if group == "" {    //整群改群同時重讀會因雙重UI變動當掉
                 self.fetchStocks()
@@ -255,8 +255,11 @@ struct simStock {
         if doItNow {
             request.twseDailyMI()
         } else if let timeStocksDownloaded = defaults.object(forKey: "timeStocksDownloaded") as? Date {
-            if timeStocksDownloaded.timeIntervalSinceNow < 0 - (10 * 24 * 60 * 60) {    //10天更新一次
+            let days:TimeInterval = (0 - timeStocksDownloaded.timeIntervalSinceNow) / 86400
+            if days > 10 {    //10天更新一次
                 request.twseDailyMI()
+            } else {
+                NSLog("stocks   上次：\(twDateTime.stringFromDate(timeStocksDownloaded,format: "yyyy/MM/dd HH:mm:ss")), next: in \(String(format:"%.1f",10 - days)) days")
             }
         } else {
             request.twseDailyMI()
@@ -265,7 +268,6 @@ struct simStock {
         
     func downloadTrades(requestAction:simDataRequest.simTechnicalAction?=nil) {
         if let action = requestAction {
-            NSLog(action == .tUpdateAll ? "重算技術數值！" : "重算模擬！")
             request.runRequest(stocks: stocks, action: action)
         } else if simTesting {
             NSLog("模擬測試...")
@@ -273,15 +275,14 @@ struct simStock {
             let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
             let time1332 = twDateTime.time1330(delayMinutes: 2)
             let time0900 = twDateTime.time0900()
-            if (request.isOffDay && twDateTime.isDateInToday(request.timeTradesDownloaded)) {
+            if (request.isOffDay && twDateTime.isDateInToday(request.timeTradesUpdated)) {
                 NSLog("休市日且今天已更新。")
-            } else if request.timeTradesDownloaded > last1332 && Date() < time0900 {
+            } else if request.timeTradesUpdated > last1332 && Date() < time0900 {
                 NSLog("今天還沒開盤且上次更新是昨收盤後。")
-            } else if request.timeTradesDownloaded > time1332 {
+            } else if request.timeTradesUpdated > time1332 {
                 NSLog("上次更新是今天收盤之後。")
             } else {
-                let all:Bool = !twDateTime.inMarketingTime(request.timeTradesDownloaded, delay: 2, forToday: true)
-                NSLog("下載\(all ? "歷史價" : "盤中價")...（上次：" + twDateTime.stringFromDate(request.timeTradesDownloaded, format: "yyyy/MM/dd HH:mm:ss") + "）")
+                let all:Bool = !twDateTime.inMarketingTime(request.timeTradesUpdated, delay: 2, forToday: true)
                 request.runRequest(stocks: stocks, action: (all ? .newTrades : .realtime))
             }
         }

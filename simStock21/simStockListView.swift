@@ -392,18 +392,19 @@ struct lastTrade: View {
         HStack{
             Text(String(format:"%.2f",trade.priceClose))
                 .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .center)
-                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "dateTime"))
+                .foregroundColor(trade.color(.ruleF, gray: (isChoosing || isSearching)))
+                .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB, gray: (isChoosing || isSearching))))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke((isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simRule")), lineWidth: (tradeCellColor(trade, for: "simRule") == .white ? 0 : 0.6))
+                        .stroke(trade.color(.ruleR, gray: (isChoosing || isSearching)), lineWidth: 1)
                 )
             if list.widthClass != .compact {
                 Text(trade.simQty.action)
                 .frame(width: 30.0, alignment: .trailing)
-                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simQty"))
+                .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
                 Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
                 .frame(width: (list.widthClass == .compact ? 35.0 : 50.0), alignment: .trailing)
-                .foregroundColor(isChoosing || isSearching ? .gray : tradeCellColor(trade, for: "simQty"))
+                .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
 
             } else {
                 EmptyView()

@@ -8,6 +8,7 @@
 
 import Foundation
 import CoreData
+import SwiftUI
 
 public class coreData {
 
@@ -53,7 +54,11 @@ public class Stock: NSManagedObject {
         if let ids = sId {
             for sId in ids {
                 let upperId = (sId == "t00" ? sId : sId.localizedUppercase)
-                predicates.append(NSPredicate(format: "sId CONTAINS %@", upperId))
+                if sId.count == 1 && sName == nil {
+                    predicates.append(NSPredicate(format: "sId == %@", upperId))
+                } else {
+                    predicates.append(NSPredicate(format: "sId CONTAINS %@", upperId))
+                }
             }
         }
         if let names = sName {
@@ -170,6 +175,7 @@ public class Stock: NSManagedObject {
         return years
     }
     
+    var p10:P10 = P10()
     
     
     
@@ -185,6 +191,13 @@ public class Stock: NSManagedObject {
 //    @objc(removeTrade:)
 //    @NSManaged public func removeFromTrade(_ values: NSSet)
 
+}
+
+struct P10 {    //五檔價格試算建議
+    var action:String = ""
+    var date:Date = Date.distantPast
+    var L:[(price:Double,action:String,qty:Double,roi:Double)] = []
+    var H:[(price:Double,action:String,qty:Double,roi:Double)] = []
 }
 
 @objc(Trade)
@@ -335,16 +348,80 @@ public class Trade: NSManagedObject {
     }
 
     
-    var simQty:(action:String,qty:Double) {
+    var simQty:(action:String,qty:Double,roi:Double) {
         if self.simQtySell > 0 {
-            return ("賣", simQtySell)
+            return ("賣", simQtySell, simAmtRoi)
         } else if self.simQtyBuy > 0 {
-            return ("買", simQtyBuy)
+            return ("買", simQtyBuy, simAmtRoi)
         } else if self.simQtyInventory > 0 {
-            return ("餘", simQtyInventory)
+            return ("餘", simQtyInventory, simAmtRoi)
         } else {
-            return ("", 0)
+            return ("", 0, 0)
         }
+    }
+        
+    enum colorScheme {
+        case time
+        case ruleR  //圓框
+        case ruleB  //背景
+        case ruleF  //文字
+        case rule
+        case qty
+    }
+    
+    func color (_ scheme: colorScheme, gray:Bool=false) -> Color {
+        if gray {
+            return .gray
+        }
+        switch scheme {
+        case .time:
+            if twDateTime.inMarketingTime(self.dateTime) {
+                return Color(UIColor.purple)
+            } else if self.simRule == "_" {
+                return .gray
+            }
+        case .rule:
+            switch self.simRule {
+            case "L":
+                return .green
+            case "H":
+                return .red
+            default:
+                return .primary
+            }
+        case .ruleF:
+            if self.stock.p10.action != "" && self.stock.p10.date == self.date {
+                return .white
+            } else {
+                return self.color(.time)
+            }
+        case .ruleB:
+            if self.stock.p10.action != "" && self.stock.p10.date == self.date {
+                if self.stock.p10.action == "賣" {
+                    return .blue
+                } else {
+                    return self.color(.rule)
+                }
+            } else {
+                return .clear
+            }
+        case .ruleR:
+            if self.simRule == "L" || self.simRule == "H" {
+                return self.color(.rule)
+            } else {
+                return .clear
+            }
+        case .qty:
+            switch self.simQty.action {
+            case "賣":
+                return .blue
+            case "買":
+                return self.color(.rule)
+            default:
+                return .primary
+            }
+        }
+        return .primary
     }
     
     func resetSimValues() {
