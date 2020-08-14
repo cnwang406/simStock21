@@ -24,15 +24,7 @@
 
 /* Begin PBXFileReference section */
 		E24E5E2A24B97A58000ED54D /* simDataRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simDataRequest.swift; sourceTree = "<group>"; };
-		E25ED3E624A40F38006C1332 /* CoreDataS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataS.swift; sourceTree = "<group>"; };
-		E25ED3E724A40F41006C1332 /* masterViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = masterViewController.swift; sourceTree = "<group>"; };
-		E25ED3E824A40F49006C1332 /* simPrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simPrice.swift; sourceTree = "<group>"; };
-		E25ED3E924A40F53006C1332 /* simStock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStock.swift; sourceTree = "<group>"; };
-		E25ED3EA24A40F5B006C1332 /* stockViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = stockViewController.swift; sourceTree = "<group>"; };
 		E25ED3EB24A40F63006C1332 /* utility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = utility.swift; sourceTree = "<group>"; };
-		E25ED3EC24A40F8C006C1332 /* pickerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pickerViewController.swift; sourceTree = "<group>"; };
-		E25ED3ED24A40F95006C1332 /* settingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settingViewController.swift; sourceTree = "<group>"; };
-		E25ED3EE24A40FAF006C1332 /* cellObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cellObject.swift; sourceTree = "<group>"; };
 		E267A58724CA797C0041369C /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
 		E27B62B124A8774600092943 /* simStockPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockPageView.swift; sourceTree = "<group>"; };
 		E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 2.xcdatamodel"; sourceTree = "<group>"; };
@@ -61,25 +53,9 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		E25ED3E524A40F1A006C1332 /* simStock */ = {
-			isa = PBXGroup;
-			children = (
-				E25ED3E624A40F38006C1332 /* CoreDataS.swift */,
-				E25ED3E724A40F41006C1332 /* masterViewController.swift */,
-				E25ED3E824A40F49006C1332 /* simPrice.swift */,
-				E25ED3E924A40F53006C1332 /* simStock.swift */,
-				E25ED3EA24A40F5B006C1332 /* stockViewController.swift */,
-				E25ED3EC24A40F8C006C1332 /* pickerViewController.swift */,
-				E25ED3ED24A40F95006C1332 /* settingViewController.swift */,
-				E25ED3EE24A40FAF006C1332 /* cellObject.swift */,
-			);
-			path = simStock;
-			sourceTree = "<group>";
-		};
 		E2C457FF24A36CAA0036791E = {
 			isa = PBXGroup;
 			children = (
-				E25ED3E524A40F1A006C1332 /* simStock */,
 				E2C4580A24A36CAA0036791E /* simStock21 */,
 				E2C4580924A36CAA0036791E /* Products */,
 			);
