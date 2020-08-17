@@ -153,7 +153,7 @@ public class Stock: NSManagedObject {
     }
     
     var trades:[Trade] {    //只給swiftui用的
-        let context = self.managedObjectContext ?? coreData.shared.context
+        let context = self.context
         return Trade.fetch(context, stock: self, asc: false)
     }
     
@@ -165,6 +165,23 @@ public class Stock: NSManagedObject {
     func lastTrade(_ context:NSManagedObjectContext) -> Trade? {
         let trades = Trade.fetch(context, stock: self, fetchLimit: 1, asc: false)
         return trades.first
+    }
+    
+    func deleteTrades(oneMonth:Bool=false) {
+        DispatchQueue.global().async {
+            let context = coreData.shared.context
+            var mStart:Date? = nil
+            if oneMonth {
+                if let last = self.lastTrade(context) {
+                    mStart = twDateTime.startOfMonth(last.date)
+                }
+            }
+            let trades = Trade.fetch(context, stock: self, dateTime: mStart)
+            for trade in trades {
+                context.delete(trade)
+            }
+            try? context.save()
+        }
     }
 
     var years:Double {
@@ -377,6 +394,8 @@ public class Trade: NSManagedObject {
                 return .gray
             }
         }
+        let stock:Stock? = self.stock   //刪除trades時，UI參考的舊trade.stock會是nil
+        let p10 = stock?.p10 ?? P10()
         switch scheme {
         case .time:
             if twDateTime.inMarketingTime(self.dateTime) {
@@ -394,13 +413,13 @@ public class Trade: NSManagedObject {
                 return .primary
             }
         case .ruleF:
-            if self.stock.p10.action != "" && self.stock.p10.date == self.date {
+            if p10.action != "" && p10.date == self.date {
                 return .white
             } else {
                 return self.color(.time)
             }
         case .ruleB:
-            if self.stock.p10.action != "" && self.stock.p10.date == self.date {
+            if p10.action != "" && p10.date == self.date {
                 if self.stock.p10.action == "賣" {
                     return .blue
                 } else {

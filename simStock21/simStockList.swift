@@ -15,9 +15,10 @@ class simStockList:ObservableObject {
     @Published var dataUpdatedTime:Date = Date.distantPast
     @Published var widthClass:WidthClass = .compact
     
+    var versionNow:String
+
     private let buildNo:String = Bundle.main.infoDictionary!["CFBundleVersion"] as! String
     private let versionNo:String = Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
-    var versionNow:String = ""
 
     enum WidthClass {
         case compact
@@ -26,10 +27,10 @@ class simStockList:ObservableObject {
         case widePad
     }
     
-    private var isPad  = UIDevice.current.userInterfaceIdiom == .pad
     private var hClass = UITraitCollection.current.horizontalSizeClass
     private var vClass = UITraitCollection.current.verticalSizeClass
-    
+    private var isPad  = UIDevice.current.userInterfaceIdiom == .pad
+
     var deviceWidthClass: WidthClass {
         if UIDevice.current.orientation.isLandscape {
             return (self.vClass == .regular ? .widePad : .widePhone)
@@ -40,6 +41,7 @@ class simStockList:ObservableObject {
     }
     
     init() {
+        versionNow = versionNo + (buildNo == "0" ? "" : "(\(buildNo))")
         widthClass = deviceWidthClass
         NotificationCenter.default.addObserver(self, selector: #selector(self.setWidthClass), name: UIDevice.orientationDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didBecomeActiveNotification, object: nil)
@@ -111,6 +113,12 @@ class simStockList:ObservableObject {
     var requestRunning:Bool {
         sim.request.running
     }
+    
+    func deleteTrades(_ stocks:[Stock], oneMonth:Bool=false) {
+        for stock in stocks {
+            stock.deleteTrades(oneMonth: oneMonth)
+        }
+    }
 
     func moveStocks(_ stocks:[Stock], toGroup:String = "") {
         sim.moveStocksToGroup(stocks, group:toGroup)
@@ -140,29 +148,16 @@ class simStockList:ObservableObject {
         return "\(count) \(roi) \(days)"
     }
     
-    func reloadNow(stock: Stock, action:simDataRequest.simTechnicalAction) {
-        if let context = stock.managedObjectContext, stock.simAddInvest == false {
-            stock.simAddInvest = true
-            try? context.save()
-        }
-        self.sim.request.runRequest(stocks: [stock], action: action)
-        /*
-        let d = DispatchGroup()
-        d.enter()
-        DispatchQueue.global(qos: .userInitiated).async {
-            let context = coreData.shared.context
-            let trades = Trade.fetch(context, stock: stock)
-            for trade in trades {
-                context.delete(trade)
+    func reloadNow(_ stocks: [Stock], action:simDataRequest.simTechnicalAction) {
+        if let context = stocks.first?.context {
+            for stock in stocks {
+                if stock.simAddInvest == false {
+                    stock.simAddInvest = true
+                }
             }
             try? context.save()
-            d.leave()
         }
-        d.notify(queue: .main) {
-            self.sim.request.runRequest(stocks: [stock], all:true)
-        }
-        */
-        
+        sim.request.downloadTrades((sim.request.realtime ? sim.stocks : stocks), requestAction: action)        
     }
     
     func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,addInvest:Bool, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {
@@ -199,18 +194,17 @@ class simStockList:ObservableObject {
     @objc func appNotification(_ notification: Notification) {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
-            versionNow = versionNo + (buildNo == "0" ? "" : "(\(buildNo))")
             NSLog ("=== appDidBecomeActive v\(versionNow) ===")
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
                 sim.runTest(start: start)
             } else {
-                let versionLast = sim.defaults.string(forKey: "simStockVersion") ?? ""
-                sim.defaults.set(versionNow, forKey: "simStockVersion")
-                sim.downloadStocks()
-                var requestAction:simDataRequest.simTechnicalAction? {
-                    if sim.defaults.bool(forKey: "simResetAll") {
-                        sim.defaults.removeObject(forKey: "simResetAll")
+                let versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
+                UserDefaults.standard.set(versionNow, forKey: "simStockVersion")
+                sim.request.downloadStocks()
+                var action:simDataRequest.simTechnicalAction? {
+                    if UserDefaults.standard.bool(forKey: "simResetAll") {
+                        UserDefaults.standard.removeObject(forKey: "simResetAll")
                         return .simResetAll
                     } else if versionLast != versionNow {
                         if buildNo == "0" || versionLast == "" {
@@ -221,7 +215,7 @@ class simStockList:ObservableObject {
                     }
                     return nil
                 }
-                sim.downloadTrades(requestAction: requestAction)
+                sim.request.downloadTrades(sim.stocks, requestAction: action)
             }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")

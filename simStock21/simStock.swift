@@ -14,12 +14,11 @@ struct simStock {
     let simTesting:Bool = false
     let simTestStart:Date? = twDateTime.dateFromString("2005/7/31")
     let request = simDataRequest()
-    let defaults = UserDefaults.standard
 
     private(set) var stocks:[Stock] = []
 
     init() {
-        if defaults.double(forKey: "simMoneyBase") == 0 {
+        if UserDefaults.standard.double(forKey: "simMoneyBase") == 0 {
             let dateStart = twDateTime.calendar.date(byAdding: .year, value: -3, to: twDateTime.startOfDay()) ?? Date.distantFuture
             setDefaults(start: dateStart, money: 70.0, invest: true)
         }
@@ -49,9 +48,10 @@ struct simStock {
         let context = coreData.shared.context
         for stock in stocks {
             let s = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
-            s.dateFirst = self.simDefaults.first
-            s.dateStart = self.simDefaults.start
-            s.simMoneyBase = self.simDefaults.money
+            let simDefaults = self.simDefaults
+            s.dateFirst = simDefaults.first
+            s.dateStart = simDefaults.start
+            s.simMoneyBase = simDefaults.money
         }
         try? context.save()
         self.fetchStocks()
@@ -59,26 +59,24 @@ struct simStock {
     }
     
     mutating func moveStocksToGroup(_ stocks:[Stock], group:String) {
-        var requestStocks:[Stock] = []
         if let context = stocks.first?.context {
+            var newStocks:[Stock] = []
+            let simDefaults = self.simDefaults
             for stock in stocks {
                 if stock.group == "" && group != "" {
                     if simDefaults.first < stock.dateFirst {
-                        stock.dateFirst = self.simDefaults.first
-                        stock.dateStart = self.simDefaults.start
+                        stock.dateFirst = simDefaults.first
+                        stock.dateStart = simDefaults.start
                     }
-                    stock.simMoneyBase = self.simDefaults.money
-                    requestStocks.append(stock)
+                    stock.simMoneyBase = simDefaults.money
+                    newStocks.append(stock)
                 }
                 stock.group = group
             }
             try? context.save()
-            if requestStocks.count > 0 {
-                self.request.runRequest(stocks: requestStocks, action: .tUpdateAll)
+            if newStocks.count > 0 {
+                request.downloadTrades((request.realtime ? self.stocks : newStocks), requestAction: .tUpdateAll)
             }
-//            if group == "" {    //整群改群同時重讀會因雙重UI變動當掉
-//                self.fetchStocks()
-//            }
         }
     }
     
@@ -93,14 +91,8 @@ struct simStock {
             } else {
                 trade.simInvestByUser = 0
             }
-//                if trade.simInvestTimes <= 3 {
-//                    trade.stock.simAddInvest = false    //取消前兩次加碼時，關閉自動加碼
-//                }
-            
             try? context.save()
-            DispatchQueue.global().async {
-                self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
-            }
+            request.downloadTrades((self.request.realtime ? self.stocks : [trade.stock]), requestAction: .simUpdateAll)
         }
     }
     
@@ -130,9 +122,7 @@ struct simStock {
                 }
             }
             try? context.save()
-            DispatchQueue.global().async {
-                self.request.simTechnical(stock: trade.stock, action: .simUpdateAll)
-            }
+            request.downloadTrades((self.request.realtime ? self.stocks : [trade.stock]), requestAction: .simUpdateAll)
         }
     }
     
@@ -148,23 +138,23 @@ struct simStock {
                 DispatchQueue.main.async {
                     try? context.save()
                 }
-                request.runRequest(stocks: stocks, action: .simResetAll)
+                request.downloadTrades((request.realtime ? self.stocks : stocks), requestAction: .simResetAll)
             }
         }
     }
     
     var simDefaults:(first:Date,start:Date,money:Double,invest:Bool) {
-        let start = defaults.object(forKey: "simDateStart") as? Date ?? Date.distantFuture
-        let money = defaults.double(forKey: "simMoneyBase")
-        let invest = defaults.bool(forKey: "simAddInvest")
+        let start = UserDefaults.standard.object(forKey: "simDateStart") as? Date ?? Date.distantFuture
+        let money = UserDefaults.standard.double(forKey: "simMoneyBase")
+        let invest = UserDefaults.standard.bool(forKey: "simAddInvest")
         let first = twDateTime.calendar.date(byAdding: .year, value: -1, to: start) ?? start
         return (first,start,money,invest)
     }
     
     func setDefaults(start:Date,money:Double,invest:Bool) {
-        defaults.set(start, forKey: "simDateStart")
-        defaults.set(money, forKey: "simMoneyBase")
-        defaults.set(invest,forKey: "simAddInvest")
+        UserDefaults.standard.set(start, forKey: "simDateStart")
+        UserDefaults.standard.set(money, forKey: "simMoneyBase")
+        UserDefaults.standard.set(invest,forKey: "simAddInvest")
     }
     
     var t00:Stock? {
@@ -204,7 +194,7 @@ struct simStock {
     }
     
     func runTest(start:Date) {
-        defaults.set(true, forKey: "simResetAll")
+        UserDefaults.standard.set(true, forKey: "simResetAll")
         NSLog("")
         NSLog("== simTesting \(twDateTime.stringFromDate(start)) ==")
         var groupRoi:String = ""
@@ -232,7 +222,7 @@ struct simStock {
         var nextYear:Date = start
         while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
             settingStocks(stocks, dateStart: nextYear, moneyBase: 100, addInvest: true)
-            self.request.runRequest(stocks: stocks, action: .simTesting)
+            request.downloadTrades(stocks, requestAction: .simTesting)
             let summary = stocksSummary(stocks)
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi
             days = String(format:"%.f", summary.days) + (days.count > 0 ? ", " : "") + days
@@ -251,42 +241,6 @@ struct simStock {
 //        }
 //    }
     
-    func downloadStocks(doItNow:Bool = false) {
-        if doItNow {
-            request.twseDailyMI()
-        } else if let timeStocksDownloaded = defaults.object(forKey: "timeStocksDownloaded") as? Date {
-            let days:TimeInterval = (0 - timeStocksDownloaded.timeIntervalSinceNow) / 86400
-            if days > 10 {    //10天更新一次
-                request.twseDailyMI()
-            } else {
-                NSLog("stocks   上次：\(twDateTime.stringFromDate(timeStocksDownloaded,format: "yyyy/MM/dd HH:mm:ss")), next: in \(String(format:"%.1f",10 - days)) days")
-            }
-        } else {
-            request.twseDailyMI()
-        }
-    }
-        
-    func downloadTrades(requestAction:simDataRequest.simTechnicalAction?=nil) {
-        if let action = requestAction {
-            request.runRequest(stocks: stocks, action: action)
-        } else if simTesting {
-            NSLog("模擬測試...")
-        } else {
-            let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
-            let time1332 = twDateTime.time1330(delayMinutes: 2)
-            let time0900 = twDateTime.time0900()
-            if (request.isOffDay && twDateTime.isDateInToday(request.timeTradesUpdated)) {
-                NSLog("休市日且今天已更新。")
-            } else if request.timeTradesUpdated > last1332 && Date() < time0900 {
-                NSLog("今天還沒開盤且上次更新是昨收盤後。")
-            } else if request.timeTradesUpdated > time1332 {
-                NSLog("上次更新是今天收盤之後。")
-            } else {
-                let all:Bool = !twDateTime.inMarketingTime(request.timeTradesUpdated, delay: 2, forToday: true)
-                request.runRequest(stocks: stocks, action: (all ? .newTrades : .realtime))
-            }
-        }
-    }
 
     
 }

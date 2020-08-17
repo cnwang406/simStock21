@@ -195,73 +195,32 @@ struct tradeListView: View {
                             .actionSheet(isPresented: $showReload) {
                                 ActionSheet(title: Text("立即更新"), message: Text("刪除或重算？"), buttons: [
                                     .default(Text("重算模擬")) {
-                                        self.list.reloadNow(stock:self.stock, action: .simResetAll)
-                                        self.showReload = false
+                                        self.list.reloadNow([self.stock], action: .simResetAll)
                                     },
                                     .default(Text("重算技術數值")) {
-                                        self.list.reloadNow(stock:self.stock, action: .tUpdateAll)
-                                        self.showReload = false
+                                        self.list.reloadNow([self.stock], action: .tUpdateAll)
+                                    },
+                                    .default(Text("刪除最後1個月")) {
+                                        self.list.deleteTrades([self.stock], oneMonth: true)
                                     },
                                     .destructive(Text("沒事，不用了。"))
                                 ])
                             }
-    //                        .sheet(isPresented: $showReload) {
-    //                            Form {
-    //                                Section (header:
-    //                                    Group {
-    //                                        Text("立即更新")
-    //                                        .font(.title)
-    //                                    }) {
-    //                                    Button(action: {
-    //                                        self.list.reloadNow(stock:self.stock)
-    //                                        self.showReload = false
-    //                                    }) {
-    //                                        Text("重算統計數值")
-    //                                    }
-    //                                    Button(action: {self.showReload = false}) {
-    //                                        Text("沒事，不用了。")
-    //                                    }
-    //                                }
-    //                            }
-    //                        }
                         //== 工具按鈕 3 ==
                         Spacer()
                         Button(action: {self.showInformation = true}) {
                             Image(systemName: "questionmark.circle")
                         }
                             .actionSheet(isPresented: $showInformation) {
-                                ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"), buttons: [
+                                ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"),
+                                buttons: [
                                     .default(Text("Yahoo! 技術分析 ")) {
                                         self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
-                                        self.showInformation = false
                                     },
                                     .destructive(Text("沒事，不用了。"))
                                 ])
                             }
 
-    //                        .sheet(isPresented: $showInformation) {
-    //                            Form {
-    //                                Section (header:
-    //                                    Group {
-    //                                        Text("參考訊息")
-    //                                        .font(.title)
-    //                                    }) {
-    //                                    Button(action: {
-    //                                        self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
-    //                                        self.showInformation = false
-    //                                    }) {
-    //                                        HStack {
-    //                                            Text("Yahoo! 技術分析")
-    //                                            Spacer()
-    //                                            Image(systemName: "safari")
-    //                                        }
-    //                                    }
-    //                                    Button(action: {self.showInformation = false}) {
-    //                                        Text("沒事，不用了。")
-    //                                    }
-    //                                }
-    //                            }
-    //                        }
                     } //工具按鈕的HStack
                         .frame(width: 100, alignment: .trailing)
                         .font(.body)

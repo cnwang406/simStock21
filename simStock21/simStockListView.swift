@@ -60,6 +60,7 @@ struct simStockListView: View {
     @State var showShare:Bool = false       //分享代號簡稱
     @State var shareText:String = ""        //要匯出的文字內容
     @State var showMoveAlert:Bool = false
+    @State var showReload:Bool = false
     
     func isChoosingOff() {
         self.isChoosing = false
@@ -67,50 +68,73 @@ struct simStockListView: View {
     }
     
     var choose: some View {
+//        GeometryReader { geometryProxy in
         HStack {
-            if isChoosing {
+            if self.isChoosing {
                 Text("請勾選")
                     .foregroundColor(Color(.darkGray))
                  Image(systemName: "chevron.right")
                      .foregroundColor(.gray)
-                 if checkedStocks.count > 0 {
-                    Button((list.widthClass != .compact ? "自股群" : "") + "移除") {
+                if self.checkedStocks.count > 0 {
+                    Button((self.list.widthClass != .compact ? "自股群" : "") + "移除") {
                         self.showMoveAlert = true
                     }
-                    .alert(isPresented: $showMoveAlert) {
-                        Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
-                            self.list.moveStocks(self.checkedStocks)
-                            self.isChoosingOff()
-                        }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
-                    }
+                    .alert(isPresented: self.$showMoveAlert) {
+                            Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
+                                self.list.moveStocks(self.checkedStocks)
+                                self.isChoosingOff()
+                            }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
+                        }
                     Divider()
-                    Button("加入" + (list.widthClass != .compact ? "股群" : "")) {
+                    Button("加入" + (self.list.widthClass != .compact ? "股群" : "")) {
                         self.showFilter = true
                     }
-                    .sheet(isPresented: $showFilter) {
-                        pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText)
-                    }
+                    .sheet(isPresented: self.$showFilter) {
+                            pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText)
+                        }
                     Divider()
-                    Button(action: {self.showExport = true}) {
-                        Text("匯出" + (list.widthClass != .compact ? "CSV" : ""))
-                        .actionSheet(isPresented: $showExport) {
-                            ActionSheet(title: Text("匯出"), message: Text("文字內容？"), buttons: [
-                                .default(Text("代號和名稱")) {
-                                    self.shareText = self.list.csvStocksIdName(self.checkedStocks)
-                                    self.showShare = true
-                                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(1)) {
-                                        self.isChoosingOff()
-                                    }
+                    Button((self.list.widthClass != .compact ? "刪除或" : "") + "重算") {
+                        self.showReload = true
+                    }
+                    .actionSheet(isPresented: self.$showReload) {
+                            ActionSheet(title: Text("刪除或重算"), message: Text("內容和範圍？"), buttons: [
+                                .default(Text("重算模擬")) {
+                                    self.list.reloadNow(self.checkedStocks, action: .simResetAll)
+                                    self.isChoosingOff()
+                                },
+                                .default(Text("重算技術數值")) {
+                                    self.list.reloadNow(self.checkedStocks, action: .tUpdateAll)
+                                    self.isChoosingOff()
+                                },
+                                .default(Text("刪除最後1個月")) {
+                                    self.list.deleteTrades(self.checkedStocks, oneMonth: true)
+                                    self.isChoosingOff()
                                 },
                                 .destructive(Text("沒事，不用了。")) {
                                     self.isChoosingOff()
                                 }
                             ])
                         }
-                        .sheet(isPresented: $showShare) {
-                            ShareSheet(activityItems: [self.shareText]) //分享窗
-                        }
+                    Divider()
+                    Button("匯出" + (self.list.widthClass != .compact ? "CSV" : "")) {
+                        self.showExport = true
                     }
+                    .actionSheet(isPresented: self.$showExport) {
+                            ActionSheet(title: Text("匯出"), message: Text("文字內容？"), buttons: [
+                                .default(Text("代號和名稱")) {
+                                    self.shareText = self.list.csvStocksIdName(self.checkedStocks)
+                                    self.showShare = true
+                                },
+                                .destructive(Text("沒事，不用了。")) {
+                                    self.isChoosingOff()
+                                }
+                            ])
+                        }
+                        .sheet(isPresented: self.$showShare) {   //分享窗
+                            ShareSheet(activityItems: [self.shareText]) { (activity, success, items, error) in
+                                self.isChoosingOff()
+                            }
+                        }
                 } else {
                     Button("全選") {
                         for stocks in self.list.groupStocks {
@@ -120,19 +144,20 @@ struct simStockListView: View {
                         }
                     }
                 }
+                Spacer()
             } else if self.list.searchGotResults {
                 Text("請勾選")
-                if checkedStocks.count > 0 {
+                if self.checkedStocks.count > 0 {
                     Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
                     Button("加入股群") {
                             self.showFilter = true
-                        }
-                        .sheet(isPresented: $showFilter) {
-                            pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isSearching, isPresented: self.$showFilter, searchText: self.$searchText)
                     }
+                    .sheet(isPresented: self.$showFilter) {
+                            pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isSearching, isPresented: self.$showFilter, searchText: self.$searchText)
+                        }
                 }
-            } else if !isSearching {
+            } else if !self.isSearching {
                 Button("選取") {
                     self.isChoosing = true
                     self.searchText = ""
@@ -141,11 +166,11 @@ struct simStockListView: View {
                 }
             }
         }
-    .fixedSize()
-            .frame(width:240.0, alignment: .leading)
-            .lineLimit(1)
             .minimumScaleFactor(0.6)
+            .lineLimit(1)
+        .frame(width: (self.list.widthClass == .compact ? 300 : 500) , alignment: .leading)
 
+//        }
 
     }
     
@@ -164,49 +189,12 @@ struct simStockListView: View {
                 }
             }
         }
-        .frame(width:(list.widthClass != .compact ? 100.0 : 50.0), alignment: .trailing)
         .lineLimit(1)
         .minimumScaleFactor(0.6)
     }
 }
 
-struct ShareSheet: UIViewControllerRepresentable {
-    typealias Callback = (_ activityType: UIActivity.ActivityType?, _ completed: Bool, _ returnedItems: [Any]?, _ error: Error?) -> Void
 
-    let activityItems: [Any]
-    let applicationActivities: [UIActivity]? = nil
-    let excludedActivityTypes: [UIActivity.ActivityType]? = [    //標為註解以排除可用的，留下不要的
-                    .addToReadingList,
-                    .airDrop,
-                    .assignToContact,
-    //                .copyToPasteboard,
-    //                .mail,
-    //                .markupAsPDF,   //iOS11之後才有
-    //                .message,
-                    .openInIBooks,
-                    .postToFacebook,
-                    .postToFlickr,
-                    .postToTencentWeibo,
-                    .postToTwitter,
-                    .postToVimeo,
-                    .postToWeibo,
-                    .print,
-                    .saveToCameraRoll]
-    let callback: Callback? = nil
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(
-            activityItems: activityItems,
-            applicationActivities: applicationActivities)
-        controller.excludedActivityTypes = excludedActivityTypes
-        controller.completionWithItemsHandler = callback
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
-        // nothing to do here
-    }
-}
 
 struct pickerGroups:View {
     @ObservedObject var list: simStockList
@@ -275,7 +263,46 @@ struct pickerGroups:View {
 
 }
 
+struct ShareSheet: UIViewControllerRepresentable {
+    typealias Callback = (_ activityType: UIActivity.ActivityType?, _ completed: Bool, _ returnedItems: [Any]?, _ error: Error?) -> Void
 
+    let activityItems: [Any]
+    let applicationActivities: [UIActivity]? = nil
+    let excludedActivityTypes: [UIActivity.ActivityType]? = [    //標為註解以排除可用的，留下不要的
+                    .addToReadingList,
+                    .airDrop,
+                    .assignToContact,
+    //                .copyToPasteboard,
+    //                .mail,
+    //                .markupAsPDF,   //iOS11之後才有
+    //                .message,
+                    .openInIBooks,
+                    .postToFacebook,
+                    .postToFlickr,
+                    .postToTencentWeibo,
+                    .postToTwitter,
+                    .postToVimeo,
+                    .postToWeibo,
+                    .print,
+                    .saveToCameraRoll]
+    let callback: Callback
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: applicationActivities)
+        controller.excludedActivityTypes = excludedActivityTypes
+        controller.completionWithItemsHandler = callback
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // nothing to do here
+    }
+    
+    static func dismantleUIViewController(_ uiViewController: Self.UIViewControllerType, coordinator: Self.Coordinator) {
+    }
+}
 
 
 struct stockSection : View {
