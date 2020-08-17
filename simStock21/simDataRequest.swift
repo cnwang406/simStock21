@@ -44,10 +44,11 @@ class simDataRequest {
                 allGroup.leave()
             } else {
                 let cnyesGroup:DispatchGroup = DispatchGroup()  //這是個股專用的group，等候cnyes下載完成才統計技術數值
-                self.cnyesPrice(stock: stock, cnyesGroup: cnyesGroup)
+                let allTrades = self.cnyesPrice(stock: stock, cnyesGroup: cnyesGroup) //回傳是否需要從頭重算模擬
+                let cnyesAction:simTechnicalAction = (allTrades ? .allTrades : action)
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
-                    self.simTechnical(stock: stock, action: action)
+                    self.simTechnical(stock: stock, action: cnyesAction)
                     self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
                 }   //即使已經收盤後也需要yahoo，才收盤時cnyes未及把當日收盤價納入查詢結果
             }
@@ -272,17 +273,20 @@ class simDataRequest {
     }
 
 
-    func cnyesPrice(stock:Stock, cnyesGroup:DispatchGroup) {
+    func cnyesPrice(stock:Stock, cnyesGroup:DispatchGroup) -> Bool {
+        var allTrades:Bool = false
         if stock.trades.count == 0 {  //資料庫是空的
             let ymdS = twDateTime.stringFromDate(stock.dateFirst)
             let ymdE = twDateTime.stringFromDate()  //今天
             cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
+            allTrades = true
         } else {
             if let firstTrade = stock.firstTrade(stock.context) {
                 if stock.dateFirst < twDateTime.startOfDay(firstTrade.dateTime)  {    //起日在首日之前
                     let ymdS = twDateTime.stringFromDate(stock.dateFirst)
                     let ymdE = twDateTime.stringFromDate(firstTrade.dateTime)
                     cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
+                    allTrades = true
                 }
             }
             if let lastTrade = stock.lastTrade(stock.context) {
@@ -293,6 +297,7 @@ class simDataRequest {
                 }
             }
         }
+        return allTrades
     }
     
     
@@ -306,6 +311,10 @@ class simDataRequest {
     
     
     func yahooRequest(_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
+        if self.isOffDay {
+            allGroup.leave()
+            return
+        }
         let url = URL(string: "https://tw.stock.yahoo.com/q/q?s=" + stock.sId)
         let urlRequest = URLRequest(url: url!,timeoutInterval: 30)
         let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
@@ -336,6 +345,7 @@ class simDataRequest {
                                     let time0905 = twDateTime.time0900(delayMinutes: 5)
                                     if (!twDateTime.isDateInToday(dt1)) && Date() > time0905 {
                                         self.isOffDay = true
+                                        NSLog("\(stock.sId)\(stock.sName)\tyahoo 休市日")
                                         //不是今天價格，現在又已過今天的開盤時間，那今天就是休市日
                                     } else {
                                         self.isOffDay = false
@@ -441,6 +451,11 @@ class simDataRequest {
     
     var twseCount:Int = 0    
     func twseRequest (_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
+        if self.isOffDay {
+            twseGroup.leave()
+            allGroup.leave()
+            return
+        }
         enum twseError: Error {
             case error(msg:String)
             case warning(msg:String)
@@ -512,6 +527,7 @@ class simDataRequest {
                 
                 if (!twDateTime.isDateInToday(dateTime)) && Date() > twDateTime.time0900(delayMinutes: 5) {
                     self.isOffDay = true    //不是今天價格，現在又已過今天的開盤時間，那今天就是休市日
+                    NSLog("\(stock.sId)\(stock.sName)\ttwse 休市日")
                 } else {
                     self.isOffDay = false
                     let h = Double(stockInfo["h"] as? String ?? "0") ?? 0    //最高
@@ -606,7 +622,7 @@ class simDataRequest {
     
     
 
-    
+    //== 五檔價格試算建議 ==
     func runP10(_ stocks:[Stock]) {
         DispatchQueue.global().async {
             let s = stocks.filter{$0.sId != "t00"}
@@ -624,7 +640,7 @@ class simDataRequest {
     
     func p10(_ stock:Stock) -> P10 {
         var p10:P10 = P10()
-        if twDateTime.inMarketingTime() {
+        if twDateTime.inMarketingTime() && !self.isOffDay {
             let context = coreData.shared.context
             let trades:[Trade] = Trade.fetch(context, stock: stock, fetchLimit: 376, asc:false).reversed()
             if trades.count > 0 {
@@ -690,7 +706,8 @@ class simDataRequest {
     
     enum simTechnicalAction {
         case realtime       //下載了盤中價
-        case newTrades      //下載了歷史價
+        case newTrades      //下載了最近的歷史價
+        case allTrades      //下載從頭開始的歷史價，只根據cnyes的下載範圍指定
         case tUpdateAll     //重算技術數值，也包含simResetAll的工作
         case simTesting     //模擬測試，也包含simResetAll的工作
         case simUpdateAll   //更新模擬，不清除反轉和加碼
@@ -713,17 +730,23 @@ class simDataRequest {
                         trade.simReversed = ""
                         trade.simInvestByUser = 0
                     }
-                    if trade.tUpdated == false || action == .tUpdateAll {   //.newTrades當然tUpdated == false是這裡
-                        self.tUpdate(trades, index: index)
-                        self.simUpdate(trades, index: index)
-                        tCount += 1
-                    } else {    //這裡剩下的就是 .simUpdateAll, .simResetAll, .simTesting
+                    if (action == .simUpdateAll || action == .simResetAll || action == .simTesting) {
                         self.simUpdate(trades, index: index)
                         sCount += 1
+                    } else {    //newTrades, allTrades, tUpdateAll
+                        if trade.tUpdated == false || action == .tUpdateAll {
+                            //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
+                            self.tUpdate(trades, index: index)
+                            tCount += 1
+                        }
+                        if trade.tUpdated == false || action != .newTrades {
+                            self.simUpdate(trades, index: index)
+                            sCount += 1
+                        }
                     }
                 }
                 if action != .simTesting {
-                    NSLog("\(stock.sId)\(stock.sName)\t技術數值：歷史價共\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : ""))
+                    NSLog("\(stock.sId)\(stock.sName)\t技術數值：歷史價共\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
                 }
             }
             if action != .simTesting {

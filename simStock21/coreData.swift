@@ -371,7 +371,11 @@ public class Trade: NSManagedObject {
     
     func color (_ scheme: colorScheme, gray:Bool=false) -> Color {
         if gray {
-            return .gray
+            if scheme == .ruleB {
+                return .clear
+            } else {
+                return .gray
+            }
         }
         switch scheme {
         case .time:

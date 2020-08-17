@@ -76,9 +76,9 @@ struct simStock {
             if requestStocks.count > 0 {
                 self.request.runRequest(stocks: requestStocks, action: .tUpdateAll)
             }
-            if group == "" {    //整群改群同時重讀會因雙重UI變動當掉
-                self.fetchStocks()
-            }
+//            if group == "" {    //整群改群同時重讀會因雙重UI變動當掉
+//                self.fetchStocks()
+//            }
         }
     }
     

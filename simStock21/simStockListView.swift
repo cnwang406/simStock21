@@ -59,6 +59,7 @@ struct simStockListView: View {
     @State var showExport:Bool = false      //顯示匯出選單
     @State var showShare:Bool = false       //分享代號簡稱
     @State var shareText:String = ""        //要匯出的文字內容
+    @State var showMoveAlert:Bool = false
     
     func isChoosingOff() {
         self.isChoosing = false
@@ -74,8 +75,13 @@ struct simStockListView: View {
                      .foregroundColor(.gray)
                  if checkedStocks.count > 0 {
                     Button((list.widthClass != .compact ? "自股群" : "") + "移除") {
-                        self.list.moveStocks(self.checkedStocks)
-                        self.isChoosingOff()
+                        self.showMoveAlert = true
+                    }
+                    .alert(isPresented: $showMoveAlert) {
+                        Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
+                            self.list.moveStocks(self.checkedStocks)
+                            self.isChoosingOff()
+                        }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
                     }
                     Divider()
                     Button("加入" + (list.widthClass != .compact ? "股群" : "")) {
