@@ -48,9 +48,9 @@ class simDataRequest {
         }
     }
         
-    func downloadTrades(_ stocks: [Stock], requestAction:simDataRequest.simTechnicalAction?=nil) {
+    func downloadTrades(_ stocks: [Stock], requestAction:simDataRequest.simTechnicalAction?=nil, allStocks:[Stock]?=nil) {
         if let action = requestAction {
-            runRequest(stocks, action: action)
+            runRequest(stocks, action: action, allStocks: allStocks)
         } else {
             let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
             let time1332 = twDateTime.time1330(delayMinutes: 2)
@@ -63,12 +63,12 @@ class simDataRequest {
                 NSLog("上次更新是今天收盤之後。")
             } else {
                 let all:Bool = !twDateTime.inMarketingTime(timeTradesUpdated, delay: 2, forToday: true)
-                runRequest(stocks, action: (all ? .newTrades : .realtime))
+                runRequest(allStocks ?? stocks, action: (all ? .newTrades : .realtime))
             }
         }
     }
 
-    private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime) {
+    private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.running = true
         self.twseCount = 0
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
@@ -109,7 +109,7 @@ class simDataRequest {
             if self.realtime && action != .simTesting {
                 self.timer?.invalidate()
                 self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
-                    self.runRequest(stocks, action: .realtime)
+                    self.runRequest(allStocks ?? stocks, action: .realtime)
                 }
                 if let t = self.timer, t.isValid {
                     NSLog("timer scheduled in \(t.fireDate.timeIntervalSinceNow)s")
@@ -606,6 +606,7 @@ class simDataRequest {
                     if twseCooled {
                         self.twseRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
                     } else {
+                        twseGroup.leave()
                         allGroup.leave()
                     }
                 }
@@ -767,7 +768,7 @@ class simDataRequest {
                 }   //self.isOffDay = false
                     
             } catch twseError.error(let msg) {   //error就放棄結束
-                self.timeTradesUpdated = Date()
+                self.timeTradesUpdated = Date() //讓後面排隊的twseRequest不足冷卻時間而先放棄
                 NSLog("\(stock.sId)\(stock.sName)\ttwse timeout? \(msg)")
                 //可能是被TWSE拒絕連線而逾時
             } catch twseError.warning(let msg) {    //warn可能只是cookie失敗，重試
@@ -1205,7 +1206,7 @@ class simDataRequest {
         //1.55=0.9394 1.65=0.9505 2=0.9772 3=0.9987 3.5=0.9998
         //-0.84=0.2005 -0.85=0.1977 -0.67=0.2514 -0.68=0.2483
         
-		//== 高買 ==================================================
+        //== 高買 ==================================================
         var wantH:Double = 0
         wantH += (trade.tMa60DiffZ125 > 0.85 ? 1 : 0)
         wantH += (trade.tKdKZ125 > -0.8 ? 1 : 0)

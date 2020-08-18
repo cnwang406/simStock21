@@ -157,7 +157,7 @@ class simStockList:ObservableObject {
             }
             try? context.save()
         }
-        sim.request.downloadTrades((sim.request.realtime ? sim.stocks : stocks), requestAction: action)        
+        sim.request.downloadTrades(stocks, requestAction: action, allStocks: sim.stocks)        
     }
     
     func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,addInvest:Bool, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {

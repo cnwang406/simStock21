@@ -342,12 +342,13 @@ struct checkGroup: View {
     @Binding var checkedStocks:[Stock]
     @Binding var stocks : [Stock]
     
+    
     func checkGroup() {
         self.isChecked = !self.isChecked
         if self.isChecked {
-            self.checkedStocks = stocks
+            self.checkedStocks += stocks
         } else {
-            self.checkedStocks = []
+            self.checkedStocks = self.checkedStocks.filter{!stocks.contains($0)}
         }
     }
 

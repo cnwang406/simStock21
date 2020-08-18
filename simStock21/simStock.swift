@@ -75,7 +75,7 @@ struct simStock {
             }
             try? context.save()
             if newStocks.count > 0 {
-                request.downloadTrades((request.realtime ? self.stocks : newStocks), requestAction: .tUpdateAll)
+                request.downloadTrades(newStocks, requestAction: .tUpdateAll, allStocks: self.stocks)
             }
         }
     }
@@ -92,7 +92,7 @@ struct simStock {
                 trade.simInvestByUser = 0
             }
             try? context.save()
-            request.downloadTrades((self.request.realtime ? self.stocks : [trade.stock]), requestAction: .simUpdateAll)
+            request.downloadTrades([trade.stock], requestAction: .simUpdateAll, allStocks: self.stocks)
         }
     }
     
@@ -122,7 +122,7 @@ struct simStock {
                 }
             }
             try? context.save()
-            request.downloadTrades((self.request.realtime ? self.stocks : [trade.stock]), requestAction: .simUpdateAll)
+            request.downloadTrades([trade.stock], requestAction: .simUpdateAll, allStocks: self.stocks)
         }
     }
     
@@ -138,7 +138,7 @@ struct simStock {
                 DispatchQueue.main.async {
                     try? context.save()
                 }
-                request.downloadTrades((request.realtime ? self.stocks : stocks), requestAction: .simResetAll)
+                request.downloadTrades(stocks, requestAction: .simResetAll, allStocks: self.stocks)
             }
         }
     }
