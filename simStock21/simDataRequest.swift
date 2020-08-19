@@ -72,7 +72,9 @@ class simDataRequest {
         self.running = true
         self.twseCount = 0
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
-        NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
+        if action != .simTesting {
+            NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
+        }
         let q = OperationQueue()
         if action != .simTesting {
             q.maxConcurrentOperationCount = 1
@@ -98,26 +100,27 @@ class simDataRequest {
             }
         }
         allGroup.notify(queue: .main) {
-            if !simActions {
+            if action != .simTesting {
                 self.running = false    //解除UI「背景作業中」的提示
                 self.timeTradesUpdated = Date()
                 NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":self.timeTradesUpdated])  //通知股群清單的summary要更新了
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 self.runP10(stocks)
-            }
-            if self.realtime && action != .simTesting {
-                self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
-                    self.runRequest(allStocks ?? stocks, action: .realtime)
+            
+                if self.realtime && action != .simTesting {
+                    self.timer?.invalidate()
+                    self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
+                        self.runRequest(allStocks ?? stocks, action: .realtime)
+                    }
+                    if let t = self.timer, t.isValid {
+                        NSLog("timer scheduled in \(t.fireDate.timeIntervalSinceNow)s")
+                    }
+                } else if let t = self.timer, t.isValid {
+                    t.invalidate()
+                    self.timer = nil
+                    NSLog("timer invalidated.")
                 }
-                if let t = self.timer, t.isValid {
-                    NSLog("timer scheduled in \(t.fireDate.timeIntervalSinceNow)s")
-                }
-            } else if let t = self.timer, t.isValid {
-                t.invalidate()
-                self.timer = nil
-                NSLog("timer invalidated.")
             }
         }
     }
@@ -1219,12 +1222,12 @@ class simDataRequest {
         wantH += (trade.tLowDiff125 - trade.tHighDiff125 < 15 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa60DiffZ125 > 2.5 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
-//        wantH += (trade.days > 150 && trade.rollAmtRoi < -3 ? -1 : 0)
+        wantH += (trade.grade == .damn ? -1 : 0)
         
         
         
         if wantH >= 2 {
-            if trade.weak && prev.priceClose < trade.priceClose && (prev.simRule == "H" || prev.simRule == "I") {
+            if trade.grade == .weak && prev.priceClose < trade.priceClose && (prev.simRule == "H" || prev.simRule == "I") {
                 trade.simRule = "I"
             } else {
                 trade.simRule = "H"

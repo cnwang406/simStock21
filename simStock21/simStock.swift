@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = twDateTime.dateFromString("2005/7/31")
+    let simTestStart:Date? = nil    //twDateTime.dateFromString("2005/7/31")
     let request = simDataRequest()
 
     private(set) var stocks:[Stock] = []
@@ -128,9 +128,13 @@ struct simStock {
     
     func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) {
         if let context = stocks[0].managedObjectContext {
+            var dateChanged:Bool = false
             for stock in stocks {
-                stock.dateStart = dateStart
-                stock.dateFirst = twDateTime.calendar.date(byAdding: .year, value: -1, to: dateStart) ?? stock.dateStart
+                if dateStart != stock.dateStart {
+                    stock.dateStart = dateStart
+                    stock.dateFirst = twDateTime.calendar.date(byAdding: .year, value: -1, to: dateStart) ?? stock.dateStart
+                    dateChanged = true
+                }
                 stock.simMoneyBase = moneyBase
                 stock.simAddInvest = addInvest
             }
@@ -138,7 +142,7 @@ struct simStock {
                 DispatchQueue.main.async {
                     try? context.save()
                 }
-                request.downloadTrades(stocks, requestAction: .simResetAll, allStocks: self.stocks)
+                request.downloadTrades(stocks, requestAction: (dateChanged ? .tUpdateAll : .simResetAll), allStocks: self.stocks)
             }
         }
     }

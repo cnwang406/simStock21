@@ -356,8 +356,25 @@ public class Trade: NSManagedObject {
         }
     }
     
-    var weak:Bool {
-        (self.days > 60 || self.rollAmtRoi < -1)
+    enum Grade {
+        case none
+        case high
+        case fine
+        case weak
+        case damn
+    }
+    var grade:Grade {
+        if self.days < 80 && self.rollAmtRoi > 15 {
+            return .high
+        } else if self.days < 80 && self.rollAmtRoi > 5 {
+            return .fine
+        } else if self.days > 150 || self.rollAmtRoi < -15 && self.rollRounds > 2 {
+            return .damn
+        } else if self.days > 60 || self.rollAmtRoi < -1 && self.rollRounds > 2 {
+            return .weak
+        }
+        return .none
+    
     }
     
     var invested:Double {
