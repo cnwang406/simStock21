@@ -1,1 +1,1 @@
-﻿itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/raw/master/ipa/manifest.plist
+﻿itms-services://?action=download-manifest&url=https://raw.githubusercontent.com/peiyu66/simStock21/master/ipa/manifest.plist
