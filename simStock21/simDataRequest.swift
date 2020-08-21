@@ -226,6 +226,9 @@ class simDataRequest {
                         } else {
                             p10.H.append((trade.priceClose, simQty.action, simQty.qty, simQty.roi))
                         }
+                        if simQty.action == "買" && p10.rule == nil {
+                            p10.rule = trade.simRuleBuy
+                        }
                     }
                 }
                 if p10.L.count > 0 {
@@ -1202,8 +1205,9 @@ class simDataRequest {
 //        let d10 = tradeIndex(10, index:index)
 //        let d15 = tradeIndex(15, index:index)
 
+        let ma20d = trade.tMa20DiffMax9 - trade.tMa20DiffMin9
+        let ma60d = trade.tMa60DiffMax9 - trade.tMa60DiffMin9
 
-        
         //*** Z=P? ***
         //0.84=0.7995 0.85=0.8023 1=0.8413 1.04=0.8508 1.3=0.9032 1.45=0.9265 1.5=0.9332
         //1.55=0.9394 1.65=0.9505 2=0.9772 3=0.9987 3.5=0.9998
@@ -1222,12 +1226,12 @@ class simDataRequest {
         wantH += (trade.tLowDiff125 - trade.tHighDiff125 < 15 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa60DiffZ125 > 2.5 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
+        wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn ? -1 : 0)
         
         
-        
         if wantH >= 2 {
-            if trade.grade == .weak && prev.priceClose < trade.priceClose && (prev.simRule == "H" || prev.simRule == "I") {
+            if (trade.grade <= .weak && prev.priceClose < trade.priceClose) && (prev.simRule == "H" || prev.simRule == "I") {
                 trade.simRule = "I"
             } else {
                 trade.simRule = "H"
@@ -1242,7 +1246,9 @@ class simDataRequest {
             wantL += (trade.tKdKZ125 < -0.9 && trade.tKdKZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tOscZ125 < -0.9 && trade.tOscZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
+            
             wantL += (trade.tMa20Days < -30 ? -1 : 0)
+
             if wantL >= 5 {
                 trade.simRule = "L"
             }
@@ -1300,12 +1306,14 @@ class simDataRequest {
                 let aMust12 = (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9)
                 let aMust13 = (trade.tMa20Diff < -15 && trade.tMa60Diff < -15)
                 let aMust1  = aMust11 && aMust12 && aMust13
-                let aMust21 = (trade.tKdKZ125 < 0.8 || trade.tKdDZ125 < 0.8 || trade.tKdJZ125 < 0.8 || trade.tOscZ125 < 0.8)
-                let aMust23 = (trade.tMa20Diff < -10 && trade.tMa60Diff < -10)
+                
+                let aMust21 = (trade.tKdKZ125 < -0.8 || trade.tKdDZ125 < -0.8 || trade.tKdJZ125 < -0.8 || trade.tOscZ125 < -0.8)
+                let aMust23 = (trade.tMa20Diff < -8 && trade.tMa60Diff < -8)
                 let aMust2  = aMust21 && aMust23 && trade.simDays > 180
 //                let aMust3 = aMust21 && aMust23 && trade.tHighDiff125 < -30 && trade.tHighDiff250 < -30 && trade.tLowDiff125 < 5 && trade.tLowDiff250 < 5
+                
                 let aRoi30 = trade.simUnitRoi < -30
-                let aRoi25 = trade.simUnitRoi < -25 && trade.simDays < 180
+                let aRoi25 = trade.simUnitRoi < -25 && (trade.simDays < 180 || trade.simDays > 360)
                 let addInvest = (aMust1 || aMust2) && (aRoi30 || aRoi25) && aWant >= 1
                 
                 if addInvest {

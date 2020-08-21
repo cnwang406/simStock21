@@ -211,6 +211,7 @@ public class Stock: NSManagedObject {
 }
 
 struct P10 {    //五檔價格試算建議
+    var rule:String? = nil
     var action:String = ""
     var date:Date = Date.distantPast
     var L:[(price:Double,action:String,qty:Double,roi:Double)] = []
@@ -356,20 +357,26 @@ public class Trade: NSManagedObject {
         }
     }
     
-    enum Grade {
-        case none
-        case high
-        case fine
-        case weak
-        case damn
+    enum Grade:Int, Comparable {
+        static func < (lhs: Trade.Grade, rhs: Trade.Grade) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+        case high = 5
+        case fine = 1
+        case none = 0
+        case weak = -1
+        case low  = -5
+        case damn = -7
     }
     var grade:Grade {
         if self.days < 80 && self.rollAmtRoi > 15 {
             return .high
         } else if self.days < 80 && self.rollAmtRoi > 5 {
             return .fine
-        } else if self.days > 150 || self.rollAmtRoi < -15 && self.rollRounds > 2 {
+        } else if self.days > 400 || self.rollAmtRoi < -20 && self.rollRounds > 2 {
             return .damn
+        } else if self.days > 150 || self.rollAmtRoi < -15 && self.rollRounds > 2 {
+            return .low //雖然還沒有使用到low，但改變low的集合就會影響到weak的集合
         } else if self.days > 60 || self.rollAmtRoi < -1 && self.rollRounds > 2 {
             return .weak
         }
@@ -421,7 +428,7 @@ public class Trade: NSManagedObject {
                 return .gray
             }
         case .rule:
-            switch self.simRule {
+            switch (p10.rule ?? self.simRule) {
             case "L":
                 return .green
             case "H":

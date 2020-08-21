@@ -361,7 +361,7 @@ struct tradeCell: View {
     var simSummary: some View {
         Group {
             if trade.simRule != "_" {
-                VStack(alignment: .trailing,spacing: 2) {
+                VStack(alignment: .leading,spacing: 2) {
                     Text("本金餘額")
                     if trade.simDays > 0 {
                         Text("本輪損益")
@@ -377,7 +377,7 @@ struct tradeCell: View {
                     Text(String(format:"%.f仟元",trade.rollAmtProfit/1000))
                 }
                 Spacer()
-                VStack(alignment: .trailing,spacing: 2) {
+                VStack(alignment: .leading,spacing: 2) {
                     if trade.simDays > 0 {
                         Text("單位成本")
                         Text("本輪成本")
@@ -438,7 +438,7 @@ struct tradeCell: View {
     
     var priceAndKDJ: some View {
         Group {
-            VStack(alignment: .trailing,spacing: 2) {
+            VStack(alignment: .leading,spacing: 2) {
                 Text("開盤")
                 Text("最高")
                 Text("最低")
@@ -450,7 +450,7 @@ struct tradeCell: View {
             }
             .frame(minWidth: 55 , alignment: .trailing)
             Spacer()
-            VStack(alignment: .trailing,spacing: 2) {
+            VStack(alignment: .leading,spacing: 2) {
                 Text(twDateTime.inMarketingTime(trade.dateTime) ? "成交" : "收盤")
                     .foregroundColor(trade.color(.time))
                 Text("MA20")
@@ -562,7 +562,7 @@ struct tradeCell: View {
                         .font(.caption)
                         .foregroundColor(trade.color(.time))
                     //== 五檔價格試算建議 ==
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 2) {
                         if trade.date == stock.p10.date {
                             HStack {
                                 ForEach(self.stock.p10.L.indices, id:\.self) { i in
