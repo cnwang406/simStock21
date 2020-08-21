@@ -39,7 +39,6 @@
 		E2C4582224A36CC50036791E /* simStock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStock.swift; sourceTree = "<group>"; };
 		E2C4582424A36D1C0036791E /* simStockList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockList.swift; sourceTree = "<group>"; };
 		E2C4582624A36D710036791E /* coreData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = coreData.swift; sourceTree = "<group>"; };
-		E2D0194E24EF8D1D00939B4E /* ipa */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ipa; sourceTree = "<group>"; };
 		E2EAECCA24DD5C6700BC88A8 /* simStock 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 3.xcdatamodel"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -57,7 +56,6 @@
 		E2C457FF24A36CAA0036791E = {
 			isa = PBXGroup;
 			children = (
-				E2D0194E24EF8D1D00939B4E /* ipa */,
 				E2C4580A24A36CAA0036791E /* simStock21 */,
 				E2C4580924A36CAA0036791E /* Products */,
 			);
