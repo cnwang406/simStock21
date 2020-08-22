@@ -1,7 +1,7 @@
 # simStock 小確幸股票模擬機
 小確幸下載台灣上市股票歷史成交價格，設計策略及買賣規則，模擬買賣及評估報酬率。
 
-### 發佈的版本
+### 最近發佈的版本
 * [v0.2(5)](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/v0.2(5)/manifest.plist)
 
 ## 策略規則
