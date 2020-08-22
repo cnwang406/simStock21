@@ -1,5 +1,5 @@
 # simStock 小確幸股票模擬機
-小確幸下載台灣上市股票歷史成交價格，設計策略規則，模擬買賣及評估報酬率。
+小確幸下載台灣上市股票歷史成交價格，設計策略及買賣規則，模擬買賣及評估報酬率。
 
 ✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
 
