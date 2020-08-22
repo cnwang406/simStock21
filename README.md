@@ -1,7 +1,7 @@
 # simStock 小確幸股票模擬機
 小確幸下載台灣上市股票歷史成交價格，設計策略及買賣規則，模擬買賣及評估報酬率。
 
-✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
+發佈的版本：([release](https://github.com/peiyu66/simStock21/releases))
 
 ## 策略規則
    小確幸的策略是短期投機買賣：
@@ -16,6 +16,8 @@
 1. 可自動模擬2次加碼。
 1. 賣時一次全部賣出結清。
 
+### 誰適合使用小確幸？
+✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
 
 ### 小確幸沒有在App Store上架？
 * Apple Store自2017年已不允許「個人」開發者上架含有「模擬賭博」內容的App。
