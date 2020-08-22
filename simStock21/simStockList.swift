@@ -12,10 +12,11 @@ import MobileCoreServices
 
 class simStockList:ObservableObject {
     @Published private var sim:simStock = simStock()
-    @Published var dataUpdatedTime:Date = Date.distantPast
+    @Published var requestRunning:Bool = false
     @Published var widthClass:WidthClass = .compact
     
     var versionNow:String
+    var versionLast:String = ""
 
     private let buildNo:String = Bundle.main.infoDictionary!["CFBundleVersion"] as! String
     private let versionNo:String = Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
@@ -46,7 +47,7 @@ class simStockList:ObservableObject {
         NotificationCenter.default.addObserver(self, selector: #selector(self.setWidthClass), name: UIDevice.orientationDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.willResignActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.setDataUpdatedTime), name: NSNotification.Name("dataUpdated") , object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.setRequestStatus), name: NSNotification.Name("requestRunning") , object: nil)
     }
         
     var searchText:[String]? = nil {    //搜尋String以空格逗號分離為關鍵字Array
@@ -110,8 +111,8 @@ class simStockList:ObservableObject {
         return false
     }
     
-    var requestRunning:Bool {
-        sim.request.running
+    var initRunning:Bool {
+        self.requestRunning && (buildNo == "0" || versionLast == "")
     }
     
     func deleteTrades(_ stocks:[Stock], oneMonth:Bool=false) {
@@ -185,11 +186,12 @@ class simStockList:ObservableObject {
         widthClass = deviceWidthClass
     }
     
-    @objc func setDataUpdatedTime(_ notification: Notification) {
-        if let userInfo = notification.userInfo, let time = userInfo["dataUpdatedTime"] as? Date {
-            dataUpdatedTime = time
+    @objc func setRequestStatus(_ notification: Notification) {
+        if let userInfo = notification.userInfo, let running = userInfo["requestRunning"] as? Bool {
+            requestRunning = running
         }
     }
+
 
     @objc func appNotification(_ notification: Notification) {
         switch notification.name {
@@ -199,7 +201,7 @@ class simStockList:ObservableObject {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
                 sim.runTest(start: start)
             } else {
-                let versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
+                versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
                 UserDefaults.standard.set(versionNow, forKey: "simStockVersion")
                 sim.request.downloadStocks()
                 var action:simDataRequest.simTechnicalAction? {

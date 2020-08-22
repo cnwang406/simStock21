@@ -17,7 +17,7 @@ struct simStockListView: View {
             VStack (alignment: .leading) {
                 Spacer()
                 SearchBar(editText: self.$searchText, searchText: $list.searchText, isSearching: self.$isSearching)
-                    .disabled(self.isChoosing)
+                    .disabled(self.isChoosing || list.initRunning)
                 HStack(alignment: .bottom){
                     if self.isSearching && list.searchText != nil && !self.list.searchGotResults {
                         if list.searchTextInGroup {
@@ -158,11 +158,16 @@ struct simStockListView: View {
                         }
                 }
             } else if !self.isSearching {
-                Button("選取") {
-                    self.isChoosing = true
-                    self.searchText = ""
-                    self.list.searchText = nil
-                    self.isSearching = false
+                if list.initRunning {
+                    Text("請等候股群完成歷史資料的下載及計算....")
+                        .foregroundColor(.orange)
+                } else {
+                    Button("選取") {
+                        self.isChoosing = true
+                        self.searchText = ""
+                        self.list.searchText = nil
+                        self.isSearching = false
+                    }
                 }
             }
         }

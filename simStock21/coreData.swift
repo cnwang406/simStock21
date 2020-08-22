@@ -412,7 +412,7 @@ public class Trade: NSManagedObject {
     
     func color (_ scheme: colorScheme, gray:Bool=false) -> Color {
         if gray {
-            if scheme == .ruleB {
+            if scheme == .ruleB || (scheme == .ruleR && self.simRule != "L" && self.simRule != "H") {
                 return .clear
             } else {
                 return .gray

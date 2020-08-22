@@ -14,7 +14,6 @@ class simDataRequest {
     private var timeTradesUpdated:Date
     private let requestInterval:TimeInterval = 120
     
-    var running:Bool = false
     var realtime:Bool {
         twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
     }
@@ -69,7 +68,7 @@ class simDataRequest {
     }
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
-        self.running = true
+        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["requestRunning":true])  //通知股群清單要更新了
         self.twseCount = 0
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
         if action != .simTesting {
@@ -101,10 +100,9 @@ class simDataRequest {
         }
         allGroup.notify(queue: .main) {
             if action != .simTesting {
-                self.running = false    //解除UI「背景作業中」的提示
                 self.timeTradesUpdated = Date()
-                NotificationCenter.default.post(name: Notification.Name("dataUpdated"), object: nil, userInfo: ["dataUpdatedTime":self.timeTradesUpdated])  //通知股群清單的summary要更新了
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
+                NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["requestRunning":false])  //解除UI「背景作業中」的提示
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 self.runP10(stocks)
             
