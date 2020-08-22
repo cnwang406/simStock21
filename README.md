@@ -25,7 +25,7 @@
 
 ### 如何安裝小確幸ipa？
 * 若有加入Apple Developer，就自己在Xcode直接建造直接安裝。
-* 不然只好向作者登記iPhone或iPad的序號作為開發機，就可從release的itms-service連結下載安裝。
+* 不然只好向作者登記iPhone或iPad的序號作為開發機，就可從release的itms-services連結下載安裝。
 
 ### 有些股票找不到？
 * 只有上市股票才能被搜尋到，故不能找到上櫃股票。
