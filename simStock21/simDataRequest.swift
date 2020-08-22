@@ -1201,10 +1201,6 @@ class simDataRequest {
         }
 
         
-//        let d5 = tradeIndex(5, index:index)
-//        let d10 = tradeIndex(10, index:index)
-//        let d15 = tradeIndex(15, index:index)
-
         let ma20d = trade.tMa20DiffMax9 - trade.tMa20DiffMin9
         let ma60d = trade.tMa60DiffMax9 - trade.tMa60DiffMin9
 
@@ -1228,6 +1224,7 @@ class simDataRequest {
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
         wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn ? -1 : 0)
+//        wantH += (trade.grade == .low && trade.tLowDiff125 - trade.tHighDiff125 < 30 ? -1 : 0)
         
         
         if wantH >= 2 {
@@ -1276,9 +1273,22 @@ class simDataRequest {
             let sBase3 = wantS >= (topWantS - 2) && sBase0 && trade.simDays > 75
             let sBase2 = wantS >= (topWantS - 3) && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
+            var noInvested60:Bool = true
+            var noInvested45:Bool = true
+            let d60 = tradeIndex(60, index: index)
+            for (i,t) in trades[d60.prevIndex...(index - 1)].reversed().enumerated() {
+                if t.invested == 1 {
+                    if i < 45 {
+                        noInvested45 = false
+                    }
+                    noInvested60 = false
+                } else if t.simDays <= 1 {
+                    break
+                }
+            }
             let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 30
-            let cut2 = (trade.simDays > 200 && trade.simUnitRoi > -20) //|| (trade.simDays > 300 && trade.simUnitRoi > -20)
-            let sCut = wantS >= (topWantS - 3) && ((cut1 && cut2) || trade.simDays > 400) && trade.simInvestTimes >= 1
+            let cut2 = (trade.simDays > 200 && trade.simUnitRoi > -20)
+            let sCut = wantS >= (topWantS - 3) && ((cut1 && cut2) || trade.simDays > 400) && noInvested60
 
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut
             
@@ -1321,17 +1331,7 @@ class simDataRequest {
                 }
                 if trade.simRuleInvest == "A" {
                     if trade.stock.simAddInvest && trade.simInvestTimes <= 2  { //兩次自動加碼
-                        var noAddIn45:Bool = true
-                        let d45 = tradeIndex(45, index: index)
-                        for t in trades[d45.prevIndex...index - 1].reversed() {
-                            if t.invested == 1 {
-                                noAddIn45 = false
-                                break
-                            } else if t.simDays <= 1 {
-                                break
-                            }
-                        }
-                        if noAddIn45 {
+                        if noInvested45 {
                             trade.simInvestAdded = 1
                         }
                     }
