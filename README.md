@@ -20,7 +20,7 @@
 ✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
 
 ### 小確幸沒有在App Store上架？
-* Apple Store自2017年已不允許「個人」開發者上架含有「模擬賭博」內容的App。
+* App Store自2017年已不允許「個人」開發者上架含有「模擬賭博」內容的App。
 * 小確幸下載的即時及歷史股價雖然是公開資料，若想上架卻應取得來源網站的許可。
 
 ### 如何安裝小確幸ipa？
