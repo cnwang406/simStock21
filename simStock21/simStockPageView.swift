@@ -214,7 +214,10 @@ struct tradeListView: View {
                             .actionSheet(isPresented: $showInformation) {
                                 ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"),
                                 buttons: [
-                                    .default(Text("Yahoo! 技術分析 ")) {
+                                    .default(Text("小確幸網站")) {
+                                        self.openUrl("https://peiyu66.github.io/simStock21/")
+                                    },
+                                    .default(Text("Yahoo! 技術分析")) {
                                         self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
                                     },
                                     .destructive(Text("沒事，不用了。"))

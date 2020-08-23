@@ -72,6 +72,9 @@ struct simStock {
                     newStocks.append(stock)
                 }
                 stock.group = group
+                if group == "" {
+                    self.stocks = self.stocks.filter{$0 != stock}
+                }   //搜尋而加入新股不用append到self.stocks因為searchText在給值或清除時都會fetchStocks
             }
             try? context.save()
             if newStocks.count > 0 {
