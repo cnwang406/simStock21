@@ -104,8 +104,9 @@ class simDataRequest {
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
                 NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["requestRunning":false])  //解除UI「背景作業中」的提示
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
-                self.runP10(stocks)
-            
+                if self.realtime {
+                    self.runP10(stocks)
+                }            
                 if self.realtime && action != .simTesting {
                     self.timer?.invalidate()
                     self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
@@ -1221,8 +1222,7 @@ class simDataRequest {
         wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa60DiffZ125 > 2.5 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
         wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
-        wantH += (trade.grade == .damn ? -1 : 0)
-//        wantH += (trade.grade == .low && trade.tLowDiff125 - trade.tHighDiff125 < 30 ? -1 : 0)
+        wantH += (trade.grade == .damn ? -2 : 0)
         
         
         if wantH >= 2 {
@@ -1265,9 +1265,9 @@ class simDataRequest {
             let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
             let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
-            let sBase0 = trade.simUnitRoi > 0.45
-            let sBase5 = wantS >= topWantS && sBase0
-            let sBase4 = wantS >= (topWantS - 1) && sBase0 && (trade.simDays > (2 + weekendDays) || trade.simUnitRoi > 2.5)
+            let sBase0 = trade.simUnitRoi > 0.45 && trade.simDays > (1 + weekendDays)
+            let sBase5 = wantS >= topWantS && sBase0 && trade.grade <= .weak
+            let sBase4 = wantS >= (topWantS - 1) && trade.simUnitRoi > 2.5
             let sBase3 = wantS >= (topWantS - 2) && sBase0 && trade.simDays > 75
             let sBase2 = wantS >= (topWantS - 3) && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
@@ -1285,7 +1285,7 @@ class simDataRequest {
                 }
             }
             let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 30
-            let cut2 = (trade.simDays > 200 && trade.simUnitRoi > -20)
+            let cut2 = trade.simDays > 200 && trade.simUnitRoi > (trade.grade <= .low || trade.simDays > 360 ? -20 : -15)
             let sCut = wantS >= (topWantS - 3) && ((cut1 && cut2) || trade.simDays > 400) && noInvested60
 
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut
@@ -1306,23 +1306,22 @@ class simDataRequest {
             } else {
                 //== 加碼 ==================================================
                 var aWant:Double = 0
+                let z125a = (trade.tMa20DiffZ125 < -1 ? 1 : 0) + (trade.tMa60DiffZ125 < -1 ? 1 : 0) + (trade.tKdKZ125 < -1 ? 1 : 0) + (trade.tKdDZ125 < -1 ? 1 : 0) + (trade.tKdJZ125 < -1 ? 1 : 0) + (trade.tOscZ125 < -1 ? 1 :0)
+                aWant += (z125a >= 2 || trade.grade <= .low ? 1 : 0)
                 aWant += (trade.simUnitRoi < -35 ? 1 : 0)
-                aWant += (trade.tMa20Diff < -20 && trade.tMa60Diff < -20 ? 1 : 0)
                 aWant += (trade.tHighDiff125 < -35 ? 1 : 0)
+                aWant += (trade.tMa20Diff < -20 || trade.tMa60Diff < -20 ? 1 : 0)
+                aWant += (trade.tMa20Diff < -8 && trade.tMa60Diff < -8 ? 1 : 0)
+                aWant += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0)
+//                aWant += (trade.tKdK == trade.tKdKMin9 && trade.tOsc == trade.tOscMin9 ? 1 : 0)
+//                aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 && trade.grade == .damn ? 1 : 0)
+                aWant += (trade.grade >= .none ? -2 : 0)
 
-                let aMust11 = (trade.tKdKZ125 < -1 || trade.tKdDZ125 < -1 || trade.tKdJZ125 < -1 || trade.tOscZ125 < -1)
-                let aMust12 = (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9)
-                let aMust13 = (trade.tMa20Diff < -15 && trade.tMa60Diff < -15)
-                let aMust1  = aMust11 && aMust12 && aMust13
-                
-                let aMust21 = (trade.tKdKZ125 < -0.8 || trade.tKdDZ125 < -0.8 || trade.tKdJZ125 < -0.8 || trade.tOscZ125 < -0.8)
-                let aMust23 = (trade.tMa20Diff < -8 && trade.tMa60Diff < -8)
-                let aMust2  = aMust21 && aMust23 && trade.simDays > 180
-//                let aMust3 = aMust21 && aMust23 && trade.tHighDiff125 < -30 && trade.tHighDiff250 < -30 && trade.tLowDiff125 < 5 && trade.tLowDiff250 < 5
                 
                 let aRoi30 = trade.simUnitRoi < -30
                 let aRoi25 = trade.simUnitRoi < -25 && (trade.simDays < 180 || trade.simDays > 360)
-                let addInvest = (aMust1 || aMust2) && (aRoi30 || aRoi25) && aWant >= 1
+                let aRoi15 = trade.simUnitRoi < -15 && trade.simDays >= 180 && trade.simRule == "L"
+                let addInvest = (aRoi30 || aRoi25 || aRoi15) && aWant > 3
                 
                 if addInvest {
                     trade.simRuleInvest = "A"

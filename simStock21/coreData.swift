@@ -361,24 +361,26 @@ public class Trade: NSManagedObject {
         static func < (lhs: Trade.Grade, rhs: Trade.Grade) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
-        case high = 5
+        case high = 3
         case fine = 1
         case none = 0
         case weak = -1
-        case low  = -5
-        case damn = -7
+        case low  = -2
+        case damn = -3
     }
     var grade:Grade {
-        if self.days < 80 && self.rollAmtRoi > 15 {
-            return .high
-        } else if self.days < 80 && self.rollAmtRoi > 5 {
-            return .fine
-        } else if self.days > 400 || self.rollAmtRoi < -20 && self.rollRounds > 2 {
-            return .damn
-        } else if self.days > 150 || self.rollAmtRoi < -15 && self.rollRounds > 2 {
-            return .low //雖然還沒有使用到low，但改變low的集合就會影響到weak的集合
-        } else if self.days > 60 || self.rollAmtRoi < -1 && self.rollRounds > 2 {
-            return .weak
+        if self.rollRounds > 2 || self.days > 360 {
+            if self.days < 80 && self.rollAmtRoi > 20 {
+                return .high
+            } else if self.days < 80 && self.rollAmtRoi > 5 {
+                return .fine
+            } else if self.days > 180 || self.rollAmtRoi < -20 {
+                    return .damn
+            } else if self.days > 120 || self.rollAmtRoi < -10 {
+                return .low //雖然還沒有使用到low，但改變low的集合就會影響到weak的集合
+            } else if self.days > 60 || self.rollAmtRoi < -1 {
+                return .weak
+            }
         }
         return .none
     
