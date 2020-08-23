@@ -1286,7 +1286,7 @@ class simDataRequest {
             }
             let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 30
             let cut2 = trade.simDays > 200 && trade.simUnitRoi > (trade.grade <= .low || trade.simDays > 360 ? -20 : -15)
-            let sCut = wantS >= (topWantS - 3) && ((cut1 && cut2) || trade.simDays > 400) && noInvested60
+            let sCut = wantS >= (topWantS - (trade.simDays > 400 ? 4 : 3)) && ((cut1 && cut2) || trade.simDays > 400) && noInvested60
 
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut
             
