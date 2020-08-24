@@ -2,7 +2,7 @@
 小確幸下載台灣上市股票歷史成交價格，設計策略及買賣規則，模擬買賣及評估報酬率。
 
 ### 最近發佈的版本
-* [v0.2(7)](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/v0.2(7)/manifest.plist)
+* [點這裡(下載ipa)](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
 
 ## 策略規則
    小確幸的策略是短期投機買賣：
