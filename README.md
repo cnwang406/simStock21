@@ -5,6 +5,9 @@
 * [[點這裡]](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
 * 必須是曾向作者登記為開發機，iOS13以上的iPhone或iPad才能安裝。
 
+### 誰適合使用小確幸？
+✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
+
 ## 策略規則
    小確幸的策略是短期投機買賣：
 1. 低買高賣賺取價差優先於賺股息股利。
@@ -18,8 +21,9 @@
 1. 可自動模擬2次加碼。
 1. 賣時一次全部賣出結清。
 
-### 誰適合使用小確幸？
-✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
+## 選股原則
+1. 熱門股優於傳統股。
+1. 近3年的模擬，平均年報酬率在10%以上，平均週期在80天以內。
 
 ### 小確幸沒有在App Store上架？
 * App Store自2017年已不允許「個人」開發者上架含有「模擬賭博」內容的App。
