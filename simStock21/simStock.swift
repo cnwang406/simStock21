@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = twDateTime.dateFromString("2005/8/20")
+    let simTestStart:Date? = twDateTime.dateFromString("2005/8/24")
     let request = simDataRequest()
 
     private(set) var stocks:[Stock] = []
@@ -25,10 +25,10 @@ struct simStock {
         self.stocks = Stock.fetch(coreData.shared.context)
         if self.stocks.count == 0 {
             let group1:[(sId:String,sName:String)] = [
-                (sId:"1590", sName:"亞德客-KY"),
+                (sId:"3653", sName:"健策"),
                 (sId:"1515", sName:"力山"),
                 (sId:"2330", sName:"台積電"),
-                (sId:"2327", sName:"國巨")]
+                (sId:"3037", sName:"欣興")]
             self.newStock(stocks: group1, group: "股群_1")
             
             let group2:[(sId:String,sName:String)] = [
@@ -78,7 +78,7 @@ struct simStock {
             }
             try? context.save()
             if newStocks.count > 0 {
-                request.downloadTrades(newStocks, requestAction: .tUpdateAll, allStocks: self.stocks)
+                request.downloadTrades(newStocks, requestAction: .newTrades, allStocks: self.stocks)
             }
         }
     }
@@ -129,13 +129,18 @@ struct simStock {
         }
     }
     
-    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) {
+    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) -> Bool {
+        var pleaseWait:Bool = false
         if let context = stocks[0].managedObjectContext {
             var dateChanged:Bool = false
             for stock in stocks {
                 if dateStart != stock.dateStart {
                     stock.dateStart = dateStart
-                    stock.dateFirst = twDateTime.calendar.date(byAdding: .year, value: -1, to: dateStart) ?? stock.dateStart
+                    let dtFirst = twDateTime.calendar.date(byAdding: .year, value: -1, to: dateStart) ?? stock.dateStart
+                    if dtFirst < stock.dateFirst {
+                        stock.dateFirst = dtFirst
+                        pleaseWait = true
+                    }
                     dateChanged = true
                 }
                 stock.simMoneyBase = moneyBase
@@ -145,9 +150,10 @@ struct simStock {
                 DispatchQueue.main.async {
                     try? context.save()
                 }
-                request.downloadTrades(stocks, requestAction: (dateChanged ? .tUpdateAll : .simResetAll), allStocks: self.stocks)
+                request.downloadTrades(stocks, requestAction: (dateChanged ? .newTrades : .simResetAll), allStocks: self.stocks)
             }
         }
+        return pleaseWait
     }
     
     var simDefaults:(first:Date,start:Date,money:Double,invest:Bool) {
@@ -228,7 +234,7 @@ struct simStock {
         print("\n\n\(group)： 自\(twDateTime.stringFromDate(start,format:"yyyy"))第\(years)年起 ... ", terminator:"")
         var nextYear:Date = start
         while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
-            settingStocks(stocks, dateStart: nextYear, moneyBase: 100, addInvest: true)
+            let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 100, addInvest: true)
             request.downloadTrades(stocks, requestAction: .simTesting)
             let summary = stocksSummary(stocks)
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi

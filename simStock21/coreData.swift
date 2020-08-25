@@ -54,7 +54,7 @@ public class Stock: NSManagedObject {
         if let ids = sId {
             for sId in ids {
                 let upperId = (sId == "t00" ? sId : sId.localizedUppercase)
-                if sId.count == 1 && sName == nil {
+                if ids.count == 1 && sName == nil {
                     predicates.append(NSPredicate(format: "sId == %@", upperId))
                 } else {
                     predicates.append(NSPredicate(format: "sId CONTAINS %@", upperId))

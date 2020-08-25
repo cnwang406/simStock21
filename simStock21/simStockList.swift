@@ -111,8 +111,9 @@ class simStockList:ObservableObject {
         return false
     }
     
+    var pleaseWait:Bool = false    //有必要提示等候股群下載完畢
     var initRunning:Bool {
-        self.requestRunning && (buildNo == "0" || versionLast == "")
+        self.requestRunning && (versionLast == "" || self.pleaseWait)
     }
     
     func deleteTrades(_ stocks:[Stock], oneMonth:Bool=false) {
@@ -122,6 +123,9 @@ class simStockList:ObservableObject {
     }
 
     func moveStocks(_ stocks:[Stock], toGroup:String = "") {
+        if stocks.count > 1 && stocks[0].group == "" {
+            pleaseWait = true
+        }
         sim.moveStocksToGroup(stocks, group:toGroup)
     }
     
@@ -176,7 +180,7 @@ class simStockList:ObservableObject {
         } else {
             stocks.append(stock)
         }
-        sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, addInvest: addInvest)
+        self.pleaseWait = sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, addInvest: addInvest)
         if saveToDefaults {
             sim.setDefaults(start: dateStart, money: moneyBase, invest: addInvest)
         }
@@ -189,6 +193,9 @@ class simStockList:ObservableObject {
     @objc func setRequestStatus(_ notification: Notification) {
         if let userInfo = notification.userInfo, let running = userInfo["requestRunning"] as? Bool {
             requestRunning = running
+            if requestRunning == false {
+                self.pleaseWait = false
+            }
         }
     }
 
@@ -197,11 +204,12 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive v\(versionNow) ===")
+            self.pleaseWait = false
+            self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
                 sim.runTest(start: start)
             } else {
-                versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
                 UserDefaults.standard.set(versionNow, forKey: "simStockVersion")
                 sim.request.downloadStocks()
                 var action:simDataRequest.simTechnicalAction? {

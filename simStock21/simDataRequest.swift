@@ -80,7 +80,7 @@ class simDataRequest {
         }
         let allGroup:DispatchGroup = DispatchGroup()  //這是stocks共用的group，等候全部的背景作業完成時通知主畫面
         let twseGroup:DispatchGroup = DispatchGroup() //這是控制twse依序下載以避免同時多條連線被拒
-        for stock in stocks {
+        for (i,stock) in stocks.enumerated() {
             allGroup.enter()
             if realtime && action == .realtime {
                 self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
@@ -93,6 +93,7 @@ class simDataRequest {
                 let cnyesAction:simTechnicalAction = (allTrades ? .allTrades : action)
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
+                    NSLog("\(stocks.count - i)...")
                     self.simTechnical(stock: stock, action: cnyesAction)
                     self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
                 }   //即使已經收盤後也需要yahoo，才收盤時cnyes未及把當日收盤價納入查詢結果
@@ -146,12 +147,12 @@ class simDataRequest {
                         self.simUpdate(trades, index: index)
                         sCount += 1
                     } else {    //newTrades, allTrades, tUpdateAll
-                        if trade.tUpdated == false || action == .tUpdateAll {
+                        if trade.tUpdated == false && (stock.dateFirst != stock.firstTrade(context)?.date) || action == .tUpdateAll {
                             //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
                             self.tUpdate(trades, index: index)
                             tCount += 1
                         }
-                        if trade.tUpdated == false || action != .newTrades {
+                        if trade.tUpdated == false || action != .newTrades {    //必要：allTrades, tUpdateAll
                             self.simUpdate(trades, index: index)
                             sCount += 1
                         }
@@ -467,7 +468,8 @@ class simDataRequest {
             cnyesRequest(stock, ymdStart: ymdS, ymdEnd: ymdE, cnyesGroup: cnyesGroup)
             allTrades = true
         } else {
-            if let firstTrade = stock.firstTrade(stock.context) {
+            let context = coreData.shared.context
+            if let firstTrade = stock.firstTrade(context) {
                 if stock.dateFirst < twDateTime.startOfDay(firstTrade.dateTime)  {    //起日在首日之前
                     let ymdS = twDateTime.stringFromDate(stock.dateFirst)
                     let ymdE = twDateTime.stringFromDate(firstTrade.dateTime)
@@ -475,7 +477,7 @@ class simDataRequest {
                     allTrades = true
                 }
             }
-            if let lastTrade = stock.lastTrade(stock.context) {
+            if let lastTrade = stock.lastTrade(context) {
                 if lastTrade.dateTime < twDateTime.startOfDay()  {    //末日在今天之前
                     let ymdS = twDateTime.stringFromDate(lastTrade.dateTime)
                     let ymdE = twDateTime.stringFromDate(twDateTime.startOfDay())
@@ -1210,7 +1212,7 @@ class simDataRequest {
         
         //== 高買 ==================================================
         var wantH:Double = 0
-        wantH += (trade.tMa60DiffZ125 > 0.85 ? 1 : 0)
+        wantH += (trade.tMa60DiffZ125 > (trade.grade > .none ? 0.75 : 0.85) && trade.tMa60DiffZ125 < (trade.grade <= .low ? 2 : 2.5) ? 1 : 0)
         wantH += (trade.tKdKZ125 > -0.8 ? 1 : 0)
         wantH += (trade.tOscZ125 > -0.5 ? 1 : 0)
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
@@ -1219,7 +1221,7 @@ class simDataRequest {
         wantH += (trade.tHighDiff125 < -20 ? -1 : 0)
         wantH += (trade.tMa60DiffZ125 < -2 || trade.tMa20DiffZ125 > 3 ? -1 : 0) //Ma60過低, Ma20過高
         wantH += (trade.tLowDiff125 - trade.tHighDiff125 < 15 ? -1 : 0)
-        wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa60DiffZ125 > 2.5 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
+        wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
         wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn ? -2 : 0)
@@ -1360,7 +1362,7 @@ class simDataRequest {
 //                    break
 //                }
 //            }
-            if prev.simQtySell > 0 {
+            if prev.simQtySell > 0 && prev.simReversed == "" {
                 buyIt = false
                 trade.simRuleBuy = ""
             }
