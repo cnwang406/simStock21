@@ -3,6 +3,7 @@
 
 ### 最近發佈的版本
 * [[點這裡]](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
+* 必須是曾向作者登記為開發機，iOS13以上的iPhone或iPad才能安裝。
 
 ## 策略規則
    小確幸的策略是短期投機買賣：
