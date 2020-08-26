@@ -35,8 +35,7 @@ class simStockList:ObservableObject {
     var deviceWidthClass: WidthClass {
         if UIDevice.current.orientation.isLandscape {
             return (self.vClass == .regular ? .widePad : .widePhone)
-        }
-        else {
+        } else {
             return (self.hClass == .regular ? .regular : .compact)
         }
     }

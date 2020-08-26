@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct stockPageView: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @State var stock : Stock
     @State var prefix: String
     
@@ -20,9 +20,7 @@ struct stockPageView: View {
             stockPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
         }
             .navigationBarItems(trailing:
-                HStack {
-                    prefixPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
-                }
+                prefixPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
             )
     }
 }
@@ -49,16 +47,16 @@ func pickerIndexRange(index:Int, count:Int, max: Int) -> (from:Int, to:Int) {
 }
 
 struct prefixPicker: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @Binding var prefix: String
     @Binding var stock : Stock
 
     var prefixs:[String] {
-            let prefixs = list.prefixs
-            let prefixIndex = prefixs.firstIndex(of: prefix) ?? 0
+        let prefixs = list.prefixs
+        let prefixIndex = prefixs.firstIndex(of: prefix) ?? 0
         let maxCount = (list.widthClass == .widePad ? 33 : (list.widthClass == .compact ? 7 : (list.widthClass == .widePhone ? 15 : 17)))
-            let index = pickerIndexRange(index: prefixIndex, count: prefixs.count, max: maxCount)
-            return Array(prefixs[index.from...index.to])
+        let index = pickerIndexRange(index: prefixIndex, count: prefixs.count, max: maxCount)
+        return Array(prefixs[index.from...index.to])
     }
 
     var body: some View {
@@ -91,7 +89,7 @@ struct prefixPicker: View {
 }
 
 struct stockPicker: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @Binding var prefix:String
     @Binding var stock :Stock
     
@@ -287,7 +285,7 @@ struct tradeListView: View {
 }
 
 struct settingForm: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @ObservedObject var stock:Stock
     @Binding var showSetting: Bool
     @State var dateStart:Date
@@ -352,7 +350,7 @@ struct settingForm: View {
 
 
 struct tradeCell: View {
-    @State var list: simStockList
+    @ObservedObject var list: simStockList
     @State var stock: Stock
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
