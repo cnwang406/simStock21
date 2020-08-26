@@ -175,7 +175,7 @@ struct tradeListView: View {
                         Text(stock.sId)
                         Text(stock.sName)
                     }
-                        .foregroundColor(list.requestRunning ? .gray : .primary)
+                        .foregroundColor(list.isRunning ? .gray : .primary)
                     Spacer(minLength: 40)
                     HStack {
                         //== 工具按鈕 1 ==

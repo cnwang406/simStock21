@@ -12,9 +12,9 @@ import MobileCoreServices
 
 class simStockList:ObservableObject {
     @Published private var sim:simStock = simStock()
-    @Published var requestRunning:Bool = false
     @Published var widthClass:WidthClass = .compact
-    
+    @Published var runningMsg:String = ""
+
     var versionNow:String
     var versionLast:String = ""
 
@@ -110,9 +110,8 @@ class simStockList:ObservableObject {
         return false
     }
     
-    var pleaseWait:Bool = false    //有必要提示等候股群下載完畢
-    var initRunning:Bool {
-        self.requestRunning && (versionLast == "" || self.pleaseWait)
+    var isRunning:Bool {
+        self.runningMsg.count > 0
     }
     
     func deleteTrades(_ stocks:[Stock], oneMonth:Bool=false) {
@@ -122,9 +121,6 @@ class simStockList:ObservableObject {
     }
 
     func moveStocks(_ stocks:[Stock], toGroup:String = "") {
-        if stocks.count > 1 && stocks[0].group == "" {
-            pleaseWait = true
-        }
         sim.moveStocksToGroup(stocks, group:toGroup)
     }
     
@@ -179,7 +175,7 @@ class simStockList:ObservableObject {
         } else {
             stocks.append(stock)
         }
-        self.pleaseWait = sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, addInvest: addInvest)
+        sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, addInvest: addInvest)
         if saveToDefaults {
             sim.setDefaults(start: dateStart, money: moneyBase, invest: addInvest)
         }
@@ -190,11 +186,8 @@ class simStockList:ObservableObject {
     }
     
     @objc func setRequestStatus(_ notification: Notification) {
-        if let userInfo = notification.userInfo, let running = userInfo["requestRunning"] as? Bool {
-            requestRunning = running
-            if requestRunning == false {
-                self.pleaseWait = false
-            }
+        if let userInfo = notification.userInfo, let msg = userInfo["msg"] as? String {
+            runningMsg = msg
         }
     }
 
@@ -203,7 +196,6 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive v\(versionNow) ===")
-            self.pleaseWait = false
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)

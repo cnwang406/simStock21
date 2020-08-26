@@ -129,8 +129,7 @@ struct simStock {
         }
     }
     
-    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) -> Bool {
-        var pleaseWait:Bool = false
+    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) {
         if let context = stocks[0].managedObjectContext {
             var dateChanged:Bool = false
             for stock in stocks {
@@ -139,7 +138,6 @@ struct simStock {
                     let dtFirst = twDateTime.calendar.date(byAdding: .year, value: -1, to: dateStart) ?? stock.dateStart
                     if dtFirst < stock.dateFirst {
                         stock.dateFirst = dtFirst
-                        pleaseWait = true
                     }
                     dateChanged = true
                 }
@@ -153,7 +151,6 @@ struct simStock {
                 request.downloadTrades(stocks, requestAction: (dateChanged ? .newTrades : .simResetAll), allStocks: self.stocks)
             }
         }
-        return pleaseWait
     }
     
     var simDefaults:(first:Date,start:Date,money:Double,invest:Bool) {

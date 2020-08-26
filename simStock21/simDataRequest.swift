@@ -68,7 +68,7 @@ class simDataRequest {
     }
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
-        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["requestRunning":true])  //通知股群清單要更新了
+        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的下載..."])  //通知股群清單要更新了
         self.twseCount = 0
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
         if action != .simTesting {
@@ -94,6 +94,9 @@ class simDataRequest {
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
                     NSLog("\(stocks.count - i)...")
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的計算(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
+                    }
                     self.simTechnical(stock: stock, action: cnyesAction)
                     self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
                 }   //即使已經收盤後也需要yahoo，才收盤時cnyes未及把當日收盤價納入查詢結果
@@ -103,7 +106,7 @@ class simDataRequest {
             if action != .simTesting {
                 self.timeTradesUpdated = Date()
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
-                NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["requestRunning":false])  //解除UI「背景作業中」的提示
+                NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 if self.realtime {
                     self.runP10(stocks)
@@ -147,7 +150,7 @@ class simDataRequest {
                         self.simUpdate(trades, index: index)
                         sCount += 1
                     } else {    //newTrades, allTrades, tUpdateAll
-                        if trade.tUpdated == false && (stock.dateFirst != stock.firstTrade(context)?.date) || action == .tUpdateAll {
+                        if trade.tUpdated == false || action == .tUpdateAll {
                             //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
                             self.tUpdate(trades, index: index)
                             tCount += 1

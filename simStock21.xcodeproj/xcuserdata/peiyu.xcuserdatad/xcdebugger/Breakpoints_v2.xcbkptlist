@@ -14,9 +14,9 @@
             filePath = "simStock21/simStockList.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "115"
-            endingLineNumber = "115"
-            landmarkName = "initRunning"
+            startingLineNumber = "114"
+            endingLineNumber = "114"
+            landmarkName = "isRunning"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
@@ -46,10 +46,10 @@
             filePath = "simStock21/simDataRequest.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "473"
-            endingLineNumber = "473"
-            landmarkName = "unknown"
-            landmarkType = "0">
+            startingLineNumber = "476"
+            endingLineNumber = "476"
+            landmarkName = "cnyesPrice(stock:cnyesGroup:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -62,8 +62,8 @@
             filePath = "simStock21/simStock.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "236"
-            endingLineNumber = "236"
+            startingLineNumber = "233"
+            endingLineNumber = "233"
             landmarkName = "testStocks(_:group:start:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -98,6 +98,22 @@
             endingLineNumber = "58"
             landmarkName = "prefixs"
             landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5897EF48-9F83-49C1-8106-C1396E0A65C0"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "simStock21/simStockList.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "190"
+            endingLineNumber = "190"
+            landmarkName = "setRequestStatus(_:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
