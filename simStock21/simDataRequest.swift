@@ -68,8 +68,9 @@ class simDataRequest {
     }
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
-        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的下載..."])  //通知股群清單要更新了
         self.twseCount = 0
+        self.timer?.invalidate()
+        self.timer = nil
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
         if action != .simTesting {
             NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
@@ -88,14 +89,19 @@ class simDataRequest {
                 self.simTechnical(stock: stock, action: action)
                 allGroup.leave()
             } else {    //newTrades, allTrades, tUpdateAll
+                if action == .allTrades || action == .tUpdateAll {
+                    NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成資料的下載..."])  //通知股群清單要更新了
+                }
                 let cnyesGroup:DispatchGroup = DispatchGroup()  //這是個股專用的group，等候cnyes下載完成才統計技術數值
                 let allTrades = self.cnyesPrice(stock: stock, cnyesGroup: cnyesGroup) //回傳是否需要從頭重算模擬
                 let cnyesAction:simTechnicalAction = (allTrades ? .allTrades : action)
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
                     NSLog("\(stocks.count - i)...")
-                    DispatchQueue.main.async {
-                        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的計算(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
+                    if action == .allTrades || action == .tUpdateAll {
+                        DispatchQueue.main.async {
+                            NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的計算(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
+                        }
                     }
                     self.simTechnical(stock: stock, action: cnyesAction)
                     self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
