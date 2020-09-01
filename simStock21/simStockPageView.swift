@@ -262,7 +262,8 @@ struct tradeListView: View {
 
 
             //== 日交易明細列表 ==
-            List {
+//            ScrollView {
+                List {
                 ForEach(stock.trades, id:\.self.dateTime) { trade in
                     tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                         .onTapGesture {
@@ -275,6 +276,7 @@ struct tradeListView: View {
 //                        .onAppear { print(trade.date, "show") }
 //                        .onDisappear { print(trade.date, "out") }
                 }
+//                }
             }
             .id(UUID())
             .listStyle(GroupedListStyle())

@@ -53,7 +53,7 @@ class simDataRequest {
         } else {
             let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
             let time1332 = twDateTime.time1330(delayMinutes: 2)
-            let time0900 = twDateTime.time0900()
+            let time0900 = twDateTime.time0900(delayMinutes: -2)
             if (isOffDay && twDateTime.isDateInToday(timeTradesUpdated)) {
                 NSLog("休市日且今天已更新。")
             } else if timeTradesUpdated > last1332 && Date() < time0900 {
@@ -61,8 +61,7 @@ class simDataRequest {
             } else if timeTradesUpdated > time1332 {
                 NSLog("上次更新是今天收盤之後。")
             } else {
-                let all:Bool = !twDateTime.inMarketingTime(timeTradesUpdated, delay: 2, forToday: true)
-                runRequest(allStocks ?? stocks, action: (all ? .newTrades : .realtime))
+                runRequest(allStocks ?? stocks, action: (timeTradesUpdated > last1332 ? .realtime : .newTrades))
             }
         }
     }
