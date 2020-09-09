@@ -450,8 +450,8 @@ struct lastTrade: View {
             }
             Text(String(format:"%.1f年",stock.years))
                 .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)
-            if trade.rollDays > 0 {
-                Text(String(format:"%.f天",trade.rollDays/trade.rollRounds))
+            if trade.days > 0 {
+                Text(String(format:"%.f天",trade.days))
                     .frame(width: (list.widthClass == .compact ? 35.0 : 70.0), alignment: .trailing)
                 Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
                     .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)

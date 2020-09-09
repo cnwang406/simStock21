@@ -135,135 +135,17 @@ struct tradeListView: View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var selected: Date?
-    @State var showReload:Bool = false
-    @State var showSetting: Bool = false
-    @State var showInformation:Bool = false
+//    @State var showReload:Bool = false
+//    @State var showSetting: Bool = false
+//    @State var showInformation:Bool = false
         
-    var simSummary: (profit:String, roi:String, days:String) {
-        if stock.trades.count == 0 {
-            return ("","","尚無模擬交易")
-        } else {
-            let trade = stock.trades[0]
-            if trade.rollDays == 0 || trade.rollRounds == 0 {
-                return ("","","尚無模擬交易")
-            } else {
-                let numberFormatter = NumberFormatter()
-                numberFormatter.numberStyle = .currency   //貨幣格式
-                numberFormatter.maximumFractionDigits = 0
-                let rollAmtProfit = "累計損益" + (numberFormatter.string(for: trade.rollAmtProfit) ?? "$0")
-                let rollAmtRoi = String(format:"年報酬率%.1f%%",trade.rollAmtRoi/stock.years)
-                let rollDays = String(format:"平均週期%.f天",trade.rollDays/trade.rollRounds)
-                return (rollAmtProfit,rollAmtRoi,rollDays)
-            }
-        }
-    }
-
-    func openUrl(_ url:String) {
-        if let URL = URL(string: url) {
-            if UIApplication.shared.canOpenURL(URL) {
-                UIApplication.shared.open(URL, options:[:], completionHandler: nil)
-            }
-        }
-    }
     
     //== 表頭：股票名稱、模擬摘要 ==
     var body: some View {
         VStack(alignment: .leading) {
-            Group {
-                HStack(alignment: .top) {
-                    Group {
-                        Text(stock.sId)
-                        Text(stock.sName)
-                    }
-                        .foregroundColor(list.isRunning ? .gray : .primary)
-                    Spacer(minLength: 40)
-                    HStack {
-                        //== 工具按鈕 1 ==
-                        Button(action: {self.showSetting = true}) {
-                            Image(systemName: "wrench")
-                        }
-                            .sheet(isPresented: $showSetting) {
-                                settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
-                            }
-                        //== 工具按鈕 2 ==
-                        Spacer()
-                        Button(action: {self.showReload = true}) {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                            .actionSheet(isPresented: $showReload) {
-                                ActionSheet(title: Text("立即更新"), message: Text("刪除或重算？"), buttons: [
-                                    .default(Text("重算模擬")) {
-                                        self.list.reloadNow([self.stock], action: .simResetAll)
-                                    },
-                                    .default(Text("重算技術數值")) {
-                                        self.list.reloadNow([self.stock], action: .tUpdateAll)
-                                    },
-                                    .default(Text("刪除最後1個月")) {
-                                        self.list.deleteTrades([self.stock], oneMonth: true)
-                                    },
-                                    .destructive(Text("沒事，不用了。"))
-                                ])
-                            }
-                        //== 工具按鈕 3 ==
-                        Spacer()
-                        Button(action: {self.showInformation = true}) {
-                            Image(systemName: "questionmark.circle")
-                        }
-                            .actionSheet(isPresented: $showInformation) {
-                                ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"),
-                                buttons: [
-                                    .default(Text("小確幸網站")) {
-                                        self.openUrl("https://peiyu66.github.io/simStock21/")
-                                    },
-                                    .default(Text("Yahoo! 技術分析")) {
-                                        self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
-                                    },
-                                    .destructive(Text("沒事，不用了。"))
-                                ])
-                            }
-
-                    } //工具按鈕的HStack
-                        .frame(width: 100, alignment: .trailing)
-                        .font(.body)
-
-
-                }
-                .font(.title)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .padding()
-            
-                Spacer()
-                
-                VStack(alignment: .trailing) {
-                    HStack {
-                        Spacer()
-                        Text(String(format:"期間%.1f年", stock.years))
-                        Text(stock.simMoneyBase > 0 ? String(format:"起始本金%.f萬元",stock.simMoneyBase) : "")
-                        Text(stock.simAddInvest ? "自動2次加碼" : "不自動加碼")
-                            .foregroundColor(stock.simAddInvest ? .primary : .red)
-                    }
-    //                    .lineLimit(1)
-    //                    .minimumScaleFactor(0.6)
-    //                    .padding(.trailing)
-                    HStack {
-                        Spacer()
-                        Text(simSummary.profit)
-                        Text(simSummary.roi)
-                        Text(simSummary.days)
-                    }
-                    
-                }
-                    .font(.callout)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .padding(.trailing)
-            }   //Group （表頭）
-
-
+            tradeHeading(list: self.list, stock: self.stock)
             //== 日交易明細列表 ==
-//            ScrollView {
-                List {
+            List {
                 ForEach(stock.trades, id:\.self.dateTime) { trade in
                     tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                         .onTapGesture {
@@ -272,11 +154,10 @@ struct tradeListView: View {
                             } else {
                                 self.selected = trade.date
                             }
-                        }
+                    }
 //                        .onAppear { print(trade.date, "show") }
 //                        .onDisappear { print(trade.date, "out") }
                 }
-//                }
             }
             .id(UUID())
             .listStyle(GroupedListStyle())
@@ -348,6 +229,135 @@ struct settingForm: View {
     
 
     
+}
+
+struct tradeHeading:View {
+    @ObservedObject var list: simStockList
+    @ObservedObject var stock : Stock
+    @State var showReload:Bool = false
+    @State var showSetting: Bool = false
+    @State var showInformation:Bool = false
+    
+    var simSummary: (profit:String, roi:String, days:String) {
+        if stock.trades.count == 0 {
+            return ("","","尚無模擬交易")
+        } else {
+            let trade = stock.trades[0]
+            if trade.rollDays == 0 || trade.rollRounds == 0 {
+                return ("","","尚無模擬交易")
+            } else {
+                let numberFormatter = NumberFormatter()
+                numberFormatter.numberStyle = .currency   //貨幣格式
+                numberFormatter.maximumFractionDigits = 0
+                let rollAmtProfit = "累計損益" + (numberFormatter.string(for: trade.rollAmtProfit) ?? "$0")
+                let rollAmtRoi = String(format:"年報酬率%.1f%%",trade.rollAmtRoi/stock.years)
+                let rollDays = String(format:"平均週期%.f天",trade.rollDays/trade.rollRounds)
+                return (rollAmtProfit,rollAmtRoi,rollDays)
+            }
+        }
+    }
+
+    func openUrl(_ url:String) {
+        if let URL = URL(string: url) {
+            if UIApplication.shared.canOpenURL(URL) {
+                UIApplication.shared.open(URL, options:[:], completionHandler: nil)
+            }
+        }
+    }
+
+
+    var body: some View {
+        Group {
+            HStack(alignment: .top) {
+                Group {
+                    Text(stock.sId)
+                    Text(stock.sName)
+                }
+                    .foregroundColor(list.isRunning ? .gray : .primary)
+                Spacer(minLength: 40)
+                HStack {
+                    //== 工具按鈕 1 ==
+                    Button(action: {self.showSetting = true}) {
+                        Image(systemName: "wrench")
+                    }
+                        .sheet(isPresented: $showSetting) {
+                            settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
+                        }
+                    //== 工具按鈕 2 ==
+                    Spacer()
+                    Button(action: {self.showReload = true}) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                        .actionSheet(isPresented: $showReload) {
+                            ActionSheet(title: Text("立即更新"), message: Text("刪除或重算？"), buttons: [
+                                .default(Text("重算模擬")) {
+                                    self.list.reloadNow([self.stock], action: .simResetAll)
+                                },
+                                .default(Text("重算技術數值")) {
+                                    self.list.reloadNow([self.stock], action: .tUpdateAll)
+                                },
+                                .default(Text("刪除最後1個月")) {
+                                    self.list.deleteTrades([self.stock], oneMonth: true)
+                                },
+                                .destructive(Text("沒事，不用了。"))
+                            ])
+                        }
+                    //== 工具按鈕 3 ==
+                    Spacer()
+                    Button(action: {self.showInformation = true}) {
+                        Image(systemName: "questionmark.circle")
+                    }
+                        .actionSheet(isPresented: $showInformation) {
+                            ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"),
+                            buttons: [
+                                .default(Text("小確幸網站")) {
+                                    self.openUrl("https://peiyu66.github.io/simStock21/")
+                                },
+                                .default(Text("Yahoo! 技術分析")) {
+                                    self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
+                                },
+                                .destructive(Text("沒事，不用了。"))
+                            ])
+                        }
+
+                } //工具按鈕的HStack
+                    .frame(width: 100, alignment: .trailing)
+                    .font(.body)
+
+
+            }
+            .font(.title)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .padding()
+        
+            Spacer()
+            
+            VStack(alignment: .trailing) {
+                HStack {
+                    Spacer()
+                    Text(String(format:"期間%.1f年", stock.years))
+                    Text(stock.simMoneyBase > 0 ? String(format:"起始本金%.f萬元",stock.simMoneyBase) : "")
+                    Text(stock.simAddInvest ? "自動2次加碼" : "不自動加碼")
+                        .foregroundColor(stock.simAddInvest ? .primary : .red)
+                }
+//                    .lineLimit(1)
+//                    .minimumScaleFactor(0.6)
+//                    .padding(.trailing)
+                HStack {
+                    Spacer()
+                    Text(simSummary.profit)
+                    Text(simSummary.roi)
+                    Text(simSummary.days)
+                }
+                
+            }
+                .font(.callout)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .padding(.trailing)
+        }   //Group （表頭）
+    }
 }
 
 

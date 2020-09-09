@@ -15,7 +15,7 @@ class simDataRequest {
     private let requestInterval:TimeInterval = 120
     
     var realtime:Bool {
-        twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
+        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2) && twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
     }
     
     enum simTechnicalAction {
@@ -61,7 +61,7 @@ class simDataRequest {
             } else if timeTradesUpdated > time1332 {
                 NSLog("上次更新是今天收盤之後。")
             } else {
-                runRequest(allStocks ?? stocks, action: (timeTradesUpdated > last1332 ? .realtime : .newTrades))
+                runRequest(allStocks ?? stocks, action: (realtime ? .realtime : .newTrades))
             }
         }
     }
@@ -69,7 +69,6 @@ class simDataRequest {
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.twseCount = 0
         self.timer?.invalidate()
-        self.timer = nil
         let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
         if action != .simTesting {
             NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
@@ -159,8 +158,6 @@ class simDataRequest {
                             //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
                             self.tUpdate(trades, index: index)
                             tCount += 1
-                        }
-                        if trade.tUpdated == false || action != .newTrades {    //必要：allTrades, tUpdateAll
                             self.simUpdate(trades, index: index)
                             sCount += 1
                         }

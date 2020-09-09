@@ -168,20 +168,19 @@ public class Stock: NSManagedObject {
     }
     
     func deleteTrades(oneMonth:Bool=false) {
-        DispatchQueue.global().async {
-            let context = coreData.shared.context
-            var mStart:Date? = nil
-            if oneMonth {
-                if let last = self.lastTrade(context) {
-                    mStart = twDateTime.startOfMonth(last.date)
-                }
+        let context = coreData.shared.context
+        var mStart:Date? = nil
+        if oneMonth {
+            if let last = self.lastTrade(context) {
+                mStart = twDateTime.startOfMonth(last.date)
             }
-            let trades = Trade.fetch(context, stock: self, dateTime: mStart)
-            for trade in trades {
-                context.delete(trade)
-            }
-            try? context.save()
         }
+        let trades = Trade.fetch(context, stock: self, dateTime: mStart)
+        NSLog("\(self.sId)\(self.sName)\t刪除trades:共\(trades.count)筆")
+        for trade in trades {
+            context.delete(trade)
+        }
+        try? context.save()
     }
 
     var years:Double {
@@ -340,15 +339,7 @@ public class Trade: NSManagedObject {
     var date:Date {
         twDateTime.startOfDay(dateTime)
     }
-    
-    var years:Double {
-        var years = Date().timeIntervalSince(self.dateTime) / 86400 / 365
-        if years < 1 {
-            years = 1
-        }
-        return years
-    }
-    
+        
     var days:Double {
         if self.rollRounds <= 1 {
             return self.rollDays

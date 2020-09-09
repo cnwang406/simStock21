@@ -115,8 +115,13 @@ class simStockList:ObservableObject {
     }
     
     func deleteTrades(_ stocks:[Stock], oneMonth:Bool=false) {
-        for stock in stocks {
-            stock.deleteTrades(oneMonth: oneMonth)
+        DispatchQueue.global().async {
+            for stock in stocks {
+                stock.deleteTrades(oneMonth: oneMonth)
+            }
+            DispatchQueue.main.async {
+                self.sim.request.downloadTrades(stocks, requestAction: .newTrades, allStocks: self.sim.stocks)
+            }
         }
     }
 
@@ -183,6 +188,7 @@ class simStockList:ObservableObject {
     
     @objc func setWidthClass(_ notification: Notification) {
         widthClass = deviceWidthClass
+        NSLog("widthClass:\(widthClass)")
     }
     
     @objc func setRequestStatus(_ notification: Notification) {
