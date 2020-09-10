@@ -256,13 +256,8 @@ struct tradeHeading:View {
     @State var showInformation:Bool = false
     
     var simSummary: (profit:String, roi:String, days:String) {
-        if stock.trades.count == 0 {
-            return ("","","尚無模擬交易")
-        } else {
-            let trade = stock.trades[0]
-            if trade.rollDays == 0 || trade.rollRounds == 0 {
-                return ("","","尚無模擬交易")
-            } else {
+        if let trade = stock.trades.first {
+            if trade.rollRounds > 0 {
                 let numberFormatter = NumberFormatter()
                 numberFormatter.numberStyle = .currency   //貨幣格式
                 numberFormatter.maximumFractionDigits = 0
@@ -272,6 +267,7 @@ struct tradeHeading:View {
                 return (rollAmtProfit,rollAmtRoi,rollDays)
             }
         }
+        return ("","","尚無模擬交易")
     }
 
     func openUrl(_ url:String) {
@@ -315,6 +311,9 @@ struct tradeHeading:View {
                                 },
                                 .default(Text("刪除最後1個月")) {
                                     self.list.deleteTrades([self.stock], oneMonth: true)
+                                },
+                                .default(Text("刪除全部")) {
+                                    self.list.deleteTrades([self.stock], oneMonth: false)
                                 },
                                 .destructive(Text("沒事，不用了。"))
                             ])

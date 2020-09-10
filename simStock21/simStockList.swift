@@ -120,7 +120,7 @@ class simStockList:ObservableObject {
                 stock.deleteTrades(oneMonth: oneMonth)
             }
             DispatchQueue.main.async {
-                self.sim.request.downloadTrades(stocks, requestAction: .newTrades, allStocks: self.sim.stocks)
+                self.sim.request.downloadTrades(stocks, requestAction: (stocks.count > 1 ? .allTrades : .newTrades), allStocks: self.sim.stocks)
             }
         }
     }

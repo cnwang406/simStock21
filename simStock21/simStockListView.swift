@@ -110,6 +110,10 @@ struct simStockListView: View {
                                     self.list.deleteTrades(self.checkedStocks, oneMonth: true)
                                     self.isChoosingOff()
                                 },
+                                .default(Text("刪除全部")) {
+                                    self.list.deleteTrades(self.checkedStocks, oneMonth: false)
+                                    self.isChoosingOff()
+                                },
                                 .destructive(Text("沒事，不用了。")) {
                                     self.isChoosingOff()
                                 }
