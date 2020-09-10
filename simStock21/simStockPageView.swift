@@ -145,8 +145,27 @@ struct tradeListView: View {
         VStack(alignment: .leading) {
             tradeHeading(list: self.list, stock: self.stock)
             //== 日交易明細列表 ==
-            List {
-                ForEach(stock.trades, id:\.self.dateTime) { trade in
+            if #available(iOS 14.0, *) {
+                GeometryReader { g in
+                    ScrollView {
+                        LazyVStack {
+                            List (stock.trades, id:\.self.dateTime) { trade in
+                                tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
+                                    .onTapGesture {
+                                        if self.selected == trade.date {
+                                            self.selected = nil
+                                        } else {
+                                            self.selected = trade.date
+                                        }
+                                    }
+                            }
+                            .frame(width: g.size.width, height: g.size.height, alignment: .center)
+                            .listStyle(GroupedListStyle())
+                        }
+                    }
+                }
+            } else {
+                List(stock.trades, id:\.self.dateTime) { trade in
                     tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                         .onTapGesture {
                             if self.selected == trade.date {
@@ -154,15 +173,13 @@ struct tradeListView: View {
                             } else {
                                 self.selected = trade.date
                             }
-                    }
-//                        .onAppear { print(trade.date, "show") }
-//                        .onDisappear { print(trade.date, "out") }
+                        }
+    //                        .onAppear { print(trade.date, "show") }
+    //                        .onDisappear { print(trade.date, "out") }
                 }
+                .id(UUID())
+                .listStyle(GroupedListStyle())
             }
-            .id(UUID())
-            .listStyle(GroupedListStyle())
-            Spacer()
-            
         }
     }
 }

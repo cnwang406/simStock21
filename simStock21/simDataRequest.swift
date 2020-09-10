@@ -1268,10 +1268,10 @@ class simDataRequest {
             let topWantS:Double = 5
 
             let weekendDays:Double = (twDateTime.calendar.component(.weekday, from: trade.dateTime) <= 2 ? 2 : 0)
-            let sRoi19 = trade.simUnitRoi > (trade.grade > .weak ? 21.5 : 19.5) && trade.simDays < 30
-            let sRoi15 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 15.5 : 11.5) && trade.simDays < 30   //15.5,11.5
-            let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20    //13.5,9.5
-            let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10     //9.5,7.5
+            let sRoi19 = trade.simUnitRoi > (trade.grade > .weak ? 21.5 : 19.5) && trade.simDays < (trade.tMa60DiffZ250 > 0 ? 30 : 90)
+            let sRoi15 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 15.5 : 11.5) && trade.simDays < 30
+            let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
+            let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
             let sBase0 = trade.simUnitRoi > 0.45 && trade.simDays > (1 + weekendDays)
             let sBase5 = wantS >= topWantS && sBase0 && trade.grade <= .weak

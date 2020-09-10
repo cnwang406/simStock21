@@ -427,6 +427,9 @@ public class Trade: NSManagedObject {
             case "H":
                 return .red
             default:
+                if self.simRuleInvest == "A" {
+                    return .green
+                }
                 return .primary
             }
         case .ruleF:
