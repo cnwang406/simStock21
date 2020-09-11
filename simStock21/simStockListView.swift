@@ -9,8 +9,11 @@
 import SwiftUI
 
 struct simStockListView: View {
-    
     @ObservedObject var list: simStockList
+    @State var isChoosing = false           //進入了選取模式
+    @State var isSearching:Bool = false     //進入了搜尋模式
+    @State var checkedStocks: [Stock] = []  //已選取的股票們
+    @State var searchText:String = ""       //輸入的搜尋文字
         
     var body: some View {
         NavigationView {
@@ -45,156 +48,33 @@ struct simStockListView: View {
                     .listStyle(GroupedListStyle())
             }
                 .navigationBarTitle("", displayMode: .inline)
-                .navigationBarItems(leading: choose, trailing: endChoosing)
+                .navigationBarItems(leading: chooseCommand(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText), trailing: endChoosing(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText))
         }
             .navigationViewStyle(StackNavigationViewStyle())
-
     }
-    
-    @State var isChoosing = false           //進入了選取模式
-    @State var isSearching:Bool = false     //進入了搜尋模式
-    @State var showFilter:Bool = false      //顯示pickerGroups
-    @State var checkedStocks: [Stock] = []  //已選取的股票們
-    @State var searchText:String = ""       //輸入的搜尋文字
-    @State var showExport:Bool = false      //顯示匯出選單
-    @State var showShare:Bool = false       //分享代號簡稱
-    @State var shareText:String = ""        //要匯出的文字內容
-    @State var showMoveAlert:Bool = false
-    @State var showReload:Bool = false
-    
-    func isChoosingOff() {
-        self.isChoosing = false
-        self.checkedStocks = []
-    }
-    
-    var choose: some View {
-//        GeometryReader { geometryProxy in
-        HStack {
-            if self.isChoosing {
-                Text("請勾選")
-                    .foregroundColor(Color(.darkGray))
-                 Image(systemName: "chevron.right")
-                     .foregroundColor(.gray)
-                if self.checkedStocks.count > 0 {
-                    Button((self.list.widthClass != .compact ? "自股群" : "") + "移除") {
-                        self.showMoveAlert = true
-                    }
-                    .alert(isPresented: self.$showMoveAlert) {
-                            Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
-                                self.list.moveStocks(self.checkedStocks)
-                                self.isChoosingOff()
-                            }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
-                        }
-                    Divider()
-                    Button("加入" + (self.list.widthClass != .compact ? "股群" : "")) {
-                        self.showFilter = true
-                    }
-                    .sheet(isPresented: self.$showFilter) {
-                            pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText)
-                        }
-                    Divider()
-                    Button((self.list.widthClass != .compact ? "刪除或" : "") + "重算") {
-                        self.showReload = true
-                    }
-                    .actionSheet(isPresented: self.$showReload) {
-                            ActionSheet(title: Text("刪除或重算"), message: Text("內容和範圍？"), buttons: [
-                                .default(Text("重算模擬")) {
-                                    self.list.reloadNow(self.checkedStocks, action: .simResetAll)
-                                    self.isChoosingOff()
-                                },
-                                .default(Text("重算技術數值")) {
-                                    self.list.reloadNow(self.checkedStocks, action: .tUpdateAll)
-                                    self.isChoosingOff()
-                                },
-                                .default(Text("刪除最後1個月")) {
-                                    self.list.deleteTrades(self.checkedStocks, oneMonth: true)
-                                    self.isChoosingOff()
-                                },
-                                .default(Text("刪除全部")) {
-                                    self.list.deleteTrades(self.checkedStocks, oneMonth: false)
-                                    self.isChoosingOff()
-                                },
-                                .destructive(Text("沒事，不用了。")) {
-                                    self.isChoosingOff()
-                                }
-                            ])
-                        }
-                    Divider()
-                    Button("匯出" + (self.list.widthClass != .compact ? "CSV" : "")) {
-                        self.showExport = true
-                    }
-                    .actionSheet(isPresented: self.$showExport) {
-                            ActionSheet(title: Text("匯出"), message: Text("文字內容？"), buttons: [
-                                .default(Text("代號和名稱")) {
-                                    self.shareText = self.list.csvStocksIdName(self.checkedStocks)
-                                    self.showShare = true
-                                },
-                                .destructive(Text("沒事，不用了。")) {
-                                    self.isChoosingOff()
-                                }
-                            ])
-                        }
-                        .sheet(isPresented: self.$showShare) {   //分享窗
-                            ShareSheet(activityItems: [self.shareText]) { (activity, success, items, error) in
-                                self.isChoosingOff()
-                            }
-                        }
-                } else {
-                    Button("全選") {
-                        for stocks in self.list.groupStocks {
-                            for stock in stocks {
-                                self.checkedStocks.append(stock)
-                            }
-                        }
-                    }
-                }
-                Spacer()
-            } else if self.list.searchGotResults {
-                Text("請勾選")
-                if self.checkedStocks.count > 0 {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                    Button("加入股群") {
-                            self.showFilter = true
-                    }
-                    .sheet(isPresented: self.$showFilter) {
-                            pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isSearching, isPresented: self.$showFilter, searchText: self.$searchText)
-                        }
-                }
-            } else if !self.isSearching {
-                if list.isRunning {
-                    Text(list.runningMsg)
-                        .foregroundColor(.orange)
-                } else {
-                    Button("選取") {
-                        self.isChoosing = true
-                        self.searchText = ""
-                        self.list.searchText = nil
-                        self.isSearching = false
-                    }
-                }
-            }
-        }
-            .minimumScaleFactor(0.6)
-            .lineLimit(1)
-        .frame(width: (self.list.widthClass == .compact ? 300 : 500) , alignment: .leading)
+}
 
-//        }
+struct endChoosing:View {
+    @ObservedObject var list: simStockList
+    @Binding var isChoosing:Bool            //進入了選取模式
+    @Binding var isSearching:Bool           //進入了搜尋模式
+    @Binding var checkedStocks: [Stock]     //已選取的股票們
+    @Binding var searchText:String          //輸入的搜尋文字
 
-    }
-    
-    var endChoosing: some View {
+    var body: some View {
         HStack {
             if isChoosing {
                 Button("取消" + (list.widthClass != .compact ? "選取模式" : "")) {
-                    self.isChoosingOff()
+                    self.isChoosing = false
+                    self.checkedStocks = []
                 }
             } else if self.list.searchGotResults {
                 Button("放棄" + (list.widthClass != .compact ? "搜尋結果" : "")) {
                     self.searchText = ""
                     self.list.searchText = nil
                     self.isSearching = false
-                    self.isChoosingOff()
+                    self.isChoosing = false
+                    self.checkedStocks = []
                 }
             }
         }
@@ -203,6 +83,140 @@ struct simStockListView: View {
     }
 }
 
+struct chooseCommand:View {
+    @ObservedObject var list: simStockList
+    @Binding var isChoosing:Bool            //進入了選取模式
+    @Binding var isSearching:Bool           //進入了搜尋模式
+    @Binding var checkedStocks: [Stock]     //已選取的股票們
+    @Binding var searchText:String          //輸入的搜尋文字
+    
+    @State var shareText:String = ""        //要匯出的文字內容
+    @State var showFilter:Bool = false      //顯示pickerGroups
+    @State var showExport:Bool = false      //顯示匯出選單
+    @State var showShare:Bool = false       //分享代號簡稱
+    @State var showMoveAlert:Bool = false
+    @State var showReload:Bool = false
+
+    func isChoosingOff() {
+        self.isChoosing = false
+        self.checkedStocks = []
+    }
+
+    var body: some View {
+//        GeometryReader { g in
+            HStack {
+                if self.isChoosing {
+                    Text("請勾選")
+                        .foregroundColor(Color(.darkGray))
+                     Image(systemName: "chevron.right")
+                         .foregroundColor(.gray)
+                    if self.checkedStocks.count > 0 {
+                        Button((self.list.widthClass != .compact ? "自股群" : "") + "移除") {
+                            self.showMoveAlert = true
+                        }
+                        .alert(isPresented: self.$showMoveAlert) {
+                                Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
+                                    self.list.moveStocks(self.checkedStocks)
+                                    self.isChoosingOff()
+                                }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
+                            }
+                        Divider()
+                        Button("加入" + (self.list.widthClass != .compact ? "股群" : "")) {
+                            self.showFilter = true
+                        }
+                        .sheet(isPresented: self.$showFilter) {
+                                pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText)
+                            }
+                        Divider()
+                        Button((self.list.widthClass != .compact ? "刪除或" : "") + "重算") {
+                            self.showReload = true
+                        }
+                        .actionSheet(isPresented: self.$showReload) {
+                                ActionSheet(title: Text("刪除或重算"), message: Text("內容和範圍？"), buttons: [
+                                    .default(Text("重算模擬")) {
+                                        self.list.reloadNow(self.checkedStocks, action: .simResetAll)
+                                        self.isChoosingOff()
+                                    },
+                                    .default(Text("重算技術數值")) {
+                                        self.list.reloadNow(self.checkedStocks, action: .tUpdateAll)
+                                        self.isChoosingOff()
+                                    },
+                                    .default(Text("刪除最後1個月")) {
+                                        self.list.deleteTrades(self.checkedStocks, oneMonth: true)
+                                        self.isChoosingOff()
+                                    },
+                                    .default(Text("刪除全部")) {
+                                        self.list.deleteTrades(self.checkedStocks, oneMonth: false)
+                                        self.isChoosingOff()
+                                    },
+                                    .destructive(Text("沒事，不用了。")) {
+                                        self.isChoosingOff()
+                                    }
+                                ])
+                            }
+                        Divider()
+                        Button("匯出" + (self.list.widthClass != .compact ? "CSV" : "")) {
+                            self.showExport = true
+                        }
+                        .actionSheet(isPresented: self.$showExport) {
+                                ActionSheet(title: Text("匯出"), message: Text("文字內容？"), buttons: [
+                                    .default(Text("代號和名稱")) {
+                                        self.shareText = self.list.csvStocksIdName(self.checkedStocks)
+                                        self.showShare = true
+                                    },
+                                    .destructive(Text("沒事，不用了。")) {
+                                        self.isChoosingOff()
+                                    }
+                                ])
+                            }
+                            .sheet(isPresented: self.$showShare) {   //分享窗
+                                ShareSheet(activityItems: [self.shareText]) { (activity, success, items, error) in
+                                    self.isChoosingOff()
+                                }
+                            }
+                    } else {
+                        Button("全選") {
+                            for stocks in self.list.groupStocks {
+                                for stock in stocks {
+                                    self.checkedStocks.append(stock)
+                                }
+                            }
+                        }
+                    }
+                    Spacer()
+                } else if self.list.searchGotResults {
+                    Text("請勾選")
+                    if self.checkedStocks.count > 0 {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.gray)
+                        Button("加入股群") {
+                                self.showFilter = true
+                        }
+                        .sheet(isPresented: self.$showFilter) {
+                                pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isMoving: self.$isSearching, isPresented: self.$showFilter, searchText: self.$searchText)
+                            }
+                    }
+                } else if !self.isSearching {
+                    if list.isRunning {
+                        Text(list.runningMsg)
+                            .foregroundColor(.orange)
+                    } else {
+                        Button("選取") {
+                            self.isChoosing = true
+                            self.searchText = ""
+                            self.list.searchText = nil
+                            self.isSearching = false
+                        }
+                    }
+                }
+            }   //HStack
+//            .frame(width: g.size.width, height: g.size.height, alignment: .leading)
+                .frame(width: (self.list.widthClass == .compact ? 300 : 500) , alignment: .leading)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+//        }
+    }
+}
 
 
 struct pickerGroups:View {

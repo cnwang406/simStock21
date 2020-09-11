@@ -150,17 +150,15 @@ class simDataRequest {
                         trade.simReversed = ""
                         trade.simInvestByUser = 0
                     }
-                    if (action == .simUpdateAll || action == .simResetAll || action == .simTesting) {
+                    if trade.tUpdated == false || action == .tUpdateAll {
+                        //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
+                        self.tUpdate(trades, index: index)
+                        tCount += 1
                         self.simUpdate(trades, index: index)
                         sCount += 1
-                    } else {    //newTrades, allTrades, tUpdateAll
-                        if trade.tUpdated == false || action == .tUpdateAll {
-                            //tUpdated == false代表newTrades,allTrades。但newTrades不用從頭重算，怎麼排除呢？
-                            self.tUpdate(trades, index: index)
-                            tCount += 1
-                            self.simUpdate(trades, index: index)
-                            sCount += 1
-                        }
+                    } else if action != .newTrades {    //allTrades應重算模擬
+                        self.simUpdate(trades, index: index)
+                        sCount += 1
                     }
                 }
                 if action != .simTesting {
@@ -1292,9 +1290,12 @@ class simDataRequest {
                     break
                 }
             }
-            let cut1 = trade.tLowDiff125 - trade.tHighDiff125 < 30
-            let cut2 = trade.simDays > 200 && trade.simUnitRoi > (trade.grade <= .low || trade.simDays > 360 ? -20 : -15)
-            let sCut = wantS >= (topWantS - (trade.simDays > 400 ? 4 : 3)) && ((cut1 && cut2) || trade.simDays > 400) && noInvested60
+            let cut1a = trade.tLowDiff125 - trade.tHighDiff125 < 30
+            let cut1b = trade.simUnitRoi > -15 && (trade.simDays > 200 && trade.grade > .low)
+            let cut1c = trade.simUnitRoi > -20 && (trade.simDays > 360 || trade.grade <= .low)
+            let cut1  = cut1a && (cut1b || cut1c)
+            let cut2 = trade.simDays > 400 && trade.simUnitRoi > (trade.grade <= .low ? -20 : -15)
+            let sCut = wantS >= (topWantS - (trade.simDays > 400 ? 4 : 3)) && (cut1 || cut2) && noInvested60
 
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut || sRoi19
             

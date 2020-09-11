@@ -148,7 +148,7 @@ struct simStock {
                 DispatchQueue.main.async {
                     try? context.save()
                 }
-                request.downloadTrades(stocks, requestAction: (dateChanged ? .newTrades : .simResetAll), allStocks: self.stocks)
+                request.downloadTrades(stocks, requestAction: (dateChanged ? .allTrades : .simResetAll), allStocks: self.stocks)
             }
         }
     }

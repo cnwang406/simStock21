@@ -60,30 +60,33 @@ struct prefixPicker: View {
     }
 
     var body: some View {
-        HStack {
-            if self.prefixs.first == list.prefixs.first {
-                Text("|").foregroundColor(.gray).fixedSize()
-            } else {
-                Text("-").foregroundColor(.gray).fixedSize()
-            }
-            Picker("", selection: $prefix) {
-                ForEach(self.prefixs, id:\.self) {prefix in
-                    Text(prefix).tag(prefix)
+        GeometryReader { g in
+            HStack {
+                if self.prefixs.first == list.prefixs.first {
+                    Text("|").foregroundColor(.gray).fixedSize()
+                } else {
+                    Text("-").foregroundColor(.gray).fixedSize()
                 }
-            }
-                .pickerStyle(SegmentedPickerStyle())
-                .labelsHidden()
-                .fixedSize()
-                .onReceive([self.prefix].publisher.first()) { value in
-                    if self.stock.prefix != self.prefix {
-                        self.stock = self.list.prefixStocks(prefix: value)[0]
+                Picker("", selection: $prefix) {
+                    ForEach(self.prefixs, id:\.self) {prefix in
+                        Text(prefix).tag(prefix)
                     }
                 }
-            if self.prefixs.last == list.prefixs.last {
-                Text("|").foregroundColor(.gray).fixedSize()
-            } else {
-                Text("-").foregroundColor(.gray).fixedSize()
+                    .pickerStyle(SegmentedPickerStyle())
+                    .labelsHidden()
+                    .fixedSize()
+                    .onReceive([self.prefix].publisher.first()) { value in
+                        if self.stock.prefix != self.prefix {
+                            self.stock = self.list.prefixStocks(prefix: value)[0]
+                        }
+                    }
+                if self.prefixs.last == list.prefixs.last {
+                    Text("|").foregroundColor(.gray).fixedSize()
+                } else {
+                    Text("-").foregroundColor(.gray).fixedSize()
+                }
             }
+            .frame(width: g.size.width, height: g.size.height, alignment: .trailing)
         }
     }
 }
@@ -140,9 +143,9 @@ struct tradeListView: View {
 //    @State var showInformation:Bool = false
         
     
-    //== 表頭：股票名稱、模擬摘要 ==
     var body: some View {
         VStack(alignment: .leading) {
+            //== 表頭：股票名稱、模擬摘要 ==
             tradeHeading(list: self.list, stock: self.stock)
             //== 日交易明細列表 ==
             if #available(iOS 14.0, *) {

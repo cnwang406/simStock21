@@ -34,7 +34,7 @@ class simStockList:ObservableObject {
 
     var deviceWidthClass: WidthClass {
         if UIDevice.current.orientation.isLandscape {
-            return (self.vClass == .regular ? .widePad : .widePhone)
+            return (self.hClass == .regular && isPad ? .widePad : .widePhone)
         } else {
             return (self.hClass == .regular ? .regular : .compact)
         }
@@ -120,7 +120,7 @@ class simStockList:ObservableObject {
                 stock.deleteTrades(oneMonth: oneMonth)
             }
             DispatchQueue.main.async {
-                self.sim.request.downloadTrades(stocks, requestAction: (stocks.count > 1 ? .allTrades : .newTrades), allStocks: self.sim.stocks)
+                self.sim.request.downloadTrades(stocks, requestAction: (stocks.count > 1 ? .allTrades : .newTrades), allStocks: self.sim.stocks)    //allTrades才會提示等候訊息
             }
         }
     }
