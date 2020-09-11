@@ -205,6 +205,7 @@ struct settingForm: View {
                     DatePicker(selection: $dateStart, in: (twDateTime.calendar.date(byAdding: .year, value: -15, to: Date()) ?? stock.dateFirst)...(twDateTime.calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()), displayedComponents: .date) {
                         Text("起始日期")
                     }
+//                    .datePickerStyle(WheelDatePickerStyle())
                     .environment(\.locale, Locale(identifier: "zh_Hant_TW"))
                     HStack {
                         Text(String(format:"起始本金%.f萬元",self.moneyBase))

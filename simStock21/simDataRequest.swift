@@ -132,7 +132,17 @@ class simDataRequest {
         }
     }
     
-
+    /*
+     action         | tUpdate | simUpdate | simReset
+     ---------------+---------+-----------+----------
+     realtime       |    v    |     v     |
+     newTrades      |    v    |     v     |
+     allTrades      |    v    |     v     |    v
+     tUpdateAll     |    v    |     v     |    v
+     simTesting     |         |     v     |    v
+     simUpdateAll   |         |     v     |
+     simResetAll    |    v    |     v     |    v
+     */
 
     private func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
@@ -146,7 +156,7 @@ class simDataRequest {
                 var tCount:Int = 0
                 var sCount:Int = 0
                 for (index,trade) in trades.enumerated() {
-                    if action == .tUpdateAll || action == .simResetAll || action == .simTesting {
+                    if action == .tUpdateAll || action == .simResetAll || action == .simTesting || action == .allTrades {
                         trade.simReversed = ""
                         trade.simInvestByUser = 0
                     }
@@ -1162,9 +1172,6 @@ class simDataRequest {
     
 
     private func simUpdate(_ trades:[Trade], index:Int) {
-//        if twDateTime.stringFromDate(trade.dateTime) == "2020/05/27" && trade.stock.sId == "1476" {
-//            NSLog("\(trade.stock.sId)\(trade.stock.sName) debug ... ")
-//        }
         let trade = trades[index]
         if index == 0 || trade.date < trade.stock.dateStart {
             trade.setDefaultValues()
@@ -1204,6 +1211,9 @@ class simDataRequest {
             }
         }
 
+//        if twDateTime.stringFromDate(trade.dateTime) == "2016/11/02" && trade.stock.sId == "6176" {
+//            NSLog("\(trade.stock.sId)\(trade.stock.sName) debug ... ")
+//        }
         
         let ma20d = trade.tMa20DiffMax9 - trade.tMa20DiffMin9
         let ma60d = trade.tMa60DiffMax9 - trade.tMa60DiffMin9
@@ -1290,9 +1300,9 @@ class simDataRequest {
                     break
                 }
             }
-            let cut1a = trade.tLowDiff125 - trade.tHighDiff125 < 30
-            let cut1b = trade.simUnitRoi > -15 && (trade.simDays > 200 && trade.grade > .low)
-            let cut1c = trade.simUnitRoi > -20 && (trade.simDays > 360 || trade.grade <= .low)
+            let cut1a = trade.tLowDiff125 - trade.tHighDiff125 < 30 && trade.simDays > 200
+            let cut1b = trade.simUnitRoi > -15 && (trade.grade > .low)
+            let cut1c = trade.simUnitRoi > -20 && (trade.simDays > 300 || trade.grade <= .low)
             let cut1  = cut1a && (cut1b || cut1c)
             let cut2 = trade.simDays > 400 && trade.simUnitRoi > (trade.grade <= .low ? -20 : -15)
             let sCut = wantS >= (topWantS - (trade.simDays > 400 ? 4 : 3)) && (cut1 || cut2) && noInvested60
