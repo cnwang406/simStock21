@@ -162,7 +162,7 @@ class simStockList:ObservableObject {
             }
             try? context.save()
         }
-        sim.request.downloadTrades(stocks, requestAction: action, allStocks: sim.stocks)        
+        self.sim.request.downloadTrades(stocks, requestAction: action, allStocks: self.sim.stocks)
     }
     
     func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,addInvest:Bool, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {
@@ -222,7 +222,9 @@ class simStockList:ObservableObject {
                     }
                     return nil
                 }
-                sim.request.downloadTrades(sim.stocks, requestAction: action)
+                DispatchQueue.global().async {
+                    self.sim.request.downloadTrades(self.sim.stocks, requestAction: action)
+                }
             }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")

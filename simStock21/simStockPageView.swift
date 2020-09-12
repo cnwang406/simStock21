@@ -60,7 +60,7 @@ struct prefixPicker: View {
     }
 
     var body: some View {
-        GeometryReader { g in
+//        GeometryReader { g in
             HStack {
                 if self.prefixs.first == list.prefixs.first {
                     Text("|").foregroundColor(.gray).fixedSize()
@@ -86,8 +86,8 @@ struct prefixPicker: View {
                     Text("-").foregroundColor(.gray).fixedSize()
                 }
             }
-            .frame(width: g.size.width, height: g.size.height, alignment: .trailing)
-        }
+//            .frame(width: g.size.width, height: g.size.height, alignment: .trailing)
+//        }
     }
 }
 
@@ -138,37 +138,60 @@ struct tradeListView: View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var selected: Date?
-//    @State var showReload:Bool = false
-//    @State var showSetting: Bool = false
-//    @State var showInformation:Bool = false
-        
     
+    @State var filterIsOn:Bool = false
+
+        
+    var header:some View {
+        HStack {
+            Spacer()
+            Button(action: {self.filterIsOn = !self.filterIsOn}) {
+                if filterIsOn {
+                    Image(systemName: "square.2.stack.3d")
+//                    Image(systemName: "line.horizontal.3")
+                } else {
+                    Image(systemName: "square.3.stack.3d")
+//                    Image(systemName: "text.justify")
+                }
+            }
+                .padding(.trailing)
+        }
+    }
+    
+    var footer:some View {
+        EmptyView()
+    }
+
+
     var body: some View {
         VStack(alignment: .leading) {
             //== 表頭：股票名稱、模擬摘要 ==
             tradeHeading(list: self.list, stock: self.stock)
+            Divider()
             //== 日交易明細列表 ==
             if #available(iOS 14.0, *) {
                 GeometryReader { g in
                     ScrollView {
-                        LazyVStack {
-                            List (stock.trades, id:\.self.dateTime) { trade in
-                                tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
-                                    .onTapGesture {
-                                        if self.selected == trade.date {
-                                            self.selected = nil
-                                        } else {
-                                            self.selected = trade.date
-                                        }
-                                    }
+                        Section(header: header,footer: footer) {
+                            LazyVStack {
+                                List (stock.trades.filter{filterIsOn == false || $0.simQtySell > 0 || $0.simQtyBuy > 0}, id:\.self.dateTime) { trade in
+                                        tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
+                                            .onTapGesture {
+                                                if self.selected == trade.date {
+                                                    self.selected = nil
+                                                } else {
+                                                    self.selected = trade.date
+                                                }
+                                            }
+                                }
+                                .frame(width: g.size.width, height: g.size.height, alignment: .center)
+                                .listStyle(GroupedListStyle())
                             }
-                            .frame(width: g.size.width, height: g.size.height, alignment: .center)
-                            .listStyle(GroupedListStyle())
                         }
                     }
                 }
             } else {
-                List(stock.trades, id:\.self.dateTime) { trade in
+                List (stock.trades, id:\.self.dateTime) { trade in
                     tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                         .onTapGesture {
                             if self.selected == trade.date {
