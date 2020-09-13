@@ -138,54 +138,43 @@ struct tradeListView: View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var selected: Date?
-    
+    @State var scrollTo: Date?
     @State var filterIsOn:Bool = false
-
-        
-    var header:some View {
-        HStack {
-            Spacer()
-            Button(action: {self.filterIsOn = !self.filterIsOn}) {
-                if filterIsOn {
-                    Image(systemName: "square.2.stack.3d")
-//                    Image(systemName: "line.horizontal.3")
-                } else {
-                    Image(systemName: "square.3.stack.3d")
-//                    Image(systemName: "text.justify")
-                }
-            }
-                .padding(.trailing)
-        }
-    }
-    
-    var footer:some View {
-        EmptyView()
-    }
-
 
     var body: some View {
         VStack(alignment: .leading) {
             //== 表頭：股票名稱、模擬摘要 ==
-            tradeHeading(list: self.list, stock: self.stock)
-            Divider()
+            tradeHeading(list: self.list, stock: self.stock, filterIsOn: self.$filterIsOn)
             //== 日交易明細列表 ==
             if #available(iOS 14.0, *) {
                 GeometryReader { g in
                     ScrollView {
-                        Section(header: header,footer: footer) {
+                        ScrollViewReader { sv in
                             LazyVStack {
                                 List (stock.trades.filter{filterIsOn == false || $0.simQtySell > 0 || $0.simQtyBuy > 0}, id:\.self.dateTime) { trade in
                                         tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                                             .onTapGesture {
                                                 if self.selected == trade.date {
                                                     self.selected = nil
+                                                    self.scrollTo = nil
                                                 } else {
                                                     self.selected = trade.date
+                                                    self.scrollTo = trade.dateTime
                                                 }
                                             }
                                 }
                                 .frame(width: g.size.width, height: g.size.height, alignment: .center)
                                 .listStyle(GroupedListStyle())
+                            }
+                            .onChange(of: filterIsOn) {_ in
+                                if let dt = scrollTo {
+                                    sv.scrollTo(dt)
+                                }
+                            }
+                            .onAppear {
+                                if let dt = scrollTo {
+                                    sv.scrollTo(dt)
+                                }
                             }
                         }
                     }
@@ -281,6 +270,7 @@ struct tradeHeading:View {
     @State var showReload:Bool = false
     @State var showSetting: Bool = false
     @State var showInformation:Bool = false
+    @Binding var filterIsOn:Bool
     
     var simSummary: (profit:String, roi:String, days:String) {
         if let trade = stock.trades.first {
@@ -316,14 +306,26 @@ struct tradeHeading:View {
                     .foregroundColor(list.isRunning ? .gray : .primary)
                 Spacer(minLength: 40)
                 HStack {
-                    //== 工具按鈕 1 ==
+                    //== 工具按鈕 1 == 過濾交易模擬
+                    Button(action: {self.filterIsOn = !self.filterIsOn}) {
+                        if filterIsOn {
+                            Image(systemName: "square.2.stack.3d")
+        //                    Image(systemName: "line.horizontal.3")
+                        } else {
+                            Image(systemName: "square.3.stack.3d")
+        //                    Image(systemName: "text.justify")
+                        }
+                    }
+                        .padding(.trailing)
+
+                    //== 工具按鈕 1 == 設定
                     Button(action: {self.showSetting = true}) {
                         Image(systemName: "wrench")
                     }
                         .sheet(isPresented: $showSetting) {
                             settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
                         }
-                    //== 工具按鈕 2 ==
+                    //== 工具按鈕 2 == 刪除或重算
                     Spacer()
                     Button(action: {self.showReload = true}) {
                         Image(systemName: "arrow.clockwise")
@@ -345,7 +347,7 @@ struct tradeHeading:View {
                                 .destructive(Text("沒事，不用了。"))
                             ])
                         }
-                    //== 工具按鈕 3 ==
+                    //== 工具按鈕 3 == 參考訊息
                     Spacer()
                     Button(action: {self.showInformation = true}) {
                         Image(systemName: "questionmark.circle")
@@ -565,7 +567,7 @@ struct tradeCell: View {
                 //== 6天數,7成本價,8報酬率 ==
                 if trade.simQtyInventory > 0 || trade.simQtySell > 0 {
                     Text(String(format:"%.f天",trade.simDays))
-                        .frame(width: (list.widthClass == .compact ? 40.0 : 56.0), alignment: .trailing)
+                        .frame(width: (list.widthClass == .compact ? 44.0 : 56.0), alignment: .trailing)
                     if self.list.widthClass != .compact {
                         Text(String(format:"%.2f",trade.simUnitCost))
                             .frame(width: 56.0, alignment: .trailing)
@@ -574,7 +576,7 @@ struct tradeCell: View {
                     }
                     if self.list.widthClass != .compact || trade.simQtySell > 0 {
                         Text(String(format:"%.1f%%",trade.simAmtRoi))
-                            .frame(width: (list.widthClass == .compact ? 40.0 : 56.0), alignment: .trailing)
+                            .frame(width: (list.widthClass == .compact ? 44.0 : 56.0), alignment: .trailing)
                             .foregroundColor(trade.simQtySell > 0 ? trade.color(.qty) : .gray)
                             .font(trade.simQtySell > 0 ? .body : .callout)
                     }
@@ -582,17 +584,11 @@ struct tradeCell: View {
                     EmptyView()
                 }
                 //== 9加碼 ==
-//                if trade.simQtySell > 0 {
-//                    Text(String(format:"%.2f",trade.simUnitCost))
-//                    .frame(width: (list.widthClass == .compact ? 40.0 : 64.0), alignment: .trailing)
-//                    Text(String(format:"%.1f%%",trade.simAmtRoi))
-//                        .frame(width: (list.widthClass == .compact ? 40.0 : 64.0), alignment: .trailing)
-//                } else
                 if trade.simRuleInvest == "A" {
                     Text((trade.invested > 0 ? "已加碼" + (list.widthClass != .compact ? String(format:"(%.f)",trade.simInvestTimes - 1) : "") : "請加碼") + (trade.simInvestByUser > 0 ? "+" : (trade.simInvestByUser < 0 ? "-" : " ")))
                         .foregroundColor(.blue)
                         .font(.callout)
-                        .frame(width: (list.widthClass == .compact ? 40.0 : 88.0), alignment: .leading)
+                        .frame(width: (list.widthClass == .compact ? 44.0 : 88.0), alignment: .leading)
                         .onTapGesture {
                             self.list.addInvest(self.trade)
                         }

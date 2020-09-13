@@ -88,7 +88,9 @@ class simDataRequest {
                 allGroup.leave()
             } else {    //newTrades, allTrades, tUpdateAll
                 if action == .allTrades || action == .tUpdateAll {
-                    NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成資料的下載..."])  //通知股群清單要更新了
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成資料的下載..."])  //通知股群清單要更新了
+                    }
                 }
                 let cnyesGroup:DispatchGroup = DispatchGroup()  //這是個股專用的group，等候cnyes下載完成才統計技術數值
                 let allTrades = self.cnyesPrice(stock: stock, cnyesGroup: cnyesGroup) //回傳是否需要從頭重算模擬
@@ -110,7 +112,9 @@ class simDataRequest {
             if action != .simTesting {
                 self.timeTradesUpdated = Date()
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
-                NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
+                }
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 if self.realtime {
                     self.runP10(stocks)
@@ -1181,9 +1185,11 @@ class simDataRequest {
         let prev = trades[index - 1]
         trade.resetSimValues()
         trade.rollDays = prev.rollDays
-        //trade.rollAmtCost = prev.rollAmtCost
-        //trade.rollAmtProfit = prev.rollAmtProfit    //最後面才更新
-        //trade.rollAmtRoi = prev.rollAmtRoi
+        //cost,profit,roi:等最後面更新才有效，但grade會參考到，故...
+        trade.rollAmtCost = prev.rollAmtCost
+        trade.rollAmtProfit = prev.rollAmtProfit
+        trade.rollAmtRoi = prev.rollAmtRoi
+        //cost,profit,roi:需跟著上一筆更動，期間變動重算模擬時，判斷條件才會一致
         trade.simAmtBalance = (prev.simRule == "_" ? trade.stock.simMoneyBase * 10000 : prev.simAmtBalance)
         trade.simInvestTimes = prev.simInvestTimes
         trade.rollRounds = prev.rollRounds
@@ -1211,8 +1217,8 @@ class simDataRequest {
             }
         }
 
-//        if twDateTime.stringFromDate(trade.dateTime) == "2016/11/02" && trade.stock.sId == "6176" {
-//            NSLog("\(trade.stock.sId)\(trade.stock.sName) debug ... ")
+//        if twDateTime.stringFromDate(trade.dateTime) == "2018/09/07" && trade.stock.sId == "1590" {
+//            NSLog("\(trade.stock.sId)\(trade.stock.sName) tracking... ")
 //        }
         
         let ma20d = trade.tMa20DiffMax9 - trade.tMa20DiffMin9
