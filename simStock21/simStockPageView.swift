@@ -12,16 +12,25 @@ struct stockPageView: View {
     @ObservedObject var list: simStockList
     @State var stock : Stock
     @State var prefix: String
+    @State var showPrefixMsg:Bool = false
     
     var body: some View {
         VStack (alignment: .center) {
             tradeListView(list: self.list, stock: self.stock, selected: (stock.trades.count > 0 ? stock.trades[0].date : nil))
             Spacer()
             stockPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
+                .alert(isPresented: $showPrefixMsg) {
+                            Alert(title: Text("提醒您"), message: Text("有多股的首字相同時，\n於畫面底處可按切換。"), dismissButton: .default(Text("知道了。")))
+                        }
         }
             .navigationBarItems(trailing:
                 prefixPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
             )
+            .onAppear {
+                if list.versionLast == "" && list.prefixStocks(prefix: prefix).count > 1 {
+                    showPrefixMsg = true
+                }
+            }
     }
 }
 
@@ -137,9 +146,15 @@ struct stockPicker: View {
 struct tradeListView: View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
-    @State var selected: Date?
-    @State var scrollTo: Date?
     @State var filterIsOn:Bool = false
+    @State var selected: Date?
+    
+    @available(iOS 14.0, *)
+    func scrollToSelected(_ sv: ScrollViewProxy) {
+        if let dt = selected {
+            sv.scrollTo(dt)
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -151,30 +166,24 @@ struct tradeListView: View {
                     ScrollView {
                         ScrollViewReader { sv in
                             LazyVStack {
-                                List (stock.trades.filter{filterIsOn == false || $0.simQtySell > 0 || $0.simQtyBuy > 0}, id:\.self.dateTime) { trade in
+                                List (stock.trades.filter{self.filterIsOn == false || $0.simQtySell > 0 || $0.simQtyBuy > 0}, id:\.self.date) { trade in
                                         tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
                                             .onTapGesture {
                                                 if self.selected == trade.date {
                                                     self.selected = nil
-                                                    self.scrollTo = nil
                                                 } else {
                                                     self.selected = trade.date
-                                                    self.scrollTo = trade.dateTime
                                                 }
                                             }
                                 }
                                 .frame(width: g.size.width, height: g.size.height, alignment: .center)
                                 .listStyle(GroupedListStyle())
                             }
-                            .onChange(of: filterIsOn) {_ in
-                                if let dt = scrollTo {
-                                    sv.scrollTo(dt)
-                                }
+                            .onChange(of: stock) {_ in
+                                scrollToSelected(sv)
                             }
-                            .onAppear {
-                                if let dt = scrollTo {
-                                    sv.scrollTo(dt)
-                                }
+                            .onChange(of: self.filterIsOn) {_ in
+                                scrollToSelected(sv)
                             }
                         }
                     }
@@ -189,13 +198,11 @@ struct tradeListView: View {
                                 self.selected = trade.date
                             }
                         }
-    //                        .onAppear { print(trade.date, "show") }
-    //                        .onDisappear { print(trade.date, "out") }
                 }
                 .id(UUID())
                 .listStyle(GroupedListStyle())
             }
-        }
+        }   //VStack
     }
 }
 
@@ -272,7 +279,7 @@ struct tradeHeading:View {
     @State var showInformation:Bool = false
     @Binding var filterIsOn:Bool
     
-    var simSummary: (profit:String, roi:String, days:String) {
+    var totalSummary: (profit:String, roi:String, days:String) {
         if let trade = stock.trades.first {
             if trade.rollRounds > 0 {
                 let numberFormatter = NumberFormatter()
@@ -308,7 +315,7 @@ struct tradeHeading:View {
                 HStack {
                     //== 工具按鈕 1 == 過濾交易模擬
                     Button(action: {self.filterIsOn = !self.filterIsOn}) {
-                        if filterIsOn {
+                        if self.filterIsOn {
                             Image(systemName: "square.2.stack.3d")
         //                    Image(systemName: "line.horizontal.3")
                         } else {
@@ -391,9 +398,9 @@ struct tradeHeading:View {
 //                    .padding(.trailing)
                 HStack {
                     Spacer()
-                    Text(simSummary.profit)
-                    Text(simSummary.roi)
-                    Text(simSummary.days)
+                    Text(totalSummary.profit)
+                    Text(totalSummary.roi)
+                    Text(totalSummary.days)
                 }
                 
             }
@@ -408,7 +415,7 @@ struct tradeHeading:View {
 
 struct tradeCell: View {
     @ObservedObject var list: simStockList
-    @State var stock: Stock
+    @ObservedObject var stock: Stock    //用@State會造成P10更新怪異
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
     

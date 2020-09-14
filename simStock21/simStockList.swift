@@ -15,6 +15,8 @@ class simStockList:ObservableObject {
     @Published var widthClass:WidthClass = .compact
     @Published var runningMsg:String = ""
 
+//    @Published var filterIsOn:Bool = false
+    
     var versionNow:String
     var versionLast:String = ""
 
