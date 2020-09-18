@@ -204,6 +204,7 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive v\(versionNow) ===")
+            self.sim.request.invalidateTimer()
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
@@ -230,6 +231,7 @@ class simStockList:ObservableObject {
             }
         case UIApplication.willResignActiveNotification:
             NSLog ("=== appWillResignActive ===\n")
+            self.sim.request.invalidateTimer()
         default:
             break
         }

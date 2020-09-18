@@ -68,8 +68,6 @@ class simDataRequest {
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.twseCount = 0
-        self.timer?.invalidate()
-        let simActions:Bool = (action == .simUpdateAll || action == .simResetAll || action == .simTesting)
         if action != .simTesting {
             NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
         }
@@ -83,11 +81,11 @@ class simDataRequest {
             allGroup.enter()
             if realtime && action == .realtime {
                 self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
-            } else if simActions {
+            } else if action == .simUpdateAll || action == .simTesting {
                 self.simTechnical(stock: stock, action: action)
                 allGroup.leave()
-            } else {    //newTrades, allTrades, tUpdateAll
-                if action == .allTrades || action == .tUpdateAll {
+            } else {    //newTrades, allTrades, tUpdateAll, simResetAll
+                if action != .newTrades {
                     DispatchQueue.main.async {
                         NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成資料的下載..."])  //通知股群清單要更新了
                     }
@@ -98,7 +96,7 @@ class simDataRequest {
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
                     NSLog("\(stocks.count - i)...")
-                    if action == .allTrades || action == .tUpdateAll {
+                    if action  != .newTrades {
                         DispatchQueue.main.async {
                             NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的計算(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
                         }
@@ -118,20 +116,23 @@ class simDataRequest {
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 if self.realtime {
                     self.runP10(stocks)
-                }            
-                if self.realtime && action != .simTesting {
-                    self.timer?.invalidate()
                     self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
                         self.runRequest(allStocks ?? stocks, action: .realtime)
                     }
                     if let t = self.timer, t.isValid {
                         NSLog("timer scheduled in \(t.fireDate.timeIntervalSinceNow)s")
                     }
-                } else if let t = self.timer, t.isValid {
-                    t.invalidate()
-                    self.timer = nil
-                    NSLog("timer invalidated.")
                 }
+            }
+        }
+    }
+    
+    func invalidateTimer() {
+        if let t = self.timer, t.isValid {
+            t.invalidate()
+            self.timer = nil
+            if !self.realtime {
+                NSLog("timer invalidated.")
             }
         }
     }
