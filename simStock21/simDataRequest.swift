@@ -79,7 +79,10 @@ class simDataRequest {
         let twseGroup:DispatchGroup = DispatchGroup() //這是控制twse依序下載以避免同時多條連線被拒
         for (i,stock) in stocks.enumerated() {
             allGroup.enter()
-            if realtime && action == .realtime {
+            if action == .realtime && self.realtime {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"查詢盤中價(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
+                }
                 self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
             } else if action == .simUpdateAll || action == .simTesting {
                 self.simTechnical(stock: stock, action: action)
@@ -108,12 +111,14 @@ class simDataRequest {
         }
         allGroup.notify(queue: .main) {
             if action != .simTesting {
-                self.timeTradesUpdated = Date()
+                NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
+                if action != .realtime || twDateTime.isDateInToday(self.timeTradesUpdated) {
+                    self.timeTradesUpdated = Date() //是否有可能睡醒把昨日未完的realtime時間誤作更新？
+                }
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
                 }
-                NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 if self.realtime {
                     self.runP10(stocks)
                     self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
@@ -162,6 +167,7 @@ class simDataRequest {
                 var sCount:Int = 0
                 for (index,trade) in trades.enumerated() {
                     if action == .tUpdateAll || action == .simResetAll || action == .simTesting || action == .allTrades {
+                        //simReset就是清除user的加碼和反轉買賣
                         trade.simReversed = ""
                         trade.simInvestByUser = 0
                     }

@@ -312,7 +312,7 @@ struct tradeHeading:View {
                 }
                     .foregroundColor(list.isRunning ? .gray : .primary)
                 Spacer(minLength: 40)
-                HStack {
+                HStack (spacing: (list.widthClass != .compact ? 4 : 2)) {
                     //== 工具按鈕 1 == 過濾交易模擬
                     Button(action: {self.filterIsOn = !self.filterIsOn}) {
                         if self.filterIsOn {

@@ -222,6 +222,8 @@ class simStockList:ObservableObject {
                         } else {
                             return .simResetAll
                         }
+//                    } else if self.runningMsg != "" {
+//                        return .allTrades
                     }
                     return nil
                 }
