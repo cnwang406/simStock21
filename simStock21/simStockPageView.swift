@@ -161,6 +161,23 @@ struct tradeListView: View {
         VStack(alignment: .leading) {
             //== 表頭：股票名稱、模擬摘要 ==
             tradeHeading(list: self.list, stock: self.stock, filterIsOn: self.$filterIsOn)
+                .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onEnded({ value in
+                        if value.translation.width < 0 {
+                            self.stock = list.shiftLeftStock(stock)
+                            self.prefix = self.stock.prefix
+                        }
+                        if value.translation.width > 0 {
+                            self.stock = list.shiftRightStock(stock)
+                            self.prefix = self.stock.prefix
+                        }
+                        if value.translation.height < 0 {
+                            // up
+                        }
+                        if value.translation.height > 0 {
+                            // down
+                        }
+                    }))
             //== 日交易明細列表 ==
             if #available(iOS 14.0, *) {
                 GeometryReader { g in
@@ -204,23 +221,6 @@ struct tradeListView: View {
                 .listStyle(GroupedListStyle())
             }
         }   //VStack
-        .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
-            .onEnded({ value in
-                if value.translation.width < 0 {
-                    self.stock = list.shiftLeftStock(stock)
-                    self.prefix = self.stock.prefix
-                }
-                if value.translation.width > 0 {
-                    self.stock = list.shiftRightStock(stock)
-                    self.prefix = self.stock.prefix
-                }
-                if value.translation.height < 0 {
-                    // up
-                }
-                if value.translation.height > 0 {
-                    // down
-                }
-            }))
     }
 }
 

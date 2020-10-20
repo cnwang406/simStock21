@@ -78,7 +78,7 @@ class simStockList:ObservableObject {
         prefixedStocks.map{$0[0].prefix}
     }
     
-    func shiftLeftStock(_ stock:Stock) -> Stock {
+    func shiftRightStock(_ stock:Stock) -> Stock {
         if let i = sim.stocks.firstIndex(of: stock) {
             if i > 0 {
                 return sim.stocks[i - 1]
@@ -89,7 +89,7 @@ class simStockList:ObservableObject {
         return stock
     }
     
-    func shiftRightStock(_ stock:Stock) -> Stock {
+    func shiftLeftStock(_ stock:Stock) -> Stock {
         if let i = sim.stocks.firstIndex(of: stock) {
             if i < sim.stocks.count - 1 {
                 return sim.stocks[i + 1]
@@ -99,7 +99,6 @@ class simStockList:ObservableObject {
         }
         return stock
     }
-
     
     func prefixStocks(prefix:String) -> [Stock] {
         return prefixedStocks.filter{ $0[0].prefix == prefix}[0]
