@@ -16,7 +16,7 @@ struct stockPageView: View {
     
     var body: some View {
         VStack (alignment: .center) {
-            tradeListView(list: self.list, stock: self.stock, selected: (stock.trades.count > 0 ? stock.trades[0].date : nil))
+            tradeListView(list: self.list, stock: self.$stock, prefix: self.$prefix, selected: (stock.trades.count > 0 ? stock.trades[0].date : nil))
             Spacer()
             stockPicker(list: self.list, prefix: self.$prefix, stock: self.$stock)
                 .alert(isPresented: $showPrefixMsg) {
@@ -145,7 +145,8 @@ struct stockPicker: View {
 
 struct tradeListView: View {
     @ObservedObject var list: simStockList
-    @ObservedObject var stock : Stock
+    @Binding var stock : Stock
+    @Binding var prefix: String
     @State var filterIsOn:Bool = false
     @State var selected: Date?
     
@@ -203,6 +204,23 @@ struct tradeListView: View {
                 .listStyle(GroupedListStyle())
             }
         }   //VStack
+        .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            .onEnded({ value in
+                if value.translation.width < 0 {
+                    self.stock = list.shiftLeftStock(stock)
+                    self.prefix = self.stock.prefix
+                }
+                if value.translation.width > 0 {
+                    self.stock = list.shiftRightStock(stock)
+                    self.prefix = self.stock.prefix
+                }
+                if value.translation.height < 0 {
+                    // up
+                }
+                if value.translation.height > 0 {
+                    // down
+                }
+            }))
     }
 }
 
@@ -240,7 +258,7 @@ struct settingForm: View {
                     .onReceive([self.applyToAll].publisher.first()) { (value) in
                         self.applyToGroup = value
                     }
-                    Toggle("套用到同股群", isOn: $applyToGroup)
+                    Toggle("套用到同股群 [\(stock.group)]", isOn: $applyToGroup)
                         .disabled(self.applyToAll)
                     Toggle("作為新股預設值", isOn: $saveToDefaults)
                 }
