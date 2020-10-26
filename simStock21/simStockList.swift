@@ -57,7 +57,7 @@ class simStockList:ObservableObject {
         }
     }
     
-    var searchTextInGroup:Bool {
+    var searchTextInGroup:Bool {    //單詞的搜尋目標已在股群內？
         if let search = searchText, search.count == 1 {
             if sim.stocks.map({$0.sId}).contains(search[0]) || sim.stocks.map({$0.sName}).contains(search[0]) {
                 return true
@@ -127,7 +127,7 @@ class simStockList:ObservableObject {
         return csv
     }
         
-    var searchGotResults:Bool {
+    var searchGotResults:Bool { //查無搜尋目標？
         if let firstGroup = groupStocks.first?[0].group, firstGroup == "" {
             return true
         }
@@ -210,23 +210,22 @@ class simStockList:ObservableObject {
         }
     }
     
-    @objc func setWidthClass(_ notification: Notification) {
+    @objc private func setWidthClass(_ notification: Notification) {
         widthClass = deviceWidthClass
         NSLog("widthClass:\(widthClass)")
     }
     
-    @objc func setRequestStatus(_ notification: Notification) {
+    @objc private func setRequestStatus(_ notification: Notification) {
         if let userInfo = notification.userInfo, let msg = userInfo["msg"] as? String {
             runningMsg = msg
         }
     }
 
 
-    @objc func appNotification(_ notification: Notification) {
+    @objc private func appNotification(_ notification: Notification) {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             NSLog ("=== appDidBecomeActive v\(versionNow) ===")
-            self.sim.request.invalidateTimer()
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)

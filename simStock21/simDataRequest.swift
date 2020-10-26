@@ -14,8 +14,8 @@ class simDataRequest {
     private var timeTradesUpdated:Date
     private let requestInterval:TimeInterval = 120
     
-    var realtime:Bool {
-        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2) && twDateTime.inMarketingTime(delay: 2, forToday: true) && !isOffDay
+    private var realtime:Bool {
+        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2) && twDateTime.inMarketingTime(delay: 5, forToday: true) && !isOffDay
     }
     
     enum simTechnicalAction {

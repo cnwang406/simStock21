@@ -44,7 +44,7 @@ struct simStock {
         self.stocks = Stock.fetch(coreData.shared.context, sId: searchText, sName: searchText)
     }
         
-    mutating func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
+    mutating private func newStock(stocks:[(sId:String,sName:String)], group:String?=nil) {
         let context = coreData.shared.context
         for stock in stocks {
             let s = Stock.new(context, sId:stock.sId, sName:stock.sName, group: group)
@@ -224,7 +224,7 @@ struct simStock {
         NSLog("")
     }
     
-    func testStocks(_ stocks:[Stock], group:String, start:Date) -> (roi:String, days:String) {
+    private func testStocks(_ stocks:[Stock], group:String, start:Date) -> (roi:String, days:String) {
         var roi:String = ""
         var days:String = ""
         let years:Int = Int(round(Date().timeIntervalSince(start) / 86400 / 365))

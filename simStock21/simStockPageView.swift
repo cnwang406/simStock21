@@ -34,7 +34,7 @@ struct stockPageView: View {
     }
 }
 
-func pickerIndexRange(index:Int, count:Int, max: Int) -> (from:Int, to:Int) {
+private func pickerIndexRange(index:Int, count:Int, max: Int) -> (from:Int, to:Int) {
     var from:Int = 0
     var to:Int = count - 1
     let center:Int = (max - 1) / 2
@@ -151,7 +151,7 @@ struct tradeListView: View {
     @State var selected: Date?
     
     @available(iOS 14.0, *)
-    func scrollToSelected(_ sv: ScrollViewProxy) {
+    private func scrollToSelected(_ sv: ScrollViewProxy) {
         if let dt = selected {
             sv.scrollTo(dt)
         }
@@ -312,7 +312,7 @@ struct tradeHeading:View {
         return ("","","尚無模擬交易")
     }
 
-    func openUrl(_ url:String) {
+    private func openUrl(_ url:String) {
         if let URL = URL(string: url) {
             if UIApplication.shared.canOpenURL(URL) {
                 UIApplication.shared.open(URL, options:[:], completionHandler: nil)
@@ -437,7 +437,7 @@ struct tradeCell: View {
     @ObservedObject var trade:Trade
     @Binding var selected: Date?
     
-    func textSize(textStyle: UIFont.TextStyle) -> CGFloat {
+    private func textSize(textStyle: UIFont.TextStyle) -> CGFloat {
        return UIFont.preferredFont(forTextStyle: textStyle).pointSize
     }
     
@@ -509,7 +509,7 @@ struct tradeCell: View {
 
     }
     
-    func p10Text(p10:(price:Double,action:String,qty:Double,roi:Double)) -> String {
+    private func p10Text(p10:(price:Double,action:String,qty:Double,roi:Double)) -> String {
         var text:String = String(format:"%.2f",p10.price)
         if p10.action == "買" {
             text += p10.action + String(format:"%.f",p10.qty)

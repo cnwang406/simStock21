@@ -97,7 +97,7 @@ struct chooseCommand:View {
     @State var showMoveAlert:Bool = false
     @State var showReload:Bool = false
 
-    func isChoosingOff() {
+    private func isChoosingOff() {
         self.isChoosing = false
         self.checkedStocks = []
     }
@@ -366,7 +366,7 @@ struct checkGroup: View {
     @Binding var stocks : [Stock]
     
     
-    func checkGroup() {
+    private func checkGroup() {
         self.isChecked = !self.isChecked
         if self.isChecked {
             self.checkedStocks += stocks
@@ -393,7 +393,7 @@ struct stockCell : View {
     @Binding var checkedStocks:[Stock]
     @State   var prefix:String = ""
     
-    func checkStock() {
+    private func checkStock() {
         if self.checkedStocks.contains(self.stock) {
             self.checkedStocks.removeAll(where: {$0 == stock})
         } else {
