@@ -40,3 +40,8 @@
 
 ### 如何買賣？
 小確幸自動模擬買賣行動，你不能決定什麼時候買多少、什麼時候賣多少。但你可以就模擬結果使用日期左側的圓形按鈕，更改其買賣時機。
+
+
+<img src="https://github.com/peiyu66/simStock21/blob/master/screenshot/Simulator%20Screen%20Shot%20-%20iPhone%20SE%20(2nd%20generation)%20-%202020-10-28%20at%2014.34.35.png" width="40%"> <img src="https://github.com/peiyu66/simStock21/blob/master/screenshot/Simulator%20Screen%20Shot%20-%20iPad%20Pro%20(11-inch)%20(2nd%20generation)%20-%202020-10-28%20at%2014.32.29.png" width="40%">
+
+<img src="https://github.com/peiyu66/simStock21/blob/master/screenshot/Simulator%20Screen%20Shot%20-%20iPhone%20SE%20(2nd%20generation)%20-%202020-10-28%20at%2014.34.45.png" width="40%"> <img src="https://github.com/peiyu66/simStock21/blob/master/screenshot/Simulator%20Screen%20Shot%20-%20iPad%20Pro%20(11-inch)%20(2nd%20generation)%20-%202020-10-28%20at%2014.32.56.png" width="40%">
