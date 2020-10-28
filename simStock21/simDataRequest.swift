@@ -163,7 +163,7 @@ class simDataRequest {
 
     private func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
-        let trades = Trade.fetch(context, stock: stock, fetchLimit: (action == .realtime ? 376 : nil), asc:(action == .realtime ? false : true))
+        let trades = Trade.fetch(context, stock: stock, fetchLimit: (action == .realtime ? 256 : nil), asc:(action == .realtime ? false : true))
         if trades.count > 0 {
             if action == .realtime {
                 let tr376:[Trade] = trades.reversed()
