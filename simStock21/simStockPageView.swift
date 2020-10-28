@@ -702,7 +702,7 @@ struct tradeCell: View {
                                 .foregroundColor(trade.tMa20DiffMin9 == trade.tMa20Diff || trade.tMa60DiffMin9 == trade.tMa60Diff || trade.tOscMin9 == trade.tOsc || trade.tKdKMin9 == trade.tKdK ? .red : .primary)
                                 Text("z125")
                                 Text("z250")
-                                Text("z375")
+//                                Text("z375")
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -714,7 +714,7 @@ struct tradeCell: View {
                                     .foregroundColor(trade.tMa20DiffMin9 == trade.tMa20Diff ? .red : .primary)
                                 Text(String(format:"%.2f",trade.tMa20DiffZ125))
                                 Text(String(format:"%.2f",trade.tMa20DiffZ250))
-                                Text(String(format:"%.2f",trade.tMa20DiffZ375))
+//                                Text(String(format:"%.2f",trade.tMa20DiffZ375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -726,7 +726,7 @@ struct tradeCell: View {
                                 .foregroundColor(trade.tMa60DiffMin9 == trade.tMa60Diff ? .red : .primary)
                                 Text(String(format:"%.2f",trade.tMa60DiffZ125))
                                 Text(String(format:"%.2f",trade.tMa60DiffZ250))
-                                Text(String(format:"%.2f",trade.tMa60DiffZ375))
+//                                Text(String(format:"%.2f",trade.tMa60DiffZ375))
                             }
                         }
                         Group {
@@ -740,7 +740,7 @@ struct tradeCell: View {
                                 .foregroundColor(trade.tOscMin9 == trade.tOsc ? .red : .primary)
                                 Text(String(format:"%.2f",trade.tOscZ125))
                                 Text(String(format:"%.2f",trade.tOscZ250))
-                                Text(String(format:"%.2f",trade.tOscZ375))
+//                                Text(String(format:"%.2f",trade.tOscZ375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -752,7 +752,7 @@ struct tradeCell: View {
                                 .foregroundColor(trade.tKdKMin9 == trade.tKdK ? .red : .primary)
                                 Text(String(format:"%.2f",trade.tKdKZ125))
                                 Text(String(format:"%.2f",trade.tKdKZ250))
-                                Text(String(format:"%.2f",trade.tKdKZ375))
+//                                Text(String(format:"%.2f",trade.tKdKZ375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -762,7 +762,7 @@ struct tradeCell: View {
                                 Text("-")
                                 Text(String(format:"%.2f",trade.tKdDZ125))
                                 Text(String(format:"%.2f",trade.tKdDZ250))
-                                Text(String(format:"%.2f",trade.tKdDZ375))
+//                                Text(String(format:"%.2f",trade.tKdDZ375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -772,7 +772,7 @@ struct tradeCell: View {
                                 Text("-")
                                 Text(String(format:"%.2f",trade.tKdJZ125))
                                 Text(String(format:"%.2f",trade.tKdJZ250))
-                                Text(String(format:"%.2f",trade.tKdJZ375))
+//                                Text(String(format:"%.2f",trade.tKdJZ375))
                             }
                         }
                         Spacer()
@@ -784,7 +784,7 @@ struct tradeCell: View {
                                 Text("-")
                                 Text(String(format:"%.2f",trade.tHighDiff125))
                                 Text(String(format:"%.2f",trade.tHighDiff250))
-                                Text(String(format:"%.2f",trade.tHighDiff375))
+//                                Text(String(format:"%.2f",trade.tHighDiff375))
                             }
                             Spacer()
                             VStack(alignment: .trailing,spacing: 2) {
@@ -794,7 +794,7 @@ struct tradeCell: View {
                                 Text("-")
                                 Text(String(format:"%.2f",trade.tLowDiff125))
                                 Text(String(format:"%.2f",trade.tLowDiff250))
-                                Text(String(format:"%.2f",trade.tLowDiff375))
+//                                Text(String(format:"%.2f",trade.tLowDiff375))
                             }
                         }
                         Spacer()
