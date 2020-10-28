@@ -285,28 +285,28 @@ public class Trade: NSManagedObject {
     @NSManaged public var simUnitCost: Double       //成本單價
     @NSManaged public var simUnitRoi: Double
     @NSManaged public var simUpdated: Bool
-    @NSManaged public var tHighDiff: Double       //最高價差比
+    @NSManaged public var tHighDiff: Double         //最高價差比
     @NSManaged public var tHighDiff125: Double
     @NSManaged public var tHighDiff250: Double
-    @NSManaged public var tHighDiff375: Double
+    @NSManaged public var tHighDiff375: Double      //＊＊停用＊＊
     @NSManaged public var tKdD: Double              //K,D,J
     @NSManaged public var tKdDZ125: Double          //0.5年標準差分
     @NSManaged public var tKdDZ250: Double          //1.0年標準差分
-    @NSManaged public var tKdDZ375: Double          //1.5年標準差分
+    @NSManaged public var tKdDZ375: Double          //1.5年標準差分  //＊＊停用＊＊
     @NSManaged public var tKdJ: Double
     @NSManaged public var tKdJZ125: Double          //0.5年標準差分
     @NSManaged public var tKdJZ250: Double          //1.0年標準差分
-    @NSManaged public var tKdJZ375: Double          //1.5年標準差分
+    @NSManaged public var tKdJZ375: Double          //1.5年標準差分  //＊＊停用＊＊
     @NSManaged public var tKdK: Double
     @NSManaged public var tKdKMax9: Double
     @NSManaged public var tKdKMin9: Double
     @NSManaged public var tKdKZ125: Double          //0.5年標準差分
     @NSManaged public var tKdKZ250: Double          //1.0年標準差分
-    @NSManaged public var tKdKZ375: Double          //1.5年標準差分
+    @NSManaged public var tKdKZ375: Double          //1.5年標準差分  //＊＊停用＊＊
     @NSManaged public var tLowDiff: Double          //最低價差比
     @NSManaged public var tLowDiff125: Double
     @NSManaged public var tLowDiff250: Double
-    @NSManaged public var tLowDiff375: Double
+    @NSManaged public var tLowDiff375: Double       //＊＊停用＊＊
     @NSManaged public var tMa20: Double             //20天均價
     @NSManaged public var tMa20Days: Double         //Ma20延續漲跌天數
     @NSManaged public var tMa20Diff: Double
@@ -314,7 +314,7 @@ public class Trade: NSManagedObject {
     @NSManaged public var tMa20DiffMin9: Double
     @NSManaged public var tMa20DiffZ125: Double     //Ma20Diff於0.5年標準差分
     @NSManaged public var tMa20DiffZ250: Double     //Ma20Diff於1.0年標準差分
-    @NSManaged public var tMa20DiffZ375: Double     //Ma20Diff於1.5年標準差分
+    @NSManaged public var tMa20DiffZ375: Double     //Ma20Diff於1.5年標準差分 //＊＊停用＊＊
     @NSManaged public var tMa60: Double             //60天均價
     @NSManaged public var tMa60Days: Double         //Ma60延續漲跌天數
     @NSManaged public var tMa60Diff: Double         //現價對Ma60差比
@@ -322,7 +322,7 @@ public class Trade: NSManagedObject {
     @NSManaged public var tMa60DiffMin9: Double     //Ma60Diff於9天內最低
     @NSManaged public var tMa60DiffZ125: Double     //Ma60Diff於0.5年標準差分
     @NSManaged public var tMa60DiffZ250: Double     //Ma60Diff於1.0年標準差分
-    @NSManaged public var tMa60DiffZ375: Double     //Ma60Diff於1.5年標準差分
+    @NSManaged public var tMa60DiffZ375: Double     //Ma60Diff於1.5年標準差分 //＊＊停用＊＊
     @NSManaged public var tOsc: Double              //Macd的Osc
     @NSManaged public var tOscEma12: Double
     @NSManaged public var tOscEma26: Double

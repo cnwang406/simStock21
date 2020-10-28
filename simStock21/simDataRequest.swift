@@ -15,7 +15,7 @@ class simDataRequest {
     private let requestInterval:TimeInterval = 120
     
     private var realtime:Bool {
-        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2) && twDateTime.inMarketingTime(delay: 5, forToday: true) && !isOffDay
+        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 3) && twDateTime.inMarketingTime(delay: 3, forToday: true) && !isOffDay
     }
     
     enum simTechnicalAction {
@@ -65,9 +65,22 @@ class simDataRequest {
             }
         }
     }
+    
+    private let allGroup:DispatchGroup = DispatchGroup()  //這是stocks共用的group，等候全部的背景作業完成時通知主畫面
+    private let twseGroup:DispatchGroup = DispatchGroup() //這是控制twse依序下載以避免同時多條連線被拒
+    private var stockCount:Int = 0
+    private var stockProgress:Int = 0
+    private var stockAction:String = ""
+    private func progressNotify() {
+        self.stockProgress += 1
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"\(self.stockAction)(\(self.stockProgress)/\(self.stockCount))"])  //通知股群清單計算的進度
+        }
+    }
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.twseCount = 0
+        self.stockCount = stocks.count
         if action != .simTesting {
             NSLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
         }
@@ -75,19 +88,16 @@ class simDataRequest {
         if action != .simTesting {
             q.maxConcurrentOperationCount = 1
         }
-        let allGroup:DispatchGroup = DispatchGroup()  //這是stocks共用的group，等候全部的背景作業完成時通知主畫面
-        let twseGroup:DispatchGroup = DispatchGroup() //這是控制twse依序下載以避免同時多條連線被拒
         for (i,stock) in stocks.enumerated() {
             allGroup.enter()
             if action == .realtime && self.realtime {
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"查詢盤中價(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
-                }
-                self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+                self.stockAction = "查詢盤中價"
+                self.yahooRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
             } else if action == .simUpdateAll || action == .simTesting {
                 self.simTechnical(stock: stock, action: action)
                 allGroup.leave()
             } else {    //newTrades, allTrades, tUpdateAll, simResetAll
+                self.stockAction = "請等候股群完成歷史資料的計算"
                 if action != .newTrades {
                     DispatchQueue.main.async {
                         NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成資料的下載..."])  //通知股群清單要更新了
@@ -99,17 +109,14 @@ class simDataRequest {
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
                     NSLog("\(stocks.count - i)...")
-                    if action  != .newTrades {
-                        DispatchQueue.main.async {
-                            NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":"請等候股群完成歷史資料的計算(\(i + 1)/\(stocks.count))"])  //通知股群清單計算的進度
-                        }
-                    }
                     self.simTechnical(stock: stock, action: cnyesAction)
-                    self.yahooRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+                    self.yahooRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
                 }   //即使已經收盤後也需要yahoo，才收盤時cnyes未及把當日收盤價納入查詢結果
             }
         }
         allGroup.notify(queue: .main) {
+            self.stockProgress = 0
+            self.stockAction = ""
             if action != .simTesting {
                 NSLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
                 if action != .realtime || twDateTime.isDateInToday(self.timeTradesUpdated) {
@@ -532,7 +539,7 @@ class simDataRequest {
     
     
     
-    private func yahooRequest(_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
+    private func yahooRequest(_ stock:Stock) { //, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
         if self.isOffDay {
             allGroup.leave()
             return
@@ -632,17 +639,19 @@ class simDataRequest {
                 let delay:Int = (self.twseCount / 9) * 3
                 self.twseCount += 1
                 DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
-                    twseGroup.wait()
-                    twseGroup.enter()
+                    self.twseGroup.wait()
+                    self.twseGroup.enter()
                     if twseCooled {
-                        self.twseRequest(stock, allGroup: allGroup, twseGroup: twseGroup)
+                        self.twseRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
                     } else {
-                        twseGroup.leave()
-                        allGroup.leave()
+                        self.progressNotify()
+                        self.twseGroup.leave()
+                        self.allGroup.leave()
                     }
                 }
             } else {
-                allGroup.leave()
+                self.progressNotify()
+                self.allGroup.leave()
             }
         })  //let task =
         task.resume()
@@ -678,7 +687,7 @@ class simDataRequest {
     
     
     private var twseCount:Int = 0    
-    private func twseRequest (_ stock:Stock, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
+    private func twseRequest (_ stock:Stock) { //, allGroup:DispatchGroup, twseGroup:DispatchGroup) {
         if self.isOffDay {
             twseGroup.leave()
             allGroup.leave()
@@ -807,8 +816,9 @@ class simDataRequest {
             } catch {
                 NSLog("\(stock.sId)\(stock.sName)\ttwse error: \(error)")
             }   //do
-            twseGroup.leave()
-            allGroup.leave()
+            self.progressNotify()
+            self.twseGroup.leave()
+            self.allGroup.leave()
         })
         task.resume()
     }
@@ -892,7 +902,7 @@ class simDataRequest {
             //250天約是1年，375是1年半，125天是半年
             let d125 = tradeIndex(125, index: index)
             let d250 = tradeIndex(250, index: index)
-            let d375 = tradeIndex(375, index: index)
+//            let d375 = tradeIndex(375, index: index)
 
             let maxDouble:Double = Double.greatestFiniteMagnitude
             let minDouble:Double = Double.leastNormalMagnitude
@@ -1004,13 +1014,13 @@ class simDataRequest {
             }
             let pDiff125  = priceHighAndLow(d125)
             let pDiff250  = priceHighAndLow(d250)
-            let pDiff375  = priceHighAndLow(d375)
+//            let pDiff375  = priceHighAndLow(d375)
             trade.tHighDiff125 = pDiff125.highDiff
             trade.tHighDiff250 = pDiff250.highDiff
-            trade.tHighDiff375 = pDiff375.highDiff
+//            trade.tHighDiff375 = pDiff375.highDiff
             trade.tLowDiff125  = pDiff125.lowDiff
             trade.tLowDiff250  = pDiff250.lowDiff
-            trade.tLowDiff375  = pDiff375.lowDiff
+//            trade.tLowDiff375  = pDiff375.lowDiff
 
             //ma60,Osc,K在半年、1年、1年半內的標準分數
             func standardDeviationZ(_ key:String, dIndex:(prevIndex:Int,prevCount:Double,thisIndex:Int,thisCount:Double)) -> Double {
@@ -1030,22 +1040,22 @@ class simDataRequest {
             }
             trade.tKdKZ125  = standardDeviationZ("tKdK", dIndex:d125)
             trade.tKdKZ250  = standardDeviationZ("tKdK", dIndex:d250)
-            trade.tKdKZ375  = standardDeviationZ("tKdK", dIndex:d375)
+//            trade.tKdKZ375  = standardDeviationZ("tKdK", dIndex:d375)
             trade.tKdDZ125  = standardDeviationZ("tKdD", dIndex:d125)
             trade.tKdDZ250  = standardDeviationZ("tKdD", dIndex:d250)
-            trade.tKdDZ375  = standardDeviationZ("tKdD", dIndex:d375)
+//            trade.tKdDZ375  = standardDeviationZ("tKdD", dIndex:d375)
             trade.tKdJZ125  = standardDeviationZ("tKdJ", dIndex:d125)
             trade.tKdJZ250  = standardDeviationZ("tKdJ", dIndex:d250)
-            trade.tKdJZ375  = standardDeviationZ("tKdJ", dIndex:d375)
+//            trade.tKdJZ375  = standardDeviationZ("tKdJ", dIndex:d375)
             trade.tOscZ125  = standardDeviationZ("tOsc", dIndex:d125)
             trade.tOscZ250  = standardDeviationZ("tOsc", dIndex:d250)
-            trade.tOscZ375  = standardDeviationZ("tOsc", dIndex:d375)
+//            trade.tOscZ375  = standardDeviationZ("tOsc", dIndex:d375)
             trade.tMa20DiffZ125 = standardDeviationZ("tMa20Diff", dIndex:d125)
             trade.tMa20DiffZ250 = standardDeviationZ("tMa20Diff", dIndex:d250)
-            trade.tMa20DiffZ375 = standardDeviationZ("tMa20Diff", dIndex:d375)
+//            trade.tMa20DiffZ375 = standardDeviationZ("tMa20Diff", dIndex:d375)
             trade.tMa60DiffZ125 = standardDeviationZ("tMa60Diff", dIndex:d125)
             trade.tMa60DiffZ250 = standardDeviationZ("tMa60Diff", dIndex:d250)
-            trade.tMa60DiffZ375 = standardDeviationZ("tMa60Diff", dIndex:d375)
+//            trade.tMa60DiffZ375 = standardDeviationZ("tMa60Diff", dIndex:d375)
 
             var ma20DaysBefore: Double = 0
             if prev.tMa20Days < 0 && prev.tMa20Days > -5 && index >= Int(0 - prev.tMa20Days + 1) {
@@ -1119,7 +1129,7 @@ class simDataRequest {
                     trade.tMa60Days = 0
                 }
             }
-            if d375.thisCount >= 375 {
+            if d250.thisCount >= 250 {
                 trade.tUpdated = true
             } else {
                 trade.tUpdated = false
