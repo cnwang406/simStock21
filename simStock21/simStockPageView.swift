@@ -289,12 +289,46 @@ struct settingForm: View {
     
 }
 
+struct logForm: View {
+    @Binding var showLog: Bool
+
+    var body: some View {
+        NavigationView {
+            Form {
+                VStack {
+                    if simLog.Log.count > 0 {
+                        Text(simLog.Log)
+                    } else {
+                        Text("目前沒有Log。")
+                    }
+                }
+                    .font(.footnote)
+                    .lineLimit(nil)
+            }
+            .navigationBarTitle("Log")
+            .navigationBarItems(leading: cancel)
+
+        }
+            .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    var cancel: some View {
+        Button("關閉") {
+            self.showLog = false
+        }
+    }
+    
+
+    
+}
+
 struct tradeHeading:View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var showReload:Bool = false
     @State var showSetting: Bool = false
     @State var showInformation:Bool = false
+    @State var showLog:Bool = false
     @Binding var filterIsOn:Bool
     
     var totalSummary: (profit:String, roi:String, days:String) {
@@ -331,17 +365,17 @@ struct tradeHeading:View {
                     .foregroundColor(list.isRunning ? .gray : .primary)
                 Spacer(minLength: 40)
                 HStack (spacing: (list.widthClass != .compact ? 4 : 2)) {
-                    //== 工具按鈕 1 == 過濾交易模擬
-                    Button(action: {self.filterIsOn = !self.filterIsOn}) {
-                        if self.filterIsOn {
-                            Image(systemName: "square.2.stack.3d")
-        //                    Image(systemName: "line.horizontal.3")
-                        } else {
-                            Image(systemName: "square.3.stack.3d")
-        //                    Image(systemName: "text.justify")
+                    //== 工具按鈕 0 == 過濾交易模擬
+                    if #available(iOS 14.0, *) {
+                        Button(action: {self.filterIsOn = !self.filterIsOn}) {
+                            if self.filterIsOn {
+                                Image(systemName: "square.2.stack.3d")
+                            } else {
+                                Image(systemName: "square.3.stack.3d")
+                            }
                         }
+                            .padding(.trailing)
                     }
-                        .padding(.trailing)
 
                     //== 工具按鈕 1 == 設定
                     Button(action: {self.showSetting = true}) {
@@ -386,9 +420,16 @@ struct tradeHeading:View {
                                 .default(Text("Yahoo! 技術分析")) {
                                     self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
                                 },
+                                .default(Text("查看Log")) {
+                                    self.showLog = true
+                                },
                                 .destructive(Text("沒事，不用了。"))
                             ])
                         }
+                    .sheet(isPresented: $showLog) {
+                        logForm(showLog: self.$showLog)
+                    }
+
 
                 } //工具按鈕的HStack
                     .frame(width: 100, alignment: .trailing)

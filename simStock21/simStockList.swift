@@ -217,6 +217,7 @@ class simStockList:ObservableObject {
     
     @objc private func setRequestStatus(_ notification: Notification) {
         if let userInfo = notification.userInfo, let msg = userInfo["msg"] as? String {
+            simLog.addLog(msg)
             runningMsg = msg
         }
     }

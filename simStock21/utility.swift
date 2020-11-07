@@ -9,6 +9,15 @@
 import Foundation
 import SystemConfiguration
 
+public class simLog {
+    static var Log:String = ""
+    
+    static func addLog(_ log:String) {
+        Log += (log.count > 0 ? "\n" : "") + twDateTime.stringFromDate(format: "yyyy/MM/dd HH:mm:ss ") + log
+        NSLog(log)
+    }
+}
+
 public struct NetConnection {  // 偵測網路連線是否有效
     static func isConnectedToNetwork() -> Bool {
         var zeroAddress = sockaddr_in()
