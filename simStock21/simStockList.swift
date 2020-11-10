@@ -217,7 +217,6 @@ class simStockList:ObservableObject {
     
     @objc private func setRequestStatus(_ notification: Notification) {
         if let userInfo = notification.userInfo, let msg = userInfo["msg"] as? String {
-            simLog.addLog(msg)
             runningMsg = msg
         }
     }
@@ -226,7 +225,7 @@ class simStockList:ObservableObject {
     @objc private func appNotification(_ notification: Notification) {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
-            NSLog ("=== appDidBecomeActive v\(versionNow) ===")
+            simLog.addLog ("=== appDidBecomeActive v\(versionNow) ===")
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
@@ -254,7 +253,7 @@ class simStockList:ObservableObject {
                 }
             }
         case UIApplication.willResignActiveNotification:
-            NSLog ("=== appWillResignActive ===\n")
+            simLog.addLog ("=== appWillResignActive ===\n")
             self.sim.request.invalidateTimer()
         default:
             break

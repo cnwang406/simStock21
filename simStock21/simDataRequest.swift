@@ -83,11 +83,14 @@ class simDataRequest {
         self.twseCount = 0
         self.stockCount = stocks.count
         if action != .simTesting {
-            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : ""))
+            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress)"))
         }
         let q = OperationQueue()
         if action != .simTesting {
             q.maxConcurrentOperationCount = 1
+        }
+        if twDateTime.startOfDay(timeTradesUpdated) != twDateTime.startOfDay() {
+            isOffDay = false
         }
         for (i,stock) in stocks.enumerated() {
             allGroup.enter()
@@ -109,7 +112,6 @@ class simDataRequest {
                 let cnyesAction:simTechnicalAction = (allTrades ? .allTrades : action)
                 q.addOperation {    //q是依序執行simTechnical以避免平行記憶體飆高crash
                     cnyesGroup.wait()
-                    NSLog("\(stocks.count - i)...")
                     self.simTechnical(stock: stock, action: cnyesAction)
                     self.progressNotify(1)
                     self.yahooRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
@@ -145,9 +147,9 @@ class simDataRequest {
         if let t = self.timer, t.isValid {
             t.invalidate()
             self.timer = nil
-            if !self.realtime {
+//            if !self.realtime {
                 simLog.addLog("timer invalidated.")
-            }
+//            }
         }
     }
     
@@ -192,7 +194,7 @@ class simDataRequest {
                     }
                 }
                 if action != .simTesting {
-                    simLog.addLog("\(stock.sId)\(stock.sName)\t技術數值：歷史價共\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
+                    simLog.addLog("\(stock.sId)\(stock.sName)\t技術數值(\(self.stockProgress)/\(self.stockCount))：歷史價共\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
                 }
             }
             if action != .simTesting {
@@ -611,9 +613,9 @@ class simDataRequest {
         //                                        let volume = yNumber(yColumn[5])
                                                 trade.tSource = "yahoo"
                                                 try? context.save() //由simTechnical執行trade.objectWillChange.send()
-                                                simLog.addLog("\(stock.sId)\(stock.sName)\tyahoo 成交價 \(String(format:"%.2f ",close))" + twDateTime.stringFromDate(dt1, format: "HH:mm:ss"))
+                                                simLog.addLog("\(stock.sId)\(stock.sName)\tyahoo(\(self.stockProgress)/\(self.stockCount)) 成交價 \(String(format:"%.2f ",close))" + twDateTime.stringFromDate(dt1, format: "HH:mm:ss"))
                                             } else {
-                                                simLog.addLog("\(stock.sId)\(stock.sName)\tyahoo 未更新 \(String(format:"%.2f",close))")
+                                                simLog.addLog("\(stock.sId)\(stock.sName)\tyahoo(\(self.stockProgress)/\(self.stockCount)) 未更新 \(String(format:"%.2f",close))")
                                             }
                                             self.simTechnical(stock: stock, action: .realtime)
                                         }
@@ -800,7 +802,7 @@ class simDataRequest {
                             trade.tSource = "twse"
                             try? context.save() //由simTechnical執行trade.objectWillChange.send()
                             self.simTechnical(stock: stock, action: .realtime)
-                            simLog.addLog("\(stock.sId)\(stock.sName)\ttwse 成交價 \(String(format:"%.2f ",z))" + twDateTime.stringFromDate(dateTime, format: "HH:mm:ss"))
+                            simLog.addLog("\(stock.sId)\(stock.sName)\ttwse(\(self.stockProgress)/\(self.stockCount)) 成交價 \(String(format:"%.2f ",z))" + twDateTime.stringFromDate(dateTime, format: "HH:mm:ss"))
                         } else {
                             simLog.addLog("\(stock.sId)\(stock.sName)\ttwse 未更新 \(String(format:"%.2f",z))")
                         }
