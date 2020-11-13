@@ -109,7 +109,7 @@ public class Stock: NSManagedObject {
                     stock.group = group
                 }
                 if index > 0 {
-                    NSLog("\(stock.sId)\(stock.sName)\t重複\(index)???")
+                    NSLog("\(stock.sId)\(stock.sName) 重複\(index)???")
                 }
             }
         }
@@ -176,7 +176,7 @@ public class Stock: NSManagedObject {
             }
         }
         let trades = Trade.fetch(context, stock: self, dateTime: mStart)
-        NSLog("\(self.sId)\(self.sName)\t刪除trades:共\(trades.count)筆")
+        NSLog("\(self.sId)\(self.sName) 刪除trades:共\(trades.count)筆")
         for trade in trades {
             context.delete(trade)
         }
