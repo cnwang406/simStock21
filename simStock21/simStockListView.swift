@@ -458,7 +458,7 @@ struct lastTrade: View {
                     Text("  ")
                 }
             }
-                .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .center)
+                .frame(width: (list.widthClass == .compact ? 70.0 : 110.0), alignment: .center)
                 .foregroundColor(trade.color(.price, gray: (isChoosing || isSearching)))
                 .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB, gray: (isChoosing || isSearching))))
                 .overlay(

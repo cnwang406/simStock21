@@ -589,7 +589,7 @@ struct tradeCell: View {
             }
             VStack(alignment: .trailing,spacing: 2) {
                 Text(String(format:"%.2f",trade.priceClose))
-                    .foregroundColor(trade.color(.price))
+                    .foregroundColor(trade.color(.price, price:trade.priceClose))
                 Text(String(format:"%.2f",trade.tMa20))
                 Text(String(format:"%.2f",trade.tMa60))
             }
@@ -630,7 +630,7 @@ struct tradeCell: View {
                         Text("  ")
                     }
                 }
-                    .frame(width: (list.widthClass == .compact ? 64.0 : 104.0), alignment: .center)
+                    .frame(width: (list.widthClass == .compact ? 70.0 : 110.0), alignment: .center)
                     .foregroundColor(trade.color(.price))
                     .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB)))
                     .overlay(
@@ -696,32 +696,34 @@ struct tradeCell: View {
                         .font(.caption)
                         .foregroundColor(trade.color(.time))
                     //== 五檔價格試算建議 ==
-                    VStack(alignment: .leading, spacing: 2) {
-                        if trade.date == stock.p10.date {
-                            HStack {
-                                ForEach(self.stock.p10.L.indices, id:\.self) { i in
-                                    Group {
-                                        if i > 0 {
-                                            Divider()
+                    if list.widthClass != .compact {
+                        VStack(alignment: .leading, spacing: 2) {
+                            if trade.date == stock.p10.date {
+                                HStack {
+                                    ForEach(self.stock.p10.L.indices, id:\.self) { i in
+                                        Group {
+                                            if i > 0 {
+                                                Divider()
+                                            }
+                                            Text(self.p10Text(p10: self.stock.p10.L[i]))
                                         }
-                                        Text(self.p10Text(p10: self.stock.p10.L[i]))
                                     }
                                 }
-                            }
-                            HStack {
-                                ForEach(self.stock.p10.H.indices, id:\.self) { i in
-                                    Group {
-                                        if i > 0 {
-                                            Divider()
+                                HStack {
+                                    ForEach(self.stock.p10.H.indices, id:\.self) { i in
+                                        Group {
+                                            if i > 0 {
+                                                Divider()
+                                            }
+                                            Text(self.p10Text(p10: self.stock.p10.H[i]))
                                         }
-                                        Text(self.p10Text(p10: self.stock.p10.H[i]))
                                     }
                                 }
                             }
                         }
+                            .font(.custom("Courier", size: textSize(textStyle: .footnote)))
+                            .foregroundColor(trade.color(.ruleB))
                     }
-                        .font(.custom("Courier", size: textSize(textStyle: .footnote)))
-                        .foregroundColor(trade.color(.ruleB))
                 }
                 Spacer()
                 //== 單價和模擬摘要 ==

@@ -412,17 +412,17 @@ public class Trade: NSManagedObject {
                 return .gray
             }
         }
+        let thePrice:Double = price ?? self.priceClose
         let stock:Stock? = self.stock   //刪除trades時，UI參考的舊trade.stock會是nil
         let p10 = stock?.p10 ?? P10()
         switch scheme {
         case .price:
-            let thePrice:Double = price ?? self.priceClose
             if self.tLowDiff == 10 && self.priceLow == thePrice {
                 return .green
             } else  if self.tHighDiff == 10 && self.priceHigh == thePrice {
                     return .red
             } else {
-                return self.color(.ruleF)
+                return self.color(price == nil ? .ruleF : .time)
             }
         case .time:
             if twDateTime.inMarketingTime(self.dateTime) {
