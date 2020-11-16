@@ -230,7 +230,7 @@ struct settingForm: View {
     @Binding var showSetting: Bool
     @State var dateStart:Date
     @State var moneyBase:Double
-    @State var addInvest:Bool
+    @State var autoInvest:Double
     @State var applyToGroup:Bool = false
     @State var applyToAll:Bool = false
     @State var saveToDefaults:Bool = false
@@ -251,7 +251,14 @@ struct settingForm: View {
                             .frame(width: 180, alignment: .leading)
                         Slider(value: $moneyBase, in: 10...1000, step: 10)
                     }
-                    Toggle("自動2次加碼", isOn: $addInvest)
+//                    Toggle("自動2次加碼", isOn: $autoInvest)
+                    HStack {
+                        Text(self.autoInvest > 9 ? "自動無限加碼" : (self.autoInvest > 0 ? String(format:"自動%.0f次加碼", self.autoInvest) : "不自動加碼"))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(width: 180, alignment: .leading)
+                        Slider(value: $autoInvest, in: 0...10, step: 1)
+                    }
                 }
                 Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults).font(.footnote)) {
                     Toggle("套用到全部股", isOn: $applyToAll)
@@ -279,7 +286,7 @@ struct settingForm: View {
     var done: some View {
         Button("確認") {
             DispatchQueue.global().async {
-                self.list.applySetting(self.stock, dateStart: self.dateStart, moneyBase: self.moneyBase, addInvest: self.addInvest, applyToGroup: self.applyToGroup, applyToAll: self.applyToAll, saveToDefaults: self.saveToDefaults)
+                self.list.applySetting(self.stock, dateStart: self.dateStart, moneyBase: self.moneyBase, autoInvest: self.autoInvest, applyToGroup: self.applyToGroup, applyToAll: self.applyToAll, saveToDefaults: self.saveToDefaults)
             }
             self.showSetting = false
         }
@@ -382,7 +389,7 @@ struct tradeHeading:View {
                         Image(systemName: "wrench")
                     }
                         .sheet(isPresented: $showSetting) {
-                            settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, addInvest: self.stock.simAddInvest)
+                            settingForm(list: self.list, stock: self.stock, showSetting: self.$showSetting, dateStart: self.stock.dateStart, moneyBase: self.stock.simMoneyBase, autoInvest: self.stock.simAutoInvest)
                         }
                     //== 工具按鈕 2 == 刪除或重算
                     Spacer()
@@ -449,8 +456,8 @@ struct tradeHeading:View {
                     Spacer()
                     Text(String(format:"期間%.1f年", stock.years))
                     Text(stock.simMoneyBase > 0 ? String(format:"起始本金%.f萬元",stock.simMoneyBase) : "")
-                    Text(stock.simAddInvest ? "自動2次加碼" : "不自動加碼")
-                        .foregroundColor(stock.simAddInvest ? .primary : .red)
+                    Text(stock.simAutoInvest == 10 ? "自動無限加碼" : (stock.simAutoInvest > 0 ? String(format:"自動%.0f次加碼", stock.simAutoInvest) : "不自動加碼"))
+                        .foregroundColor(stock.simAutoInvest > 0 && stock.simAutoInvest < 10 ? .primary : .red)
                 }
 //                    .lineLimit(1)
 //                    .minimumScaleFactor(0.6)
@@ -723,6 +730,7 @@ struct tradeCell: View {
                         }
                             .font(.custom("Courier", size: textSize(textStyle: .footnote)))
                             .foregroundColor(trade.color(.ruleB))
+                            .padding(8)
                     }
                 }
                 Spacer()

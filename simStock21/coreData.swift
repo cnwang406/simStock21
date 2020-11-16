@@ -142,7 +142,8 @@ public class Stock: NSManagedObject {
     @NSManaged public var group: String
     @NSManaged public var dateFirst: Date   //歷史價格起始
     @NSManaged public var dateStart: Date   //模擬交易起始
-    @NSManaged public var simAddInvest:Bool         //自動加碼
+    @NSManaged public var simAddInvest:Bool         //停用，改為simAutoInvest
+    @NSManaged public var simAutoInvest:Double      //自動加碼次數：0～9，10為無限次
     @NSManaged public var simMoneyBase: Double      //每次投入本金額度
     @NSManaged public var simReversed:Bool          //反轉買賣
     @NSManaged public var stockTrades: NSSet?
@@ -476,7 +477,6 @@ public class Trade: NSManagedObject {
                 return .primary
             }
         }
-        return .primary
     }
     
     func resetSimValues() {

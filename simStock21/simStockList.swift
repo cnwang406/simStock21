@@ -165,7 +165,10 @@ class simStockList:ObservableObject {
         let defaults = sim.simDefaults
         let start = twDateTime.stringFromDate(defaults.start,format: "起始日yyyy/MM/dd")
         let money = String(format:"起始本金%.f萬元",defaults.money)
-        let invest = (defaults.invest ? "自動2次加碼" : "")
+        if defaults.invest == 9 {
+            
+        }
+        let invest = (defaults.invest > 9 ? "自動無限加碼" : (defaults.invest > 0 ? String(format:"自動%.0f次加碼", defaults.invest) : ""))
         return "預設：\(start) \(money) \(invest)"
     }
     
@@ -180,8 +183,8 @@ class simStockList:ObservableObject {
     func reloadNow(_ stocks: [Stock], action:simDataRequest.simTechnicalAction) {
         if let context = stocks.first?.context {
             for stock in stocks {
-                if stock.simAddInvest == false {
-                    stock.simAddInvest = true
+                if stock.simAutoInvest == 0 {
+                    stock.simAutoInvest = 2
                 }
             }
             try? context.save()
@@ -189,7 +192,7 @@ class simStockList:ObservableObject {
         self.sim.request.downloadTrades(stocks, requestAction: action, allStocks: self.sim.stocks)
     }
     
-    func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,addInvest:Bool, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {
+    func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,autoInvest:Double, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {
         var stocks:[Stock] = []
         if applyToAll {
             stocks = sim.stocks
@@ -204,9 +207,9 @@ class simStockList:ObservableObject {
         } else {
             stocks.append(stock)
         }
-        sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, addInvest: addInvest)
+        sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, autoInvest: autoInvest)
         if saveToDefaults {
-            sim.setDefaults(start: dateStart, money: moneyBase, invest: addInvest)
+            sim.setDefaults(start: dateStart, money: moneyBase, invest: autoInvest)
         }
     }
     

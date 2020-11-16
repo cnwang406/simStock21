@@ -28,6 +28,7 @@
 		E267A58724CA797C0041369C /* simStock21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = simStock21.xcdatamodel; sourceTree = "<group>"; };
 		E27B62B124A8774600092943 /* simStockPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockPageView.swift; sourceTree = "<group>"; };
 		E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 2.xcdatamodel"; sourceTree = "<group>"; };
+		E283D26625626CC200415169 /* simStock 4.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "simStock 4.xcdatamodel"; sourceTree = "<group>"; };
 		E2C4580824A36CAA0036791E /* simStock21.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simStock21.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E2C4580B24A36CAA0036791E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E2C4580D24A36CAA0036791E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -318,7 +319,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;
@@ -327,7 +328,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mystock.simStock21;
 				PRODUCT_NAME = simStock21;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -342,7 +343,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;
@@ -351,7 +352,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mystock.simStock21;
 				PRODUCT_NAME = simStock21;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -387,6 +388,7 @@
 		E267A58624CA797C0041369C /* simStock21.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				E283D26625626CC200415169 /* simStock 4.xcdatamodel */,
 				E2EAECCA24DD5C6700BC88A8 /* simStock 3.xcdatamodel */,
 				E27EEDD524CBC8CB007401FA /* simStock 2.xcdatamodel */,
 				E267A58724CA797C0041369C /* simStock21.xcdatamodel */,

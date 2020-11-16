@@ -80,16 +80,16 @@ class simDataRequest {
     }
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
-        if self.stockProgress > 0 {
-            simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
-            return
-        }
-        self.twseCount = 0
         self.stockCount = stocks.count
-        self.stockProgress = 1
         if action != .simTesting {
             simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress)"))
+            if self.stockProgress > 0 {
+                simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
+                return
+            }
         }
+        self.twseCount = 0
+        self.stockProgress = 1
         let q = OperationQueue()
         if action != .simTesting {
             q.maxConcurrentOperationCount = 1
@@ -1271,7 +1271,6 @@ class simDataRequest {
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
         wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn ? -2 : 0)
-//        wantH += (trade.tHighDiff > 8.5 ? -1 : 0)
         
         
         if wantH >= 2 {
@@ -1292,6 +1291,7 @@ class simDataRequest {
             wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
             
             wantL += (trade.tMa20Days < -30 ? -1 : 0)
+            wantL += (trade.tLowDiff >= (trade.grade <= .none ? 9 : 8) && trade.grade >= .low ? -1 : 0)
 
             if wantL >= 5 {
                 trade.simRule = "L"
@@ -1307,6 +1307,7 @@ class simDataRequest {
             wantS += (trade.tKdDZ125 > 0.9 && trade.tKdDZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tOscZ125 > 0.9 && trade.tOscZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tHighDiff > (trade.grade >= .weak && trade.grade <= .none ? 8.5 : 7.5) ? -1 : 0)
+//            wantS += (trade.tHighDiff == 10 && trade.grade >= .weak ? -1 : 0)
 //            wantS += ((trade.tOsc == trade.tOscMin9 ? 1 : 0) + (trade.tKdK == trade.tKdKMin9 ? 1 : 0) + (trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0) + (trade.tMa60Diff == trade.tMa60DiffMin9 ? 1 : 0) >= 3 && trade.tMa60DiffZ125 < -1.5 ? 1 : 0)
             let topWantS:Double = 5
 
@@ -1370,7 +1371,7 @@ class simDataRequest {
 //                aWant += (trade.tKdK == trade.tKdKMin9 && trade.tOsc == trade.tOscMin9 ? 1 : 0)
 //                aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 && trade.grade == .damn ? 1 : 0)
                 aWant += (trade.grade >= .none ? -2 : 0)
-
+                aWant += (trade.tLowDiff >= 8.5 && trade.grade <= .low ? -1 : 0)
                 
                 let aRoi30 = trade.simUnitRoi < -30
                 let aRoi25 = trade.simUnitRoi < -25 && (trade.simDays < 180 || trade.simDays > 360)
@@ -1381,7 +1382,7 @@ class simDataRequest {
                     trade.simRuleInvest = "A"
                 }
                 if trade.simRuleInvest == "A" {
-                    if trade.stock.simAddInvest && trade.simInvestTimes <= 2  { //兩次自動加碼
+                    if trade.stock.simAutoInvest > 9 || trade.simInvestTimes <= trade.stock.simAutoInvest  { //自動加碼
                         if noInvested45 {
                             trade.simInvestAdded = 1
                         }

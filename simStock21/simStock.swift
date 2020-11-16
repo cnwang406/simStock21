@@ -20,7 +20,7 @@ struct simStock {
     init() {
         if UserDefaults.standard.double(forKey: "simMoneyBase") == 0 {
             let dateStart = twDateTime.calendar.date(byAdding: .year, value: -3, to: twDateTime.startOfDay()) ?? Date.distantFuture
-            setDefaults(start: dateStart, money: 70.0, invest: true)
+            setDefaults(start: dateStart, money: 70.0, invest: 2)
         }
         self.stocks = Stock.fetch(coreData.shared.context)
         if self.stocks.count == 0 {
@@ -129,7 +129,7 @@ struct simStock {
         }
     }
     
-    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,addInvest:Bool) {
+    func settingStocks(_ stocks:[Stock],dateStart:Date,moneyBase:Double,autoInvest:Double) {
         if let context = stocks[0].managedObjectContext {
             var dateChanged:Bool = false
             for stock in stocks {
@@ -142,7 +142,7 @@ struct simStock {
                     dateChanged = true
                 }
                 stock.simMoneyBase = moneyBase
-                stock.simAddInvest = addInvest
+                stock.simAutoInvest = autoInvest
             }
             if !simTesting {
                 DispatchQueue.main.async {
@@ -153,18 +153,18 @@ struct simStock {
         }
     }
     
-    var simDefaults:(first:Date,start:Date,money:Double,invest:Bool) {
+    var simDefaults:(first:Date,start:Date,money:Double,invest:Double) {
         let start = UserDefaults.standard.object(forKey: "simDateStart") as? Date ?? Date.distantFuture
         let money = UserDefaults.standard.double(forKey: "simMoneyBase")
-        let invest = UserDefaults.standard.bool(forKey: "simAddInvest")
+        let invest = UserDefaults.standard.double(forKey: "simAutoInvest")
         let first = twDateTime.calendar.date(byAdding: .year, value: -1, to: start) ?? start
         return (first,start,money,invest)
     }
     
-    func setDefaults(start:Date,money:Double,invest:Bool) {
+    func setDefaults(start:Date,money:Double,invest:Double) {
         UserDefaults.standard.set(start, forKey: "simDateStart")
         UserDefaults.standard.set(money, forKey: "simMoneyBase")
-        UserDefaults.standard.set(invest,forKey: "simAddInvest")
+        UserDefaults.standard.set(invest,forKey: "simAutoInvest")
     }
     
     var t00:Stock? {
@@ -231,7 +231,7 @@ struct simStock {
         print("\n\n\(group)： 自\(twDateTime.stringFromDate(start,format:"yyyy"))第\(years)年起 ... ", terminator:"")
         var nextYear:Date = start
         while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
-            let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 100, addInvest: true)
+            let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 100, autoInvest: 2)
             request.downloadTrades(stocks, requestAction: .simTesting)
             let summary = stocksSummary(stocks)
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi
