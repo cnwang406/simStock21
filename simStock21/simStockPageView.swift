@@ -564,15 +564,22 @@ struct tradeCell: View {
         Group {
             VStack(alignment: .leading,spacing: 2) {
                 Text("開盤")
-                Text("最高")
-                Text("最低")
+                Text(trade.tHighDiff == 10 ? "漲停" : "最高")
+                    .foregroundColor(trade.tHighDiff == 10 ? .red : .primary)
+                Text(trade.tLowDiff == 10 ? "跌停" : "最低")
+                    .foregroundColor(trade.tLowDiff == 10 ? .green : .primary)
             }
             VStack(alignment: .trailing,spacing: 2) {
                 Text(String(format:"%.2f",trade.priceOpen))
+                    .foregroundColor(trade.color(.price, price:trade.priceOpen))
                 Text(String(format:"%.2f",trade.priceHigh))
+                    .foregroundColor(trade.tHighDiff > 7.5 ? .red : trade.color(.price, price:trade.priceHigh))
                 Text(String(format:"%.2f",trade.priceLow))
+                    .foregroundColor(trade.tLowDiff == 10 ? .green : trade.color(.price, price:trade.priceLow))
             }
             .frame(minWidth: 55 , alignment: .trailing)
+            
+
             Spacer()
             VStack(alignment: .leading,spacing: 2) {
                 Text(twDateTime.inMarketingTime(trade.dateTime) ? "成交" : "收盤")
@@ -582,7 +589,7 @@ struct tradeCell: View {
             }
             VStack(alignment: .trailing,spacing: 2) {
                 Text(String(format:"%.2f",trade.priceClose))
-                    .foregroundColor(trade.color(.time))
+                    .foregroundColor(trade.color(.price))
                 Text(String(format:"%.2f",trade.tMa20))
                 Text(String(format:"%.2f",trade.tMa60))
             }
@@ -591,8 +598,6 @@ struct tradeCell: View {
         }
         .font(.custom("Courier", size: textSize(textStyle: .callout)))
     }
-    
-    
     
      var body: some View {
         VStack(alignment: .leading) {
@@ -614,14 +619,25 @@ struct tradeCell: View {
                 Text(twDateTime.stringFromDate(trade.dateTime))
                     .foregroundColor(trade.color(.time))
                     .frame(width: (list.widthClass == .compact ? 80.0 : 128.0), alignment: .leading)
-                Text(String(format:"%.2f",trade.priceClose))
+                HStack (spacing:2){
+                    Text("  ")
+                    Text(String(format:"%.2f",trade.priceClose))
+                    if trade.tLowDiff == 10 && trade.priceClose == trade.priceLow {
+                        Image(systemName: "arrow.down.to.line")
+                    } else if trade.tHighDiff == 10 && trade.priceClose == trade.priceHigh {
+                        Image(systemName: "arrow.up.to.line")
+                    } else {
+                        Text("  ")
+                    }
+                }
                     .frame(width: (list.widthClass == .compact ? 64.0 : 104.0), alignment: .center)
-                    .foregroundColor(trade.color(.ruleF))
+                    .foregroundColor(trade.color(.price))
                     .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB)))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(trade.color(.ruleR), lineWidth: 1)
                     )
+
 
                 //== 4買賣,5數量 ==
                 Text(trade.simQty.action)

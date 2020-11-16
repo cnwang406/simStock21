@@ -447,9 +447,19 @@ struct lastTrade: View {
 
     var body: some View {
         HStack{
-            Text(String(format:"%.2f",trade.priceClose))
+            HStack (spacing:2){
+                Text("  ")
+                Text(String(format:"%.2f",trade.priceClose))
+                if trade.tLowDiff == 10 && trade.priceClose == trade.priceLow {
+                    Image(systemName: "arrow.down.to.line")
+                } else if trade.tHighDiff == 10 && trade.priceClose == trade.priceHigh {
+                    Image(systemName: "arrow.up.to.line")
+                } else {
+                    Text("  ")
+                }
+            }
                 .frame(width: (list.widthClass == .compact ? 50.0 : 70.0), alignment: .center)
-                .foregroundColor(trade.color(.ruleF, gray: (isChoosing || isSearching)))
+                .foregroundColor(trade.color(.price, gray: (isChoosing || isSearching)))
                 .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB, gray: (isChoosing || isSearching))))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)

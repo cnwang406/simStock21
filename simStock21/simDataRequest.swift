@@ -81,7 +81,8 @@ class simDataRequest {
 
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         if self.stockProgress > 0 {
-            simLog.addLog("前查價未完？(\(self.stockProgress)/\(self.stockCount))")
+            simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
+            return
         }
         self.twseCount = 0
         self.stockCount = stocks.count

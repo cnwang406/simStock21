@@ -395,6 +395,7 @@ public class Trade: NSManagedObject {
     }
         
     enum colorScheme {
+        case price
         case time
         case ruleR  //圓框
         case ruleB  //背景
@@ -403,7 +404,7 @@ public class Trade: NSManagedObject {
         case qty
     }
     
-    func color (_ scheme: colorScheme, gray:Bool=false) -> Color {
+    func color (_ scheme: colorScheme, gray:Bool=false, price:Double?=nil) -> Color {
         if gray {
             if scheme == .ruleB || (scheme == .ruleR && self.simRule != "L" && self.simRule != "H") {
                 return .clear
@@ -414,11 +415,22 @@ public class Trade: NSManagedObject {
         let stock:Stock? = self.stock   //刪除trades時，UI參考的舊trade.stock會是nil
         let p10 = stock?.p10 ?? P10()
         switch scheme {
+        case .price:
+            let thePrice:Double = price ?? self.priceClose
+            if self.tLowDiff == 10 && self.priceLow == thePrice {
+                return .green
+            } else  if self.tHighDiff == 10 && self.priceHigh == thePrice {
+                    return .red
+            } else {
+                return self.color(.ruleF)
+            }
         case .time:
             if twDateTime.inMarketingTime(self.dateTime) {
                 return Color(UIColor.purple)
             } else if self.simRule == "_" {
                 return .gray
+            } else {
+                return .primary
             }
         case .rule:
             switch (p10.rule ?? self.simRule) {
