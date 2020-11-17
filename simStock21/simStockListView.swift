@@ -411,9 +411,9 @@ struct stockCell : View {
             Group {
                 Text(stock.sId)
                     .font(list.widthClass == .compact ? .callout : .body)
-                    .frame(width : (list.widthClass == .compact ? 40.0 : 60.0), alignment: .leading)
+                    .frame(width : (list.widthClass == .compact ? 35.0 : 65.0), alignment: .leading)
                 Text(stock.sName)
-                    .frame(width : (isSearching && stock.group == "" ? 150.0 : (list.widthClass == .compact ? 75.0 : 110.0)), alignment: .leading)
+                    .frame(width : (isSearching && stock.group == "" ? 135.0 : (list.widthClass == .compact ? 70.0 : 100.0)), alignment: .leading)
             }
                 .foregroundColor(list.isRunning ? .gray : .primary)
             if stock.group != "" {
@@ -458,7 +458,7 @@ struct lastTrade: View {
                     Text("  ")
                 }
             }
-                .frame(width: (list.widthClass == .compact ? 70.0 : 110.0), alignment: .center)
+                .frame(width: (list.widthClass == .compact ? 60.0 : 110.0), alignment: .center)
                 .foregroundColor(trade.color(.price, gray: (isChoosing || isSearching)))
                 .background(RoundedRectangle(cornerRadius: 20).fill(trade.color(.ruleB, gray: (isChoosing || isSearching))))
                 .overlay(
@@ -467,25 +467,30 @@ struct lastTrade: View {
                 )
             if list.widthClass != .compact {
                 Text(trade.simQty.action)
-                .frame(width: 30.0, alignment: .trailing)
-                .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
+                    .frame(width: (list.widthClass == .compact ? 20.0 : 30.0), alignment: .center)
+                    .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
                 Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
-                .frame(width: (list.widthClass == .compact ? 35.0 : 50.0), alignment: .trailing)
-                .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
+                    .frame(width: (list.widthClass == .compact ? 30.0 : 40.0), alignment: .trailing)
+                    .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
 
             } else {
                 EmptyView()
             }
             Text(String(format:"%.1f年",stock.years))
-                .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)
+                .frame(width: (list.widthClass == .compact ? 40.0 : 65.0), alignment: .trailing)
             if trade.days > 0 {
                 Text(String(format:"%.f天",trade.days))
-                    .frame(width: (list.widthClass == .compact ? 35.0 : 70.0), alignment: .trailing)
+                    .frame(width: (list.widthClass == .compact ? 35.0 : 65.0), alignment: .trailing)
                 Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
-                    .frame(width: (list.widthClass == .compact ? 40.0 : 70.0), alignment: .trailing)
+                    .frame(width: (list.widthClass == .compact ? 40.0 : 65.0), alignment: .trailing)
+                if list.widthClass != .compact {
+                    trade.gradeIcon
+                        .frame(width:25, alignment: .trailing)
+                }
             } else {
                 EmptyView()
             }
+            Spacer()
         }
             .font(list.widthClass == .compact ? .footnote : .body)
             .foregroundColor(isChoosing || isSearching ? .gray : .primary)

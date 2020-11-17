@@ -14,8 +14,6 @@ class simStockList:ObservableObject {
     @Published private var sim:simStock = simStock()
     @Published var widthClass:WidthClass = .compact
     @Published var runningMsg:String = ""
-
-//    @Published var filterIsOn:Bool = false
     
     var versionNow:String
     var versionLast:String = ""
@@ -242,12 +240,10 @@ class simStockList:ObservableObject {
                         return .simResetAll
                     } else if versionLast != versionNow {
                         if buildNo == "0" || versionLast == "" {
-                            return .tUpdateAll
+                            return .tUpdateAll      //改版後需要重算技術值時，應另起版號其build為0或留空
                         } else {
-                            return .simResetAll
+                            return .simResetAll     //否則就只會重算模擬，即使另起新版其build不為0或留空
                         }
-//                    } else if self.runningMsg != "" {
-//                        return .allTrades
                     }
                     return nil
                 }

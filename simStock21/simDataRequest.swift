@@ -1258,7 +1258,7 @@ class simDataRequest {
         
         //== 高買 ==================================================
         var wantH:Double = 0
-        wantH += (trade.tMa60DiffZ125 > (trade.grade > .none ? 0.75 : 0.85) && trade.tMa60DiffZ125 < (trade.grade <= .low ? 2 : 2.5) ? 1 : 0)
+        wantH += (trade.tMa60DiffZ125 > (trade.grade > .weak ? 0.75 : 0.85) && trade.tMa60DiffZ125 < (trade.grade <= .low ? 2 : 2.5) ? 1 : 0)
         wantH += (trade.tKdKZ125 > -0.8 ? 1 : 0)
         wantH += (trade.tOscZ125 > -0.5 ? 1 : 0)
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
@@ -1269,8 +1269,8 @@ class simDataRequest {
         wantH += (trade.tLowDiff125 - trade.tHighDiff125 < 15 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMax9 && trade.tMa20Diff == trade.tMa20DiffMax9 && trade.tMa20DiffZ125 > 2.5 ? -1 : 0)
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
-        wantH += (trade.grade == .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
-        wantH += (trade.grade == .damn ? -2 : 0)
+        wantH += (trade.grade <= .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
+        wantH += (trade.grade == .damn && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         
         
         if wantH >= 2 {
@@ -1291,7 +1291,7 @@ class simDataRequest {
             wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
             
             wantL += (trade.tMa20Days < -30 ? -1 : 0)
-            wantL += (trade.tLowDiff >= (trade.grade <= .none ? 9 : 8) && trade.grade >= .low ? -1 : 0)
+            wantL += (trade.tLowDiff >= (trade.grade <= .none ? 9 : 8) && trade.grade >= .weak ? -1 : 0) //或是 >= .low
 
             if wantL >= 5 {
                 trade.simRule = "L"
@@ -1306,7 +1306,7 @@ class simDataRequest {
             wantS += (trade.tKdKZ125 > 0.9 && trade.tKdKZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tKdDZ125 > 0.9 && trade.tKdDZ250 > 0.9 ? 1 : 0)
             wantS += (trade.tOscZ125 > 0.9 && trade.tOscZ250 > 0.9 ? 1 : 0)
-            wantS += (trade.tHighDiff > (trade.grade >= .weak && trade.grade <= .none ? 8.5 : 7.5) ? -1 : 0)
+            wantS += (trade.tHighDiff >= (trade.grade <= .none ? 9 : 7.5) ? -1 : 0)
 //            wantS += (trade.tHighDiff == 10 && trade.grade >= .weak ? -1 : 0)
 //            wantS += ((trade.tOsc == trade.tOscMin9 ? 1 : 0) + (trade.tKdK == trade.tKdKMin9 ? 1 : 0) + (trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0) + (trade.tMa60Diff == trade.tMa60DiffMin9 ? 1 : 0) >= 3 && trade.tMa60DiffZ125 < -1.5 ? 1 : 0)
             let topWantS:Double = 5
@@ -1362,7 +1362,7 @@ class simDataRequest {
                 //== 加碼 ==================================================
                 var aWant:Double = 0
                 let z125a = (trade.tMa20DiffZ125 < -1 ? 1 : 0) + (trade.tMa60DiffZ125 < -1 ? 1 : 0) + (trade.tKdKZ125 < -1 ? 1 : 0) + (trade.tKdDZ125 < -1 ? 1 : 0) + (trade.tKdJZ125 < -1 ? 1 : 0) + (trade.tOscZ125 < -1 ? 1 :0)
-                aWant += (z125a >= 2 || trade.grade <= .low ? 1 : 0)
+                aWant += (z125a >= 2 || trade.grade <= .weak ? 1 : 0)
                 aWant += (trade.simUnitRoi < -35 ? 1 : 0)
                 aWant += (trade.tHighDiff125 < -35 ? 1 : 0)
                 aWant += (trade.tMa20Diff < -20 || trade.tMa60Diff < -20 ? 1 : 0)
@@ -1370,7 +1370,7 @@ class simDataRequest {
                 aWant += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0)
 //                aWant += (trade.tKdK == trade.tKdKMin9 && trade.tOsc == trade.tOscMin9 ? 1 : 0)
 //                aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 && trade.grade == .damn ? 1 : 0)
-                aWant += (trade.grade >= .none ? -2 : 0)
+                aWant += (trade.grade >= .none ? -2 : 0)    //已測試必須none減兩分，不能weak/none/fine交錯各減1分
                 aWant += (trade.tLowDiff >= 8.5 && trade.grade <= .low ? -1 : 0)
                 
                 let aRoi30 = trade.simUnitRoi < -30

@@ -459,16 +459,12 @@ struct tradeHeading:View {
                     Text(stock.simAutoInvest == 10 ? "自動無限加碼" : (stock.simAutoInvest > 0 ? String(format:"自動%.0f次加碼", stock.simAutoInvest) : "不自動加碼"))
                         .foregroundColor(stock.simAutoInvest > 0 && stock.simAutoInvest < 10 ? .primary : .red)
                 }
-//                    .lineLimit(1)
-//                    .minimumScaleFactor(0.6)
-//                    .padding(.trailing)
                 HStack {
                     Spacer()
                     Text(totalSummary.profit)
                     Text(totalSummary.roi)
                     Text(totalSummary.days)
                 }
-                
             }
                 .font(.callout)
                 .lineLimit(1)
@@ -531,7 +527,7 @@ struct tradeCell: View {
                 Spacer()
                 VStack(alignment: .leading,spacing: 2) {
                     if trade.simDays > 0 {
-                        Text(String(format:"第%.f輪" + (trade.rollRounds > 10 ? "" : " ") + trade.simRuleBuy,trade.rollRounds))
+                        Text(String(format:"%.f輪" + (trade.rollRounds > 10 ? "" : " ") + (trade.grade.rawValue < 0 ? "" : " ") + "%d" + trade.simRuleBuy,trade.rollRounds,trade.grade.rawValue))
                         Text("本輪報酬")
                     } else {
                         Text("")

@@ -345,7 +345,9 @@ public class Trade: NSManagedObject {
         if self.rollRounds <= 1 {
             return self.rollDays
         } else {
-            return (self.rollDays - (self.simQtyInventory > 0 ? self.simDays : 0)) / (self.rollRounds - (self.simQtyInventory > 0 ? 1 : 0))
+            let prevRounds = (self.rollRounds - (self.simQtyInventory > 0 ? 1 : 0))
+            let prevDays = (self.rollDays - (self.simQtyInventory > 0 ? self.simDays : 0)) / prevRounds
+            return (self.simDays > prevDays ? self.rollDays / self.rollRounds : prevDays)
         }
     }
     
@@ -353,7 +355,8 @@ public class Trade: NSManagedObject {
         static func < (lhs: Trade.Grade, rhs: Trade.Grade) -> Bool {
             lhs.rawValue < rhs.rawValue
         }
-        case high = 3
+        case wow  = 3
+        case high = 2
         case fine = 1
         case none = 0
         case weak = -1
@@ -362,20 +365,43 @@ public class Trade: NSManagedObject {
     }
     var grade:Grade {
         if self.rollRounds > 2 || self.days > 360 {
-            if self.days < 80 && self.rollAmtRoi > 20 {
+            let roi = self.rollAmtRoi / self.stock.years
+            if self.days < 80 && roi > 20 {
+                return .wow
+            } else if self.days < 80 && roi > 10 {
                 return .high
-            } else if self.days < 80 && self.rollAmtRoi > 5 {
+            } else if self.days < 80 && roi > 5 {
                 return .fine
-            } else if self.days > 180 || self.rollAmtRoi < -20 {
+            } else if self.days > 180 || roi < -20 {
                     return .damn
-            } else if self.days > 120 || self.rollAmtRoi < -10 {
+            } else if self.days > 120 || roi < -10 {
                 return .low //雖然還沒有使用到low，但改變low的集合就會影響到weak的集合
-            } else if self.days > 60 || self.rollAmtRoi < -1 {
+            } else if self.days > 60 || roi < -1 {
                 return .weak
             }
         }
         return .none
     
+    }
+    
+    var gradeIcon:some View {
+        switch self.grade {
+        case .wow:
+            return Image(systemName: "star.square.fill")
+                .foregroundColor(.red)
+        case .damn:
+            return Image(systemName: "3.square")
+                .foregroundColor(.green)
+        case .high, .low:
+            return Image(systemName: "2.square")
+                .foregroundColor(self.grade == .high ? .red : .green)
+        case .fine, .weak:
+            return Image(systemName: "1.square")
+                .foregroundColor(self.grade == .fine ? .red : .green)
+        default:
+            return Image(systemName: "0.square")
+                .foregroundColor(.gray)
+        }
     }
     
     var invested:Double {
