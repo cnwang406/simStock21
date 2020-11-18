@@ -444,7 +444,9 @@ public class Trade: NSManagedObject {
         let p10 = stock?.p10 ?? P10()
         switch scheme {
         case .price:
-            if self.tLowDiff == 10 && self.priceLow == thePrice {
+            if p10.action != "" && p10.date == self.date {
+                return .white
+            } else if self.tLowDiff == 10 && self.priceLow == thePrice {
                 return .green
             } else  if self.tHighDiff == 10 && self.priceHigh == thePrice {
                     return .red

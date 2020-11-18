@@ -1337,10 +1337,10 @@ class simDataRequest {
                 }
             }
             let cut1a = trade.tLowDiff125 - trade.tHighDiff125 < 30 && trade.simDays > 200
-            let cut1b = trade.simUnitRoi > -15 && (trade.grade > .low)
-            let cut1c = trade.simUnitRoi > -20 && (trade.simDays > 300 || trade.grade <= .low)
+            let cut1b = trade.simUnitRoi > -15 && (trade.grade > .weak)
+            let cut1c = trade.simUnitRoi > -20 && (trade.simDays > 300 || trade.grade <= .weak)
             let cut1  = cut1a && (cut1b || cut1c)
-            let cut2 = trade.simDays > 400 && trade.simUnitRoi > (trade.grade <= .low ? -20 : -15)
+            let cut2 = trade.simDays > 400 && trade.simUnitRoi > (trade.grade <= .weak ? -20 : -15)
             let sCut = wantS >= (topWantS - (trade.simDays > 400 ? 4 : 3)) && (cut1 || cut2) && noInvested60
 
             var sell:Bool = sBase5 || sBase4 || sBase3 || sBase2 || sCut || sRoi19
@@ -1369,8 +1369,8 @@ class simDataRequest {
                 aWant += (trade.tMa20Diff < -8 && trade.tMa60Diff < -8 ? 1 : 0)
                 aWant += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0)
 //                aWant += (trade.tKdK == trade.tKdKMin9 && trade.tOsc == trade.tOscMin9 ? 1 : 0)
-//                aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 && trade.grade == .damn ? 1 : 0)
-                aWant += (trade.grade >= .none ? -2 : 0)    //已測試必須none減兩分，不能weak/none/fine交錯各減1分
+                aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 ? 1 : 0)
+                aWant += (trade.grade >= .none ? -2 : 0)    //已測試必須none以上減兩分，不能weak/none/fine交錯各減1分
                 aWant += (trade.tLowDiff >= 8.5 && trade.grade <= .low ? -1 : 0)
                 
                 let aRoi30 = trade.simUnitRoi < -30
