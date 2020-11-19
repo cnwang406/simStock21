@@ -527,7 +527,7 @@ struct tradeCell: View {
                 Spacer()
                 VStack(alignment: .leading,spacing: 2) {
                     if trade.simDays > 0 {
-                        Text(String(format:"%.f輪" + (trade.rollRounds > 10 ? "" : " ") + (trade.grade.rawValue < 0 ? "" : " ") + "%d" + trade.simRuleBuy,trade.rollRounds,trade.grade.rawValue))
+                        Text(String(format:"%.f輪" + String(repeating: " ", count: (trade.rollRounds < 10 ? 1 : 0) + (trade.grade.rawValue < 0 ? 0 : (trade.rollRounds >= 100 ? 0 : 1))) + "%d" + trade.simRuleBuy,trade.rollRounds,trade.grade.rawValue))
                         Text("本輪報酬")
                     } else {
                         Text("")

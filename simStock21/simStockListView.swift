@@ -448,9 +448,9 @@ struct stockCell : View {
             Group {
                 Text(stock.sId)
                     .font(list.widthClass == .compact ? .callout : .body)
-                    .frame(width : (list.widthClass == .compact ? 35.0 : 65.0), alignment: .leading)
+                    .frame(width : (list.widthClass == .compact ? 40.0 : 70.0), alignment: .leading)
                 Text(stock.sName)
-                    .frame(width : (isSearching && stock.group == "" ? 135.0 : (list.widthClass == .compact ? 70.0 : 100.0)), alignment: .leading)
+                    .frame(width : (isSearching && stock.group == "" ? 140.0 : (list.widthClass == .compact ? 70.0 : 100.0)), alignment: .leading)
             }
                 .foregroundColor(list.isRunning ? .gray : .primary)
             if stock.group != "" {
@@ -509,21 +509,18 @@ struct lastTrade: View {
                 Text(trade.simQty.qty > 0 ? String(format:"%.f",trade.simQty.qty) : "")
                     .frame(width: (list.widthClass == .compact ? 30.0 : 40.0), alignment: .trailing)
                     .foregroundColor(trade.color(.qty, gray: (isChoosing || isSearching)))
-
+                Text(String(format:"%.1f年",stock.years))
+                    .frame(width: (list.widthClass == .compact ? 40.0 : 65.0), alignment: .trailing)
             } else {
                 EmptyView()
             }
-            Text(String(format:"%.1f年",stock.years))
-                .frame(width: (list.widthClass == .compact ? 40.0 : 65.0), alignment: .trailing)
             if trade.days > 0 {
                 Text(String(format:"%.f天",trade.days))
                     .frame(width: (list.widthClass == .compact ? 35.0 : 65.0), alignment: .trailing)
                 Text(String(format:"%.1f%%",trade.rollAmtRoi/stock.years))
                     .frame(width: (list.widthClass == .compact ? 40.0 : 65.0), alignment: .trailing)
-                if list.widthClass != .compact {
                     trade.gradeIcon(gray:isChoosing || isSearching)
                         .frame(width:25, alignment: .trailing)
-                }
             } else {
                 EmptyView()
             }

@@ -427,13 +427,13 @@ public class Trade: NSManagedObject {
     }
         
     enum colorScheme {
-        case price
-        case time
-        case ruleR  //圓框
-        case ruleB  //背景
-        case ruleF  //文字
-        case rule
-        case qty
+        case price  //開盤、最高、最低、收盤價
+        case time   //盤中的日期、時間、收盤價
+        case ruleR  //收盤價的圓框
+        case ruleB  //收盤價的背景
+        case ruleF  //收盤價的文字
+        case rule   //只供ruleR, ruleB, qty的延伸規則
+        case qty    //買、賣的狀態
     }
     
     func color (_ scheme: colorScheme, gray:Bool=false, price:Double?=nil) -> Color {
@@ -444,7 +444,7 @@ public class Trade: NSManagedObject {
                 return .gray
             }
         }
-        let thePrice:Double = price ?? self.priceClose
+        let thePrice:Double = price ?? self.priceClose  //專用於開盤、最高、最低3個價，或收盤價為nil
         let stock:Stock? = self.stock   //刪除trades時，UI參考的舊trade.stock會是nil
         let p10 = stock?.p10 ?? P10()
         switch scheme {
