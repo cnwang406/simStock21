@@ -384,20 +384,25 @@ public class Trade: NSManagedObject {
     
     }
     
-    var gradeIcon:some View {
+    func gradeIcon(gray:Bool=false) -> some View  {
         switch self.grade {
         case .wow:
-            return Image(systemName: "star.square.fill")
-                .foregroundColor(.red)
+            if #available(iOS 14.0, *) {
+                return Image(systemName: "star.square.fill")
+                    .foregroundColor(gray ? .gray : .red)
+            } else {
+                return Image(systemName: "3.square.fill")
+                    .foregroundColor(gray ? .gray : .red)
+            }
         case .damn:
             return Image(systemName: "3.square")
-                .foregroundColor(.green)
+                .foregroundColor(gray ? .gray : .green)
         case .high, .low:
             return Image(systemName: "2.square")
-                .foregroundColor(self.grade == .high ? .red : .green)
+                .foregroundColor(gray ? .gray : (self.grade == .high ? .red : .green))
         case .fine, .weak:
             return Image(systemName: "1.square")
-                .foregroundColor(self.grade == .fine ? .red : .green)
+                .foregroundColor(gray ? .gray : (self.grade == .fine ? .red : .green))
         default:
             return Image(systemName: "0.square")
                 .foregroundColor(.gray)
@@ -444,7 +449,7 @@ public class Trade: NSManagedObject {
         let p10 = stock?.p10 ?? P10()
         switch scheme {
         case .price:
-            if p10.action == "" {
+            if p10.action == "" || p10.date != self.date {
                 if self.tLowDiff == 10 && self.priceLow == thePrice {
                     return .green
                 } else  if self.tHighDiff == 10 && self.priceHigh == thePrice {

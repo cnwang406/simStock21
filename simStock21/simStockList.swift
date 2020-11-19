@@ -114,6 +114,22 @@ class simStockList:ObservableObject {
         groupStocks.map{$0[0].group}.filter{$0 != ""}
     }
     
+    var newGroupName:String {
+        var nameInGroup:String = "股群_"
+        var numberInGroup:Int = 0
+        for groupName in self.groups {
+            if let numbersRange = groupName.rangeOfCharacter(from: .decimalDigits) {
+                let n = Int(groupName[numbersRange.lowerBound..<numbersRange.upperBound]) ?? 0
+                if n > numberInGroup {
+                    nameInGroup = String(groupName[..<numbersRange.lowerBound])
+                    numberInGroup = n
+                }
+            }
+        }
+        return (nameInGroup + String(numberInGroup + 1))
+    }
+
+    
     func csvStocksIdName(_ stocks:[Stock]) -> String {
         var csv:String = ""
         for stock in stocks {
