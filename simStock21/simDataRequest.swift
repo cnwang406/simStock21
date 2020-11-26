@@ -12,10 +12,11 @@ class simDataRequest {
     private var timer:Timer?
     private var isOffDay:Bool = false
     private var timeTradesUpdated:Date
+    private var tradeClosed:Bool = true
     private let requestInterval:TimeInterval = 120
     
     private var realtime:Bool {
-        timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 3) && twDateTime.inMarketingTime(delay: 3, forToday: true) && !isOffDay
+        !tradeClosed || (timeTradesUpdated > twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 3) && twDateTime.inMarketingTime(delay: 3, forToday: true) && !isOffDay)
     }
     
     enum simTechnicalAction {
@@ -82,7 +83,7 @@ class simDataRequest {
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.stockCount = stocks.count
         if action != .simTesting {
-            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress)"))
+            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress) \(self.tradeClosed ? "已收盤" : "盤中待續")"))
             if self.stockProgress > 0 {
                 simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
                 return
@@ -100,6 +101,7 @@ class simDataRequest {
         for stock in stocks {
             allGroup.enter()
             if action == .realtime && self.realtime {
+                self.tradeClosed = false
                 self.stockAction = (isOffDay ? "休市日" : "查詢盤中價")
                 self.yahooRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
             } else if action == .simUpdateAll || action == .simTesting {
@@ -127,11 +129,13 @@ class simDataRequest {
             self.stockProgress = 0
             self.stockAction = ""
             if action != .simTesting {
-                simLog.addLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss"))\n")
-                if action != .realtime || twDateTime.isDateInToday(self.timeTradesUpdated) {
-                    self.timeTradesUpdated = Date() //是否有可能睡醒把昨日未完的realtime時間誤作更新？
+                if  action != .realtime || twDateTime.isDateInToday(self.timeTradesUpdated) {
+                    if twDateTime.inMarketingTime() || self.tradeClosed {
+                        self.timeTradesUpdated = Date() //收盤後仍有可能是剛睡醒的收盤前價格？
+                    }
                 }
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
+                simLog.addLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss")) \(self.tradeClosed ? "已收盤" : "盤中待續")\n")
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
                 }
@@ -611,6 +615,7 @@ class simDataRequest {
                                                 }
                                             }
                                             if dt1 > trade.dateTime || trade.priceClose != close {
+                                                self.tradeClosed = !twDateTime.inMarketingTime(dt1, forToday: true)
                                                 trade.dateTime = dt1
                                                 trade.priceClose = close
                                                 trade.priceOpen = yNumber(yColumn[6])
@@ -800,6 +805,7 @@ class simDataRequest {
                     trade.tSource = "twse"
                     if z > 0 {
                         if z != trade.priceClose {
+                            self.tradeClosed = !twDateTime.inMarketingTime(dateTime, forToday: true)
                             trade.dateTime = dateTime
                             trade.priceClose = z
                             trade.priceOpen = o
@@ -818,7 +824,9 @@ class simDataRequest {
                 }   //self.isOffDay = false
                     
             } catch twseError.error(let msg) {   //error就放棄結束
-                self.timeTradesUpdated = Date() //讓後面排隊的twseRequest不足冷卻時間而先放棄
+                if twDateTime.inMarketingTime() {
+                    self.timeTradesUpdated = Date() //讓後面排隊的twseRequest不足冷卻時間而先放棄
+                }
                 simLog.addLog("(\(self.stockProgress)/\(self.stockCount))twse \(stock.sId)\(stock.sName) timeout? \(msg)")
                 //可能是被TWSE拒絕連線而逾時
             } catch twseError.warning(let msg) {    //warn可能只是cookie失敗，重試
@@ -1271,7 +1279,7 @@ class simDataRequest {
         wantH += (trade.tMa60Diff == trade.tMa60DiffMin9 || trade.tMa20Diff == trade.tMa20DiffMin9 || trade.tOsc == trade.tOscMin9 || trade.tKdK == trade.tKdKMin9 ? -1 : 0)
         wantH += (trade.grade <= .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn && (ma20d > 6 || ma60d > 7) ? -1 : 0)
-        
+        wantH += (trade.tMa20DiffZ125 > 1.6 && trade.grade <= .damn ? -1 : 0)
         
         if wantH >= 2 {
             if (trade.grade <= .weak && prev.priceClose < trade.priceClose) && (prev.simRule == "H" || prev.simRule == "I") {

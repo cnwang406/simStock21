@@ -577,7 +577,7 @@ struct SearchBar: View {
                             Button(action: {
                                 self.editText = ""
                                 self.searchText = nil
-                                self.isSearching = false
+                                self.isSearching = true
                            })
                            {
                                 Image(systemName: "multiply.circle.fill")
