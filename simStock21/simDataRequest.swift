@@ -204,7 +204,7 @@ class simDataRequest {
                     }
                 }
                 if action != .simTesting {
-                    simLog.addLog("(\(self.stockProgress)/\(self.stockCount))技術值 \(stock.sId)\(stock.sName)：歷史價共\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
+                    simLog.addLog("(\(self.stockProgress)/\(self.stockCount))技術值 \(stock.sId)\(stock.sName)：歷史價\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
                 }
             }
             if action != .simTesting {
@@ -1267,10 +1267,11 @@ class simDataRequest {
         //== 高買 ==================================================
         var wantH:Double = 0
         wantH += (trade.tMa60DiffZ125 > (trade.grade > .weak ? 0.75 : 0.85) && trade.tMa60DiffZ125 < (trade.grade <= .low ? 2 : 2.5) ? 1 : 0)
-        wantH += (trade.tKdKZ125 > -0.8 ? 1 : 0)
-        wantH += (trade.tOscZ125 > -0.5 ? 1 : 0)
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
+        wantH += ((trade.tMa60Diff > (trade.grade <= .weak ? -0.5 : 0) && trade.tMa20Diff > (trade.grade <= .weak ? -0.5 : 0)) || trade.grade == .damn ? 1 : 0)
 
+        wantH += (trade.tKdKZ125 < -0.8 ? -1 : 0)
+        wantH += (trade.tOscZ125 < -0.5 ? -1 : 0)
         wantH += (trade.tKdJZ125 > 2 ? -1 : 0)
         wantH += (trade.tHighDiff125 < -20 ? -1 : 0)
         wantH += (trade.tMa60DiffZ125 < -2 || trade.tMa20DiffZ125 > 3 ? -1 : 0) //Ma60過低, Ma20過高
@@ -1281,7 +1282,7 @@ class simDataRequest {
         wantH += (trade.grade == .damn && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.tMa20DiffZ125 > 1.6 && trade.grade <= .damn ? -1 : 0)
         
-        if wantH >= 2 {
+        if wantH >= 1 {
             if (trade.grade <= .weak && prev.priceClose < trade.priceClose) && (prev.simRule == "H" || prev.simRule == "I") {
                 trade.simRule = "I"
             } else {
@@ -1391,7 +1392,7 @@ class simDataRequest {
                 }
                 if trade.simRuleInvest == "A" {
                     if trade.stock.simAutoInvest > 9 || trade.simInvestTimes <= trade.stock.simAutoInvest  { //自動加碼
-                        if noInvested45 {
+                        if noInvested45 || (trade.simUnitRoi < -50 && trade.grade >= .fine) {
                             trade.simInvestAdded = 1
                         }
                     }
