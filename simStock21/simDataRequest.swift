@@ -128,10 +128,8 @@ class simDataRequest {
             self.stockProgress = 0
             self.stockAction = ""
             if action != .simTesting {
-                if  action != .realtime || twDateTime.isDateInToday(self.timeTradesUpdated) {
-                    if twDateTime.inMarketingTime() || self.tradeClosed {
-                        self.timeTradesUpdated = Date() //收盤後仍有可能是剛睡醒的收盤前價格？
-                    }
+                if  action != .realtime || twDateTime.inMarketingTime() || self.tradeClosed {
+                    self.timeTradesUpdated = Date() //收盤後仍有可能是剛睡醒的收盤前價格？
                 }
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
                 simLog.addLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss")) \(self.tradeClosed ? "已收盤" : "盤中待續")\n")
