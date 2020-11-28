@@ -101,7 +101,6 @@ class simDataRequest {
         for stock in stocks {
             allGroup.enter()
             if action == .realtime && self.realtime {
-                self.tradeClosed = false
                 self.stockAction = (isOffDay ? "休市日" : "查詢盤中價")
                 self.yahooRequest(stock) //, allGroup: allGroup, twseGroup: twseGroup)
             } else if action == .simUpdateAll || action == .simTesting {
