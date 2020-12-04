@@ -251,6 +251,73 @@ struct simStock {
 //        }
 //    }
     
+    func csvStockRoi(_ stock:Stock, from:Date) -> (header:String,body:String) {
+        /*
+        func padding(_ text:String ,toLength: Int=7, character: Character=" ", toRight:Bool=false) -> String {
+            var txt:String = ""
+            var len:Int = 0
+            if text.count > 0 {
+                for c in text {
+                    let C = Character(String(c).uppercased())
+                    if c >= "0" && c < "9" || C >= "A" && C <= "Z" || c == "­" || c == "%" || c == "." || c == " " {
+                        len += 1
+                    } else {
+                        len += 2    //可能是中文字，要算2個space的位置
+                        if len - toLength == 1 {    //超過截斷，但是只超過1位要補1位的space
+                            txt += " "
+                        }
+                    }
+                    if len <= toLength {
+                        txt += String(c)
+                    }
+
+                }
+                let newLength = len //text.count    //在固定長度的String左邊填空白
+                if newLength < toLength {
+                    if toRight {
+                        txt = txt + String(repeatElement(character, count: toLength - newLength))
+                    } else {
+                        txt = String(repeatElement(character, count: toLength - newLength)) + txt
+                    }
+                }
+            } else {
+                txt = String(repeatElement(character, count: toLength))
+            }
+            return txt
+        }   */
+
+        var txtHeader:String = ""
+        var txtBody:String = ""
+        var mm:Date = twDateTime.startOfMonth(from)
+        var roi:Double = 0
+        var maxMoney:Double = 0
+        let trades = Trade.fetch(stock.context, stock: stock, dateTime: from, asc: true)
+        for trade in trades {
+            let mmTrade = twDateTime.startOfMonth(trade.dateTime)
+            if mmTrade > mm {  //跨月了
+                let txtRoi = (roi == 0 ? "" : String(format:"%.1f%",roi))
+                txtHeader += ", \(twDateTime.stringFromDate(mm, format: "yyyy/MM"))"
+                txtBody   += ", \(txtRoi)"
+                mm  = mmTrade
+                roi = 0
+            }
+            if trade.simQtySell > 0 {
+                roi += trade.simAmtRoi
+                if trade.simInvestTimes > maxMoney {
+                    maxMoney = trade.simInvestTimes
+                }
+            }
+        }
+        if maxMoney > 0 {
+            let txtRoi = (roi == 0 ? "" : String(format:"%.1f%",roi))
+            txtHeader = "簡稱" + ", 本金" + txtHeader + ", \(twDateTime.stringFromDate(mm, format: "yyyy/MM"))"
+            txtBody   = stock.sName + ", \(String(format:"x%.f",maxMoney))" + txtBody + ", \(txtRoi)"
+        } else {
+            txtHeader = ""
+            txtBody   = ""
+        }
+        return (txtHeader,txtBody)
+    }    
 
     
 }

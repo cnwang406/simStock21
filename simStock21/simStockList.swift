@@ -140,6 +140,153 @@ class simStockList:ObservableObject {
         }
         return csv
     }
+    
+    func csvMonthlyRoi(_ stocks: [Stock], from:Date?=nil) -> String {
+        var text:String = ""
+        var txtMonthly:String = ""
+
+        func combineMM(_ allHeader:[String], newHeader:[String], newBody:[String]) -> (header:[String],body:[String]) {
+            var mm = allHeader
+            var bb = newBody
+            for n in newHeader {
+                var lm:String = ""
+                var inserted:Bool = false
+                for (idxM,m) in mm.enumerated() {
+                    if n < m && n > lm {
+                        mm.insert(n, at: idxM)
+                        inserted = true
+                        break
+                    }
+                    lm = m
+                }
+                if let ml = mm.last {
+                    if !inserted && n > ml {
+                        mm.append(n)
+                    }
+                } else {
+                    mm.append(n)
+                }
+            }
+            for m in mm {   //反過來用補完的header來補body的欄位
+                var ln:String = ""
+                var inserted:Bool = false
+                for (idxN,n) in newHeader.enumerated() {
+                    if m < n && m > ln {
+                        bb.insert("", at: idxN)
+                        inserted = true
+                        break
+                    }
+                    ln = n
+                }
+                if let nl = newHeader.last {
+                    if !inserted && m > nl {
+                        bb.append("")
+                    }
+                } else {
+                    bb.append("")
+                }
+            }
+            return (mm,bb)
+        }
+        
+
+
+        var allHeader:[String] = []     //合併後的月別標題：如果各股起迄月別不一致？所以需要合併
+        var allHeaderX2:[String] = []   //前兩欄，即簡稱和本金
+        for stock in stocks {
+            if stock.sId != "t00" {
+                var tFrom:Date {
+                    if let f = from {
+                        return f
+                    } else {
+                        if let d = stock.lastTrade(stock.context)?.date, let f = twDateTime.calendar.date(byAdding: .month, value: -6, to: d) {
+                            return f
+                        }
+                    }
+                    return Date.distantPast
+                }
+                let txt = sim.csvStockRoi(stock, from: tFrom)
+                if txt.body.count > 0 { //有損益才有字
+                    let subHeader = txt.header.split(separator: ",")
+                    var newHeader:[String] = []   //待合併的新的月別標題
+                    if subHeader.count >= 3 {
+                        for (i,s) in subHeader.enumerated() {
+                            if i < 2 {
+                                if allHeaderX2.count < 2 {
+                                    allHeaderX2.append(String(s).replacingOccurrences(of: " ", with: ""))
+                                }
+                            } else {
+                                newHeader.append(String(s).replacingOccurrences(of: " ", with: ""))   //順便去空白
+                            }
+                        }
+                    }
+                    let subBody = txt.body.split(separator: ",")
+                    var newBody:[String] = []   //待補”,"分隔的數值欄
+                    var newBodyX2:[String] = [] //前兩欄，即簡稱和本金
+                    if subBody.count >= 3 {
+                        for (i,s) in subBody.enumerated() {
+                            if i < 2 {
+                                newBodyX2.append(String(s).replacingOccurrences(of: " ", with: "")) //順便去空白
+                            } else {
+                                newBody.append(String(s).replacingOccurrences(of: " ", with: ""))   //順便去空白
+                            }
+                        }
+                    }
+                    if newBody.count > 0 && newHeader.count > 0 {
+                        //每次都把標題和逐月損益，跟之前各股的合併，這樣才能確保全部股的月欄是對齊的
+                        let all = combineMM(allHeader, newHeader:newHeader, newBody:newBody)   //<<<<<<<<<< 合併
+                        let allBody = newBodyX2 + all.body
+                        let txtBody = (allBody.map{String($0)}).joined(separator: ", ")
+                        txtMonthly += txtBody + "\n"
+                        allHeader   = all.header
+                    }
+                }
+            }
+        }
+        if txtMonthly.count > 0 {
+            let title:String = "逐月已實現損益(%)：\n"
+            for (idx,h) in allHeader.enumerated() {
+                if let d = twDateTime.dateFromString(h + "/01") {
+                    if h.suffix(2) == "01" {
+                        allHeader[idx] = twDateTime.stringFromDate(d, format: "yyyy/M月")
+                    } else {
+                        allHeader[idx] = twDateTime.stringFromDate(d, format: "M月")
+                    }
+                }
+            }
+            
+            //計算逐月合計，只能等全部股都合併完成後才好合計
+            var sumAll:Double = 0       //總和
+            var sumMonthly:[Double]=[]  //月別合計
+            let txtBody:[String] = txtMonthly.components(separatedBy: CharacterSet.newlines) as [String]
+            for b in txtBody {
+                let txtROI:[String] = b.components(separatedBy: ", ") as [String]
+                for (idx,r) in txtROI.enumerated() {
+                    var roi:Double = 0
+                    if let dROI = Double(r) {
+                        roi = dROI
+                    }
+                    if idx >= 2 {   //前兩欄是簡稱和本金，故跳過
+                        let i = idx - 2
+                        if i == sumMonthly.count {
+                            sumMonthly.append(roi)
+                        } else {
+                            sumMonthly[i] += roi
+                        }
+                        sumAll += roi
+                    }
+                }
+            }
+            let txtSummary = "合計,," + (sumMonthly.map{String(format:"%.1f",$0)}).joined(separator: ", ") + ", " + String(format:"%.1f",sumAll)
+            
+            //把文字通通串起來
+            let allHeader = allHeaderX2 + allHeader //冠上之前保存的前兩欄標題，即簡稱和本金
+            let txtHeader = (allHeader.map{String($0)}).joined(separator: ", ") + "\n"
+            text = "\(title)\(txtHeader)\(txtMonthly)\(txtSummary)\n" //最後空行可使版面周邊的留白對稱
+        }
+
+        return text
+    }
         
     var searchGotResults:Bool { //查無搜尋目標？
         if let firstGroup = groupStocks.first?[0].group, firstGroup == "" {

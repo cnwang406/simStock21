@@ -408,11 +408,13 @@ class simDataRequest {
     
     
     private func cnyesRequest(_ stock:Stock, ymdStart:String, ymdEnd:String, cnyesGroup:DispatchGroup) {
-        cnyesGroup.enter()
-        let ymdS = String(format:"%.f",twDateTime.dateFromString(ymdStart)!.timeIntervalSince1970)
-        let ymdE = String(format:"%.f",twDateTime.dateFromString(ymdEnd)!.timeIntervalSince1970)
+        guard let s = twDateTime.dateFromString(ymdStart) else {return}
+        guard let e = twDateTime.dateFromString(ymdEnd) else {return}
+        let ymdS = String(format:"%.f",s.timeIntervalSince1970)
+        let ymdE = String(format:"%.f",e.timeIntervalSince1970)
         let urls = "https://ws.api.cnyes.com/charting/api/v1/history?resolution=D&symbol=TWS:\(stock.sId):STOCK&from=\(ymdE)&to=\(ymdS)"
         guard let url = URL(string: urls) else {return}
+        cnyesGroup.enter()
         let urlRequest = URLRequest(url: url,timeoutInterval: 30)
         let task = URLSession.shared.dataTask(with: urlRequest, completionHandler: {(data, response, error) in
             do {
@@ -425,13 +427,16 @@ class simDataRequest {
                 guard let jdata = jroot["data"] as? [String:Any] else {throw requestError.error(msg:"no prices")}
 
                 /*
-                 {"message":"OK","statusCode":200,"data":{"nextTime":null,"t":[1586390400,1586304000,1586217600,1586131200,1585699200,1585612800,1585526400,1585267200,...
-                 ...,1428451200,1428364800],"c":[283,285,283,275.5,271.5,274,267.5,273,280,277,267.5,255,270,248,260,268,276.5,290,294,302,307,...
-                 ...,144,147,147,143,143,146],"l":[282.5,283,280.5,270,271.5,269.5,262.5,273,275.5,274,266,252,256,235.5,260,265,275.5,...
-                 ...,141.5,141.5,142.5,144.5,141.5,143.5,146,145,143,143,145],"h":[288,285.5,284,275.5,276.5,274,269,286,280,280,274,262.5,270,253,272.5,276.5,291,294,299,...
-                 ...,144,147,144.5,145.5,147.5,147,145.5,146,147.5],"quote":null,"v":[29276.43,38698.826000000001,48887.345999999998,59712.754000000001,47572.034,...
-                 ...,400.697999999997],"session":[[1606870800,1606887300]],"s":"ok","o":[287.5,285,283.5,273,276.5,273,263.5,284,279.5,276.5,268,257,258.5,252,269.5,265,285,275,299,...
-                 ...,145.5,147.5,148.5,147,150,153.5,153,149,145.5,143.5,142,142,143,145,143.5,145,146.5,146,144,145.5,146.5]}}
+                 {"message":"OK","statusCode":200,"data":{"nextTime":null,
+                 "t":[1586390400,1586304000,1586217600,1586131200,1585699200, ... ,1428451200,1428364800],
+                 "c":[283,285,283,275.5,271.5,274,267.5,273,280,277,267.5,255,270,248,260, ... ,143,146],
+                 "l":[282.5,283,280.5,270,271.5,269.5,262.5,273,275.5,274,266,252,256,235.5, ... ,143,145],
+                 "h":[288,285.5,284,275.5,276.5,274,269,286,280,280,274,262.5,270,253,272.5, ... ,146,147.5],
+                 "quote":null,
+                 "v":[29276.43,38698.826000000001,48887.345999999998,59712.754000000001, ... ,400.697999999997],
+                 "session":[[1606870800,1606887300]],
+                 "s":"ok",
+                 "o":[287.5,285,283.5,273,276.5,273,263.5,284,279.5,276.5,268,257,258.5, ... ,145.5,146.5]}}
                  */
                 
                 let t = jdata["t"] as? [Double] ?? []
@@ -462,7 +467,6 @@ class simDataRequest {
                                 if let s = Stock.fetch(context, sId:[stock.sId]).first {
                                     trade.stock = s
                                 }
-
                             }
                             trade.dateTime      = dt
                             trade.priceClose    = c[i]
