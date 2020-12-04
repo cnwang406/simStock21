@@ -244,7 +244,7 @@ class simStockList:ObservableObject {
             }
         }
         if txtMonthly.count > 0 {
-            let title:String = "逐月已實現損益(%)：\n"
+            let title:String = "逐月已實現損益(%)"
             for (idx,h) in allHeader.enumerated() {
                 if let d = twDateTime.dateFromString(h + "/01") {
                     if h.suffix(2) == "01" {
@@ -256,7 +256,6 @@ class simStockList:ObservableObject {
             }
             
             //計算逐月合計，只能等全部股都合併完成後才好合計
-            var sumAll:Double = 0       //總和
             var sumMonthly:[Double]=[]  //月別合計
             let txtBody:[String] = txtMonthly.components(separatedBy: CharacterSet.newlines) as [String]
             for b in txtBody {
@@ -273,16 +272,15 @@ class simStockList:ObservableObject {
                         } else {
                             sumMonthly[i] += roi
                         }
-                        sumAll += roi
                     }
                 }
             }
-            let txtSummary = "合計,," + (sumMonthly.map{String(format:"%.1f",$0)}).joined(separator: ", ") + ", " + String(format:"%.1f",sumAll)
+            let txtSummary = "合計,," + (sumMonthly.map{String(format:"%.1f",$0)}).joined(separator: ", ")
             
             //把文字通通串起來
             let allHeader = allHeaderX2 + allHeader //冠上之前保存的前兩欄標題，即簡稱和本金
             let txtHeader = (allHeader.map{String($0)}).joined(separator: ", ") + "\n"
-            text = "\(title)\(txtHeader)\(txtMonthly)\(txtSummary)\n" //最後空行可使版面周邊的留白對稱
+            text = "\(txtHeader)\(txtMonthly)\(txtSummary)\n\n\(title)\n" //最後空行可使版面周邊的留白對稱
         }
 
         return text

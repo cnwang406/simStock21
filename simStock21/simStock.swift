@@ -290,6 +290,7 @@ struct simStock {
         var txtBody:String = ""
         var mm:Date = twDateTime.startOfMonth(from)
         var roi:Double = 0
+        var roiSum:Double = 0
         var maxMoney:Double = 0
         let trades = Trade.fetch(stock.context, stock: stock, dateTime: from, asc: true)
         for trade in trades {
@@ -303,6 +304,7 @@ struct simStock {
             }
             if trade.simQtySell > 0 {
                 roi += trade.simAmtRoi
+                roiSum += trade.simAmtRoi
                 if trade.simInvestTimes > maxMoney {
                     maxMoney = trade.simInvestTimes
                 }
@@ -310,8 +312,9 @@ struct simStock {
         }
         if maxMoney > 0 {
             let txtRoi = (roi == 0 ? "" : String(format:"%.1f%",roi))
-            txtHeader = "簡稱" + ", 本金" + txtHeader + ", \(twDateTime.stringFromDate(mm, format: "yyyy/MM"))"
-            txtBody   = stock.sName + ", \(String(format:"x%.f",maxMoney))" + txtBody + ", \(txtRoi)"
+            let txtSum = String(format:"%.1f%",roiSum)
+            txtHeader = "簡稱" + ", 本金" + txtHeader + ", \(twDateTime.stringFromDate(mm, format: "yyyy/MM"))" + ",小計"
+            txtBody   = stock.sName + ", \(String(format:"x%.f",maxMoney))" + txtBody + ", \(txtRoi)" + ", \(txtSum)"
         } else {
             txtHeader = ""
             txtBody   = ""

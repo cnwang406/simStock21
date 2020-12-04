@@ -215,7 +215,7 @@ struct stockActionMenu:View {
                                 self.shareText = self.list.csvStocksIdName(self.checkedStocks)
                                 self.showShare = true
                             },
-                            .default(Text("逐月已實現")) {
+                            .default(Text("逐月已實現" + (self.list.widthClass != .compact ? "損益" : ""))) {
                                 self.shareText = self.list.csvMonthlyRoi(self.checkedStocks)
                                 self.showShare = true
                             },
