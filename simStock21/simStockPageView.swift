@@ -424,7 +424,10 @@ struct tradeHeading:View {
                                 .default(Text("小確幸網站")) {
                                     self.openUrl("https://peiyu66.github.io/simStock21/")
                                 },
-                                .default(Text("Yahoo! 技術分析")) {
+                                .default(Text("鉅亨個股走勢")) {
+                                    self.openUrl("https://invest.cnyes.com/twstock/tws/" + self.stock.sId)
+                                },
+                                .default(Text("Yahoo!技術分析")) {
                                     self.openUrl("https://tw.stock.yahoo.com/q/ta?s=" + self.stock.sId)
                                 },
                                 .default(Text("查看Log")) {

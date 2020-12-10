@@ -194,6 +194,21 @@ public class Stock: NSManagedObject {
     
     var p10:P10 = P10()
     
+    var dateRequestTWSE:Date? {
+        if let trade = Trade.fetch(self.context, stock: self, tillYesterday: true, TWSE: false, fetchLimit: 1, asc: false).first {
+            let twseStart:Date = twDateTime.dateFromString("2010/01/01") ?? twDateTime.startOfMonth() //2010之前的沒得查
+            if trade.date >= twseStart {
+                return trade.date
+            }
+        }
+        if let trade = Trade.fetch(self.context, stock: self, TWSE: true, fetchLimit: 1, asc: false).first {
+            if let next = twDateTime.calendar.date(byAdding: .day, value: 1, to: trade.date) {
+                return next
+            }
+        }
+        return nil
+    }
+    
     
     
 //    @objc(addTradeObject:)
@@ -220,13 +235,20 @@ struct P10 {    //五檔價格試算建議
 
 @objc(Trade)
 public class Trade: NSManagedObject {
-    static func fetchRequest (stock:Stock, dateTime:Date?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
+    static func fetchRequest (stock:Stock, dateTime:Date?=nil, tillYesterday:Bool=false, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
         var predicates:[NSPredicate] = []
         predicates.append(NSPredicate(format: "stock == %@", stock))
         if let dt = dateTime {
             predicates.append(NSPredicate(format: "dateTime >= %@", dt as CVarArg))
         }
-        if let r = simReversed, r == true  {
+        if tillYesterday {
+            let today = twDateTime.startOfDay()
+            predicates.append(NSPredicate(format: "dateTime < %@", today as CVarArg))
+        }
+        if let t = TWSE {
+            predicates.append(NSPredicate(format: "tSource \(t ? "==" : "!=") %@", "TWSE"))
+        }
+        if let r = simReversed, r == true  {    //過濾出反轉買賣的trades
             predicates.append(NSPredicate(format: "simReversed != %@", ""))
         }
         let fetchRequest = NSFetchRequest<Trade>(entityName: "Trade")
@@ -238,10 +260,26 @@ public class Trade: NSManagedObject {
         return fetchRequest
     }
     
-    static func fetch (_ context:NSManagedObjectContext, stock:Stock, dateTime:Date?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
-        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dateTime, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
+    static func fetch (_ context:NSManagedObjectContext, stock:Stock, dateTime:Date?=nil, tillYesterday:Bool=false, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
+        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dateTime, tillYesterday: tillYesterday, TWSE: TWSE, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
         return (try? context.fetch(fetchRequest)) ?? []
     }
+    
+    static func trade (_ context:NSManagedObjectContext, stock:Stock, date:Date) -> Trade {
+        let dt = twDateTime.startOfDay(date)
+        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dt ,fetchLimit: 1, asc: true)
+        if let trades = try? context.fetch(fetchRequest), let trade = trades.first, trade.date == dt{
+            return trade
+        } else {
+            let trade = Trade(context: context)
+            if let s = Stock.fetch(context, sId:[stock.sId]).first {
+                trade.stock = s
+            }
+            return trade
+        }
+        
+    }
+
 
 //    static func new(_ context:NSManagedObjectContext, stock:Stock, dateTime:Date) -> Trade {
 //        let trade = Trade(context: context)
@@ -350,7 +388,7 @@ public class Trade: NSManagedObject {
             return (self.simDays > prevDays ? self.rollDays / self.rollRounds : prevDays)
         }
     }
-    
+        
     enum Grade:Int, Comparable {
         static func < (lhs: Trade.Grade, rhs: Trade.Grade) -> Bool {
             lhs.rawValue < rhs.rawValue

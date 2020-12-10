@@ -184,6 +184,10 @@ struct stockActionMenu:View {
                 }
                 .actionSheet(isPresented: self.$showReload) {
                         ActionSheet(title: Text("刪除或重算"), message: Text("內容和範圍？"), buttons: [
+                            .default(Text("[TWSE測試]")) {
+                                self.list.requestTWSE(self.checkedStocks)
+                                self.isChoosingOff()
+                            },
                             .default(Text("重算模擬")) {
                                 self.list.reloadNow(self.checkedStocks, action: .simResetAll)
                                 self.isChoosingOff()
