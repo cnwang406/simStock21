@@ -16,7 +16,7 @@ class simDataRequest {
     private let requestInterval:TimeInterval = 120
     
     private var inMarketingTime:Bool {
-        twDateTime.inMarketingTime(timeLastTrade, forToday: true) || twDateTime.inMarketingTime(timeTradesUpdated, forToday: true)
+        twDateTime.inMarketingTime(timeLastTrade, forToday: true) || (twDateTime.inMarketingTime(timeTradesUpdated, forToday: true) && twDateTime.inMarketingTime(delay: 2, forToday: true))
     }
     
     private var realtime:Bool {
@@ -95,6 +95,9 @@ class simDataRequest {
             simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress) \(self.inMarketingTime ? "盤中待續" : "已收盤")"))
             if self.stockProgress > 0 {
                 simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
+                if self.realtime {
+                    self.setupTimer(allStocks ?? stocks, timeInterval: 30)
+                }
                 return
             }
         }
@@ -148,15 +151,19 @@ class simDataRequest {
                 }
                 if self.realtime {
                     self.runP10(stocks)
-                    self.invalidateTimer()
-                    self.timer = Timer.scheduledTimer(withTimeInterval: self.requestInterval, repeats: false) {_ in
-                        self.runRequest(allStocks ?? stocks, action: .realtime)
-                    }
-                    if let t = self.timer, t.isValid {
-                        simLog.addLog("timer scheduled in " + String(format:"%.1fs",t.fireDate.timeIntervalSinceNow))
-                    }
+                    self.setupTimer(allStocks ?? stocks)
                 }
             }
+        }
+    }
+    
+    func setupTimer(_ stocks:[Stock], timeInterval:TimeInterval?=nil) {
+        self.invalidateTimer()
+        self.timer = Timer.scheduledTimer(withTimeInterval: (timeInterval ?? self.requestInterval), repeats: false) {_ in
+            self.runRequest(stocks, action: .realtime)
+        }
+        if let t = self.timer, t.isValid {
+            simLog.addLog("timer scheduled in " + String(format:"%.1fs",t.fireDate.timeIntervalSinceNow))
         }
     }
     
