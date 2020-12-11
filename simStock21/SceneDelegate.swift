@@ -41,17 +41,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 let queue = OperationQueue()
                 queue.maxConcurrentOperationCount = 1
                 queue.addOperation {
-                    simLog.addLog("BGTask running...")
-                    list.requestTWSE()
+                    list.requestTWSE(bgTask: task)
                 }
                 task.expirationHandler = {
                     queue.cancelAllOperations()
-                    simLog.addLog("BGTask canceled.")
+                    simLog.addLog("BGTask cancelled.")
                 }
                 let lastOperation = queue.operations.last
                 lastOperation?.completionBlock = {
-                    simLog.addLog("BGTask finished.")
-                    task.setTaskCompleted(success: !(lastOperation?.isCancelled ?? false))
+                    //nothing to notify
                 }
             }
         }
@@ -67,13 +65,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
-        simLog.addLog("=== sceneDidBecomeActive ===")
+        NSLog("=== sceneDidBecomeActive ===")
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
-        simLog.addLog("=== sceneWillResignActive ===")
+        NSLog("=== sceneWillResignActive ===")
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {
@@ -82,7 +80,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
-        simLog.addLog("=== sceneDidEnterBackground ===")
+        NSLog("=== sceneDidEnterBackground ===")
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.

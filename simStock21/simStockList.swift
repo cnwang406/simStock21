@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import MobileCoreServices
+import BackgroundTasks
 
 class simStockList:ObservableObject {
     @Published private var sim:simStock = simStock()
@@ -424,10 +425,10 @@ class simStockList:ObservableObject {
 
     }
     
-    func requestTWSE(_ stocks:[Stock]?=nil) {
+    func requestTWSE(_ stocks:[Stock]?=nil, bgTask:BGTask?=nil) {
         let requestStocks = stocks ?? sim.stocks
         DispatchQueue.global().async {
-            self.sim.request.downloadTrades(requestStocks, requestAction: .TWSE)
+            self.sim.request.downloadTrades(requestStocks, requestAction: .TWSE, bgTask: bgTask)
         }
     }
 
