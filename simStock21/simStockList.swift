@@ -47,7 +47,7 @@ class simStockList:ObservableObject {
         NotificationCenter.default.addObserver(self, selector: #selector(self.setWidthClass), name: UIDevice.orientationDidChangeNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didBecomeActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.willResignActiveNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didEnterBackgroundNotification, object: nil)
+//        NotificationCenter.default.addObserver(self, selector: #selector(self.appNotification), name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.setRequestStatus), name: NSNotification.Name("requestRunning") , object: nil)
     }
         
@@ -414,8 +414,8 @@ class simStockList:ObservableObject {
                     self.sim.request.downloadTrades(self.sim.stocks, requestAction: action)
                 }
             }
-        case UIApplication.didEnterBackgroundNotification:
-            simLog.addLog("=== appDidEnterBackground ===\n")
+//        case UIApplication.didEnterBackgroundNotification:
+//            simLog.addLog("=== appDidEnterBackground ===")
         case UIApplication.willResignActiveNotification:
             simLog.addLog ("=== appWillResignActive ===")
             self.sim.request.invalidateTimer()
@@ -425,10 +425,10 @@ class simStockList:ObservableObject {
 
     }
     
-    func requestTWSE(_ stocks:[Stock]?=nil, bgTask:BGTask?=nil) {
+    func reviseWithTWSE(_ stocks:[Stock]?=nil, bgTask:BGTask?=nil) {
         let requestStocks = stocks ?? sim.stocks
         DispatchQueue.global().async {
-            self.sim.request.downloadTrades(requestStocks, requestAction: .TWSE, bgTask: bgTask)
+            self.sim.request.reviseWithTWSE(requestStocks, bgTask: bgTask)
         }
     }
 

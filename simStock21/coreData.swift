@@ -196,16 +196,11 @@ public class Stock: NSManagedObject {
     
     var dateRequestTWSE:Date? {
         if let trade = Trade.fetch(self.context, stock: self, tillYesterday: true, TWSE: false, fetchLimit: 1, asc: false).first {
-            let twseStart:Date = twDateTime.dateFromString("2010/01/01") ?? twDateTime.startOfMonth() //2010之前的沒得查
-            if trade.date >= twseStart {
+            if let twseStart:Date = twDateTime.dateFromString("2010/01/01"), trade.date >= twseStart { //2010之前的沒得查
                 return trade.date
             }
         }
-        if let trade = Trade.fetch(self.context, stock: self, TWSE: true, fetchLimit: 1, asc: false).first {
-            if let next = twDateTime.calendar.date(byAdding: .day, value: 1, to: trade.date) {
-                return next
-            }
-        }
+        simLog.addLog("TWSE (\(self.sId)\(self.sName) 略。")
         return nil
     }
     

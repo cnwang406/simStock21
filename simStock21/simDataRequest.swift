@@ -6,7 +6,7 @@
 //  Copyright © 2020 peiyu. All rights reserved.
 //
 
-import Foundation
+import UIKit
 import BackgroundTasks
 
 class simDataRequest {
@@ -17,7 +17,7 @@ class simDataRequest {
     private let requestInterval:TimeInterval = 120
     
     private var inMarketingTime:Bool {
-        twDateTime.inMarketingTime(timeLastTrade, forToday: true) || (twDateTime.inMarketingTime(timeTradesUpdated, forToday: true) && twDateTime.inMarketingTime(delay: 2, forToday: true))
+        (twDateTime.inMarketingTime(timeLastTrade, forToday: true) || (twDateTime.inMarketingTime(timeTradesUpdated, forToday: true) && twDateTime.inMarketingTime(delay: 2, forToday: true))) && !isOffDay
     }
     
     private var realtime:Bool {
@@ -54,9 +54,9 @@ class simDataRequest {
         }
     }
         
-    func downloadTrades(_ stocks: [Stock], requestAction:simTechnicalAction?=nil, bgTask:BGTask?=nil, allStocks:[Stock]?=nil, task:BGTask?=nil) {
+    func downloadTrades(_ stocks: [Stock], requestAction:simTechnicalAction?=nil, allStocks:[Stock]?=nil) {
         if let action = requestAction {
-            runRequest(stocks, action: action, bgTask: bgTask, allStocks: allStocks)
+            runRequest(stocks, action: action, allStocks: allStocks)
         } else {
             let last1332 = twDateTime.time1330(twDateTime.yesterday(), delayMinutes: 2)
             let time1332 = twDateTime.time1330(delayMinutes: 2)
@@ -86,11 +86,7 @@ class simDataRequest {
         }
     }
 
-    private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, bgTask:BGTask?=nil, allStocks:[Stock]?=nil) {
-        if action == .TWSE {
-            self.reviseByTWSE(stocks, bgTask: bgTask)
-            return
-        }
+    private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.stockCount = stocks.count
         if action != .simTesting {
             simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress) \(self.inMarketingTime ? "盤中待續" : "已收盤")"))
@@ -171,34 +167,38 @@ class simDataRequest {
         if let t = self.timer, t.isValid {
             t.invalidate()
             self.timer = nil
-            simLog.addLog("timer invalidated.")
+            simLog.addLog("timer invalidated.\n")
         }
     }
-    
-    /*
-     action         | tUpdate | simUpdate | simReset
-     ---------------+---------+-----------+----------
-     realtime       |    v    |     v     |
-     newTrades      |    v    |     v     |
-     allTrades      |    v    |     v     |    v
-     tUpdateAll     |    v    |     v     |    v
-     simTesting     |         |     v     |    v
-     simUpdateAll   |         |     v     |
-     simResetAll    |    v    |     v     |    v
-     */
-    
+
     var countTWSE:Int? = nil
     var progressTWSE:Int? = nil
     var continueTWSE:Bool = true
-    private func reviseByTWSE(_ stocks:[Stock], bgTask:BGTask?=nil) {
+    func reviseWithTWSE(_ stocks:[Stock], bgTask:BGTask?=nil) {
         self.countTWSE = stocks.count
         self.progressTWSE = 0
+        
+        var timeRemain:String {
+            if bgTask != nil {
+                return String(format:"剩餘時間: %.3fs",UIApplication.shared.backgroundTimeRemaining)
+            }
+            return ""
+        }
+
+        if let task = bgTask {
+            task.expirationHandler = {
+                self.continueTWSE = false
+                simLog.addLog("BGTask expired. \(timeRemain)")
+                task.setTaskCompleted(success: false)
+            }
+        }
         
         func requestTWSE(_ requestStocks:[Stock], bgTask:BGTask?=nil) {
             let stockGroup:DispatchGroup = DispatchGroup()
             if let stock = requestStocks.first, let dateStart = stock.dateRequestTWSE  {
                 stockGroup.enter()
-                let delay:Int = ((self.progressTWSE ?? 0) % 3 == 0 ? 3 : 1)
+                let progress = self.progressTWSE ?? 0
+                let delay:Int = (progress % 5 == 0 ? 7 : 3)
                 self.progressTWSE = stocks.count - requestStocks.count + 1
                 DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
                     self.twseRequest(stock: stock, dateStart: dateStart, stockGroup: stockGroup)
@@ -211,24 +211,38 @@ class simDataRequest {
                 if requests.count > 0 {
                     requestTWSE(requests, bgTask: bgTask)
                 } else {
+                    self.progressTWSE = nil
+                    simLog.addLog("TWSE(\(stocks.count))完成。 \(timeRemain)\n")
                     if let task = bgTask {
                         task.setTaskCompleted(success: true)
                     }
-                    self.progressTWSE = nil
-                    simLog.addLog("TWSE(\(stocks.count))完成")
                 }
             } else {
+                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷！ \(timeRemain)\n")
+                self.continueTWSE = true
+                self.progressTWSE = nil
                 if let task = bgTask {
                     task.setTaskCompleted(success: false)
                 }
-                self.continueTWSE = true
-                self.progressTWSE = nil
-                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷")
             }
         }
         
         requestTWSE(stocks)
     }
+    
+    
+    
+    /*
+     action         | tUpdate | simUpdate | simReset
+     ---------------+---------+-----------+----------
+     realtime       |    v    |     v     |
+     newTrades      |    v    |     v     |
+     allTrades      |    v    |     v     |    v
+     tUpdateAll     |    v    |     v     |    v
+     simTesting     |         |     v     |    v
+     simUpdateAll   |         |     v     |
+     simResetAll    |    v    |     v     |    v
+     */
 
     private func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
@@ -261,7 +275,7 @@ class simDataRequest {
                 if action != .simTesting {
                     let progress = self.progressTWSE ?? self.stockProgress
                     let count = self.countTWSE ?? self.stockCount
-                    simLog.addLog("(\(progress)/\(count))技術值 \(stock.sId)\(stock.sName)：歷史價\(trades.count)筆" + (tCount > 0 ? "/統計\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
+                    simLog.addLog("(\(progress)/\(count))\(stock.sId)\(stock.sName)：歷史價\(trades.count)筆" + (tCount > 0 ? "/技術\(tCount)筆" : "") + (sCount > 0 ? "/模擬\(sCount)筆" : "") + " \(action)")
                 }
             }
             if action != .simTesting {
@@ -591,24 +605,26 @@ class simDataRequest {
                                 let dateTime = twDateTime.time1330(dt0)
                                 if let close = Double(line.components(separatedBy: ",")[4]) {
                                     if close > 0 {
-                                        tradesCount += 1
                                         if dt0 < firstDate {
                                             firstDate = dt0
                                         }
                                         let trade = Trade.trade(context, stock: stock, date: dt0)
-                                        trade.dateTime = dateTime
-                                        trade.priceClose = close
-                                        if let open = Double(line.components(separatedBy: ",")[1]) {
-                                            trade.priceOpen = open
+                                        if trade.tSource != "TWSE" {
+                                            trade.dateTime = dateTime
+                                            trade.priceClose = close
+                                            if let open = Double(line.components(separatedBy: ",")[1]) {
+                                                trade.priceOpen = open
+                                            }
+                                            if let high = Double(line.components(separatedBy: ",")[2]) {
+                                                trade.priceHigh = high
+                                            }
+                                            if let low  = Double(line.components(separatedBy: ",")[3]) {
+                                                trade.priceLow = low
+                                            }
+                                            trade.tSource = "cnyes"
+                                            trade.tUpdated  = false
+                                            tradesCount += 1
                                         }
-                                        if let high = Double(line.components(separatedBy: ",")[2]) {
-                                            trade.priceHigh = high
-                                        }
-                                        if let low  = Double(line.components(separatedBy: ",")[3]) {
-                                            trade.priceLow = low
-                                        }
-                                        trade.tSource = "cnyes"
-                                        trade.tUpdated  = false
                                     }
                                 }   //if let close
                             }   //if let dt0

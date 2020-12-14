@@ -28,7 +28,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Add `@Environment(\.managedObjectContext)` in the views that will need the context.
         let list = simStockList()
         let contentView = simStockListView(list: list)//.environment(\.managedObjectContext, context)
-
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
@@ -37,20 +36,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.makeKeyAndVisible()
             simLog.addLog("=== sceneWillConnectTo ===")
             BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.mystock.simStock21.BGTask", using: DispatchQueue.global()) { (task) in
-                simLog.addLog("背景剩餘時間: \(UIApplication.shared.backgroundTimeRemaining)s")
-                let queue = OperationQueue()
-                queue.maxConcurrentOperationCount = 1
-                queue.addOperation {
-                    list.requestTWSE(bgTask: task)
-                }
-                task.expirationHandler = {
-                    queue.cancelAllOperations()
-                    simLog.addLog("BGTask cancelled.")
-                }
-                let lastOperation = queue.operations.last
-                lastOperation?.completionBlock = {
-                    //nothing to notify
-                }
+                simLog.addLog("背景剩餘時間: \(String(format:"%.3fs",UIApplication.shared.backgroundTimeRemaining))")
+                list.reviseWithTWSE(bgTask: task)
             }
         }
     }
@@ -89,12 +76,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 //        (UIApplication.shared.delegate as? AppDelegate)?.saveContext()
         try? coreData.shared.context.save()
         do {
-            let request = BGAppRefreshTaskRequest(identifier: "com.mystock.simStock21.BGTask")
-            request.earliestBeginDate = Date(timeIntervalSinceNow: 60) //背景預留時間
+//            let request = BGAppRefreshTaskRequest(identifier: "com.mystock.simStock21.BGTask")
+            let request = BGProcessingTaskRequest(identifier: "com.mystock.simStock21.BGTask")
+            request.earliestBeginDate = Date(timeIntervalSinceNow: 320) //背景預留時間
+            request.requiresNetworkConnectivity = true
             try BGTaskScheduler.shared.submit(request)
-            simLog.addLog("BGTask submitted")
+            simLog.addLog("BGTask submitted.")
         } catch {
-            simLog.addLog("Failed to submit BGTask")
+            simLog.addLog("Failed to submit BGTask.")
         }
     }
     
