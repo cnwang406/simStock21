@@ -410,6 +410,9 @@ struct tradeHeading:View {
                                 .default(Text("刪除全部")) {
                                     self.list.deleteTrades([self.stock], oneMonth: false)
                                 },
+                                .default(Text("[TWSE復驗]")) {
+                                    self.list.reviseWithTWSE([self.stock])
+                                },
                                 .destructive(Text("沒事，不用了。"))
                             ])
                         }
