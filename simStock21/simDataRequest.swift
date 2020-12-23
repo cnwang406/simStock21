@@ -141,7 +141,7 @@ class simDataRequest {
                     self.timeTradesUpdated = Date() //收盤後仍有可能是剛睡醒的收盤前價格？那就維持前timeTradesUpdated不能動
                 }
                 UserDefaults.standard.set(self.timeTradesUpdated, forKey: "timeTradesUpdated")
-                simLog.addLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss")) \(self.inMarketingTime ? "盤中待續" : "已收盤")\n")
+                simLog.addLog("\(self.isOffDay ? "休市日" : "完成") \(action)\(self.isOffDay ? "" : "(\(stocks.count))") \(twDateTime.stringFromDate(self.timeTradesUpdated, format: "HH:mm:ss")) \(self.inMarketingTime ? "盤中待續" : "已收盤")")
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: Notification.Name("requestRunning"), object: nil, userInfo: ["msg":""])  //解除UI「背景作業中」的提示
                 }
@@ -200,7 +200,7 @@ class simDataRequest {
                 request.earliestBeginDate = Date(timeIntervalSinceNow: 320) //背景預留時間
                 request.requiresNetworkConnectivity = true
                 try? BGTaskScheduler.shared.submit(request)
-                simLog.addLog("BGTask submitted again.\n")
+                simLog.addLog("BGTask submitted again.")
             }
         }
         
@@ -223,14 +223,14 @@ class simDataRequest {
                     requestTWSE(requests, bgTask: bgTask)
                 } else {
                     self.progressTWSE = nil
-                    simLog.addLog("TWSE(\(stocks.count))完成。 \(timeRemain)\n")
+                    simLog.addLog("TWSE(\(stocks.count))完成。 \(timeRemain)")
                     submitBGTask()
                     if let task = bgTask {
                         task.setTaskCompleted(success: true)
                     }
                 }
             } else {
-                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷！ \(timeRemain)\n")
+                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷！ \(timeRemain)")
                 self.continueTWSE = true
                 self.progressTWSE = nil
                 submitBGTask()
@@ -708,7 +708,7 @@ class simDataRequest {
         let request = URLRequest(url: url,timeoutInterval: 30)
         let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
             do {
-                guard let jsonData = data else { throw requestError.error(msg:"no data") }
+                guard let jsonData = data else { throw requestError.warning(msg:"no data") }
                 guard let jroot = try JSONSerialization.jsonObject(with: jsonData, options: .allowFragments) as? [String:Any] else {throw requestError.error(msg: "invalid jroot") }
                 guard let stat = jroot["stat"] as? String else {throw requestError.error(msg:"no rtmessage") }
                 if stat != "OK" {
@@ -1571,6 +1571,8 @@ class simDataRequest {
         wantH += (trade.tMa60DiffZ125 > (trade.grade > .weak ? 0.75 : 0.85) && trade.tMa60DiffZ125 < (trade.grade <= .low ? 2 : 2.5) ? 1 : 0)
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
         wantH += ((trade.tMa60Diff > (trade.grade <= .weak ? -0.5 : 0) && trade.tMa20Diff > (trade.grade <= .weak ? -0.5 : 0)) || trade.grade == .damn ? 1 : 0)
+        wantH += (trade.tMa60DiffMax9 > 30 && trade.grade <= .fine  ? 1 : 0)
+        wantH += (trade.tMa20DiffMax9 > 35 && trade.grade <= .none  ? 1 : 0)
 
         wantH += (trade.tKdKZ125 < -0.8 ? -1 : 0)
         wantH += (trade.tOscZ125 < -0.5 ? -1 : 0)
@@ -1600,7 +1602,8 @@ class simDataRequest {
             wantL += (trade.tKdKZ125 < -0.9 && trade.tKdKZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tOscZ125 < -0.9 && trade.tOscZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
-            
+            wantL += (trade.tKdD - trade.tKdK > 20 && trade.tKdK < 40 && trade.grade <= .weak ? 1 : 0)
+
             wantL += (trade.tMa20Days < -30 ? -1 : 0)
             wantL += (trade.tLowDiff >= (trade.grade <= .none ? 9 : 8) && trade.grade >= .weak ? -1 : 0) //或是 >= .low
             wantL += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 && trade.tOsc == trade.tOscMin9 && (trade.grade <= .damn || trade.grade >= .wow) ? -1 : 0)   //&& trade.tKdK == trade.tKdKMin9
@@ -1629,10 +1632,11 @@ class simDataRequest {
             let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
             let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
-            let sBase0 = trade.simUnitRoi > 0.45 && trade.simDays > (1 + weekendDays)
-            let sBase5 = wantS >= topWantS && sBase0 && trade.grade <= .weak
-            let sBase4 = wantS >= (topWantS - 1) && trade.simUnitRoi > 2.5
-            let sBase3 = wantS >= (topWantS - 2) && sBase0 && trade.simDays > 75
+            let sRoi02 = trade.simUnitRoi > 2.5
+            let sRoi00 = trade.simUnitRoi > 0.45 && trade.simDays > (1 + weekendDays)
+            let sBase5 = wantS >= topWantS && sRoi00 && trade.grade <= .weak
+            let sBase4 = wantS >= (topWantS - 1) && sRoi02
+            let sBase3 = wantS >= (topWantS - 2) && sRoi00 && trade.simDays > 75
             let sBase2 = wantS >= (topWantS - 3) && (sRoi15 || sRoi13 || sRoi09 || sRoi03)
             
             var noInvested60:Bool = true
@@ -1680,7 +1684,6 @@ class simDataRequest {
                 aWant += (trade.tMa20Diff < -20 || trade.tMa60Diff < -20 ? 1 : 0)
                 aWant += (trade.tMa20Diff < -8 && trade.tMa60Diff < -8 ? 1 : 0)
                 aWant += (trade.tMa60Diff == trade.tMa60DiffMin9 && trade.tMa20Diff == trade.tMa20DiffMin9 ? 1 : 0)
-//                aWant += (trade.tKdK == trade.tKdKMin9 && trade.tOsc == trade.tOscMin9 ? 1 : 0)
                 aWant += (trade.simRule == "L" && trade.simUnitRoi < -25 ? 1 : 0)
                 aWant += (trade.grade >= .none ? -2 : 0)    //已測試必須none以上減兩分，不能weak/none/fine交錯各減1分
                 aWant += (trade.tLowDiff >= 8.5 && trade.grade <= .low ? -1 : 0)

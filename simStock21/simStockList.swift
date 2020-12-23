@@ -390,6 +390,7 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             simLog.addLog ("=== appDidBecomeActive v\(versionNow) ===")
+            simLog.shrinkLog(500)
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
@@ -402,7 +403,9 @@ class simStockList:ObservableObject {
                         UserDefaults.standard.removeObject(forKey: "simResetAll")
                         return .simResetAll
                     } else if versionLast != versionNow {
-                        if buildNo == "0" || versionLast == "" {
+                        let lastNo = (versionLast == "" ? "" : versionLast.split(separator: ".")[0])
+                        let thisNo = versionNow.split(separator: ".")[0]
+                        if lastNo != thisNo || buildNo == "0" || versionLast == "" {
                             return .tUpdateAll      //改版後需要重算技術值時，應另起版號其build為0或留空
                         } else {
                             return .simResetAll     //否則就只會重算模擬，即使另起新版其build不為0或留空

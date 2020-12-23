@@ -81,7 +81,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             request.earliestBeginDate = Date(timeIntervalSinceNow: 320) //背景預留時間
             request.requiresNetworkConnectivity = true
             try BGTaskScheduler.shared.submit(request)
-            simLog.addLog("BGTask submitted.\n")
+            simLog.addLog("BGTask submitted.")
         } catch {
             simLog.addLog("Failed to submit BGTask.")
         }

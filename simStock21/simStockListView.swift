@@ -54,12 +54,48 @@ struct simStockListView: View {
     }
 }
 
+struct logForm: View {
+    @Binding var showLog: Bool
+
+    var body: some View {
+        NavigationView {
+            Form {
+                VStack {
+                    Text(simLog.logReport())
+                }
+                    .font(.footnote)
+                    .lineLimit(nil)
+            }
+            .navigationBarTitle("Log")
+            .navigationBarItems(leading: cancel)
+
+        }
+            .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    var cancel: some View {
+        Button("關閉") {
+            self.showLog = false
+        }
+    }
+}
+
 struct endChoosing:View {
     @ObservedObject var list: simStockList
     @Binding var isChoosing:Bool            //進入了選取模式
     @Binding var isSearching:Bool           //進入了搜尋模式
     @Binding var checkedStocks: [Stock]     //已選取的股票們
     @Binding var searchText:String          //輸入的搜尋文字
+    @State var showLog:Bool = false         //顯示log
+    @State var showInformation:Bool = false
+
+    private func openUrl(_ url:String) {
+        if let URL = URL(string: url) {
+            if UIApplication.shared.canOpenURL(URL) {
+                UIApplication.shared.open(URL, options:[:], completionHandler: nil)
+            }
+        }
+    }
 
     var body: some View {
         HStack {
@@ -76,10 +112,35 @@ struct endChoosing:View {
                     self.isChoosing = false
                     self.checkedStocks = []
                 }
+            } else if self.isSearching {
+                EmptyView()
+            } else {
+                Group {
+                    Button(action: {self.showLog = true}) {
+                        Image(systemName: "doc.text")
+                    }
+                    Spacer()
+                    Button(action: {self.showInformation = true}) {
+                        Image(systemName: "questionmark.circle")
+                    }
+                        .actionSheet(isPresented: $showInformation) {
+                            ActionSheet(title: Text("參考訊息"), message: Text("小確幸v\(list.versionNow)"),
+                            buttons: [
+                                .default(Text("小確幸網站")) {
+                                    self.openUrl("https://peiyu66.github.io/simStock21/")
+                                },
+                                .destructive(Text("沒事，不用了。"))
+                            ])
+                        }
+                }
             }
         }
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .sheet(isPresented: $showLog) {
+                logForm(showLog: self.$showLog)
+            }
+
     }
 }
 
@@ -89,9 +150,8 @@ struct chooseCommand:View {
     @Binding var isSearching:Bool           //進入了搜尋模式
     @Binding var checkedStocks: [Stock]     //已選取的股票們
     @Binding var searchText:String          //輸入的搜尋文字
-    
     @State var showFilter:Bool = false      //顯示pickerGroups
-    
+
     var body: some View {
         Group {
             if self.isChoosing || self.list.searchGotResults {
@@ -126,7 +186,6 @@ struct chooseCommand:View {
                         }
                     }
                 }
-
             }
         }
             .frame(width: (self.list.widthClass == .compact ? 300 : 500) , alignment: .leading)
@@ -162,7 +221,7 @@ struct stockActionMenu:View {
                     self.showMoveAlert = true
                 }
                 .alert(isPresented: self.$showMoveAlert) {
-                        Alert(title: Text("自股群移除"), message: Text("確認要移除？"), primaryButton: .default(Text("移除"), action: {
+                        Alert(title: Text("自股群移除"), message: Text("移除不會刪去歷史價，\n只不再更新、計算或復驗。"), primaryButton: .default(Text("移除"), action: {
                             self.list.moveStocks(self.checkedStocks)
                             self.isChoosingOff()
                         }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
@@ -379,7 +438,6 @@ struct stockSection : View {
     @Binding var isChoosing:Bool
     @Binding var isSeaching:Bool
     @Binding var checkedStocks: [Stock]
-
 
     var header:some View {
         HStack {

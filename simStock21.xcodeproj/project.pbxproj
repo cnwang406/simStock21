@@ -16,7 +16,6 @@
 		E2C4581324A36CAA0036791E /* simStockListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4581224A36CAA0036791E /* simStockListView.swift */; };
 		E2C4581524A36CAA0036791E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E2C4581424A36CAA0036791E /* Assets.xcassets */; };
 		E2C4581824A36CAA0036791E /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E2C4581724A36CAA0036791E /* Preview Assets.xcassets */; };
-		E2C4581B24A36CAA0036791E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E2C4581924A36CAA0036791E /* LaunchScreen.storyboard */; };
 		E2C4582324A36CC50036791E /* simStock.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4582224A36CC50036791E /* simStock.swift */; };
 		E2C4582524A36D1C0036791E /* simStockList.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4582424A36D1C0036791E /* simStockList.swift */; };
 		E2C4582724A36D710036791E /* coreData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C4582624A36D710036791E /* coreData.swift */; };
@@ -35,7 +34,6 @@
 		E2C4581224A36CAA0036791E /* simStockListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockListView.swift; sourceTree = "<group>"; };
 		E2C4581424A36CAA0036791E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E2C4581724A36CAA0036791E /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		E2C4581A24A36CAA0036791E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		E2C4581C24A36CAA0036791E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E2C4582224A36CC50036791E /* simStock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStock.swift; sourceTree = "<group>"; };
 		E2C4582424A36D1C0036791E /* simStockList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = simStockList.swift; sourceTree = "<group>"; };
@@ -84,7 +82,6 @@
 				E25ED3EB24A40F63006C1332 /* utility.swift */,
 				E267A58624CA797C0041369C /* simStock21.xcdatamodeld */,
 				E2C4581424A36CAA0036791E /* Assets.xcassets */,
-				E2C4581924A36CAA0036791E /* LaunchScreen.storyboard */,
 				E2C4581C24A36CAA0036791E /* Info.plist */,
 				E2C4581624A36CAA0036791E /* Preview Content */,
 			);
@@ -157,7 +154,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E2C4581B24A36CAA0036791E /* LaunchScreen.storyboard in Resources */,
 				E2C4581824A36CAA0036791E /* Preview Assets.xcassets in Resources */,
 				E2C4581524A36CAA0036791E /* Assets.xcassets in Resources */,
 			);
@@ -184,17 +180,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		E2C4581924A36CAA0036791E /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				E2C4581A24A36CAA0036791E /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		E2C4581D24A36CAA0036791E /* Debug */ = {
@@ -319,7 +304,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;
@@ -343,7 +328,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 0;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"simStock21/Preview Content\"";
 				DEVELOPMENT_TEAM = QQP5F43Z2T;
 				ENABLE_PREVIEWS = YES;

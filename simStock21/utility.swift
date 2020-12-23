@@ -10,11 +10,34 @@ import Foundation
 import SystemConfiguration
 
 public class simLog {
-    static var Log:String = ""
+    static var Log:[(time:String, text:String)] = []
     
-    static func addLog(_ log:String) {
-        Log += (log.count > 0 ? "\n" : "") + twDateTime.stringFromDate(format: "yyyy/MM/dd HH:mm:ss ") + log
-        NSLog(log)
+    static func addLog(_ text:String) {
+        NSLog(text)
+        Log.append((time:twDateTime.stringFromDate(format: "yyyy/MM/dd HH:mm:ss"), text:text))
+    }
+    
+    static func logReport() -> String {
+        var logReport:String = ""
+        var logTime:String = ""
+        for log in Log {
+            if log.time != logTime {
+                if logTime != ""  {
+                    logReport += "\n"
+                }
+                logTime = log.time
+                logReport += log.time + "\n"
+            }
+            logReport += log.text + "\n"
+        }
+        return logReport
+    }
+    
+    static func shrinkLog (_ number:Int) {
+        if Log.count > Int(1.5 * Float(number)) {
+            let left = Log.count - number
+            Log = Array(Log[left...])
+        }
     }
 }
 
