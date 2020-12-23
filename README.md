@@ -2,7 +2,7 @@
 小確幸下載台灣上市股票歷史成交價格，設計策略及買賣規則，模擬買賣及評估報酬率。
 
 ### 最近發佈的版本
-* v0.5：[[點這裡]](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
+* v0.6：[[點這裡]](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
     * 曾向作者登記為開發機，iOS13以上的iPhone或iPad才能安裝。
     * iOS14在(UI)操作略為完整方便，但模擬結果而言iOS13是一樣的。
 
