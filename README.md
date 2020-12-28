@@ -3,8 +3,7 @@
 
 ### 最近發佈的版本
 * v0.6：[[點這裡]](itms-services://?action=download-manifest&url=https://github.com/peiyu66/simStock21/releases/download/ipa/manifest.plist)，就會出現確認安裝的對話方塊。
-    * 曾向作者登記為開發機，iOS13以上的iPhone或iPad才能安裝。
-    * iOS14在(UI)操作略為完整方便，但模擬結果而言iOS13是一樣的。
+    * 曾向作者登記為開發機，iOS14以上的iPhone或iPad才能安裝。
 
 ### 誰適合使用小確幸？
 ✐✐✐ [小確幸適性評估](https://docs.google.com/forms/d/e/1FAIpQLSdzNyfMl5NP1sCSHSxoSCWqqdeAPSQbw4kAiwlCv0pzJkjgrg/viewform?usp=sf_link) ✐✐✐
