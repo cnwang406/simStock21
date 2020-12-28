@@ -330,7 +330,7 @@ class simStockList:ObservableObject {
             
         }
         let invest = (defaults.invest > 9 ? "自動無限加碼" : (defaults.invest > 0 ? String(format:"自動%.0f次加碼", defaults.invest) : ""))
-        return "預設：\(start) \(money) \(invest)"
+        return "新股預設：\(start) \(money) \(invest)"
     }
     
     func stocksSummary(_ stocks:[Stock]) -> String {
@@ -390,7 +390,7 @@ class simStockList:ObservableObject {
         switch notification.name {
         case UIApplication.didBecomeActiveNotification:
             simLog.addLog ("=== appDidBecomeActive v\(versionNow) ===")
-            simLog.shrinkLog(500)
+            simLog.shrinkLog(200)
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
                 let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)

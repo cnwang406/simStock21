@@ -57,11 +57,12 @@ struct simStockListView: View {
 struct logForm: View {
     @Binding var showLog: Bool
 
+    /*
     var body: some View {
         NavigationView {
             Form {
                 VStack {
-                    Text(simLog.logReport())
+                    Text(simLog.logReportText())
                 }
                     .font(.footnote)
                     .lineLimit(nil)
@@ -72,6 +73,40 @@ struct logForm: View {
         }
             .navigationViewStyle(StackNavigationViewStyle())
     }
+    */
+    
+    var logArray:[String] {
+        simLog.logReportArray()
+    }
+    
+    var body: some View {
+        NavigationView {
+            GeometryReader { g in
+                ScrollView(.vertical) {
+                    ScrollViewReader { scroller in
+                        VStack(alignment: .leading) {
+                            ForEach(logArray, id:\.self) { log in
+                                Text(log)
+                                    .id(log)
+                            }
+                                .font(.footnote)
+                                .lineLimit(nil)
+                                .onAppear {
+                                    scroller.scrollTo(logArray.last, anchor: .bottom)
+                                }
+                        }
+                            .frame(width: g.size.width, alignment: .topLeading)
+                            .padding()
+                    }
+                }
+                    .navigationBarTitle("Log")
+                    .navigationBarItems(leading: cancel)
+                    .padding()
+            }
+        }
+            .navigationViewStyle(StackNavigationViewStyle())
+    }
+
     
     var cancel: some View {
         Button("關閉") {
@@ -112,7 +147,7 @@ struct endChoosing:View {
                     self.isChoosing = false
                     self.checkedStocks = []
                 }
-            } else if self.isSearching {
+            } else if self.isSearching || self.list.isRunning {
                 EmptyView()
             } else {
                 Group {

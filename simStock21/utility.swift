@@ -11,13 +11,14 @@ import SystemConfiguration
 
 public class simLog {
     static var Log:[(time:String, text:String)] = []
+    static var shrink:[(time:String, text:String)] = []
     
     static func addLog(_ text:String) {
         NSLog(text)
         Log.append((time:twDateTime.stringFromDate(format: "yyyy/MM/dd HH:mm:ss"), text:text))
     }
     
-    static func logReport() -> String {
+    static func logReportText() -> String {
         var logReport:String = ""
         var logTime:String = ""
         for log in Log {
@@ -33,10 +34,21 @@ public class simLog {
         return logReport
     }
     
+    static func logReportArray() -> [String] {
+        let reportText = logReportText().replacingOccurrences(of: "\n\n", with: "\n \n")
+        let reportArray = Array(reportText.split(separator: "\n").map{String($0)})
+        return reportArray
+    }
+    
     static func shrinkLog (_ number:Int) {
         if Log.count > Int(1.5 * Float(number)) {
+            shrink.append((twDateTime.stringFromDate(format: "yyyy/MM/dd HH:mm:ss"),"log被縮減\(number)則。"))
+            if shrink.count > 3 {
+                let left = shrink.count - 3
+                shrink = Array(shrink[left...])
+            }
             let left = Log.count - number
-            Log = Array(Log[left...])
+            Log = shrink + Array(Log[left...])
         }
     }
 }

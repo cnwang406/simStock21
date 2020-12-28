@@ -200,7 +200,6 @@ public class Stock: NSManagedObject {
                 return trade.date
             }
         }
-        simLog.addLog("TWSE (\(self.sId)\(self.sName) 略。")
         return nil
     }
     
@@ -420,13 +419,13 @@ public class Trade: NSManagedObject {
     func gradeIcon(gray:Bool=false) -> some View  {
         switch self.grade {
         case .wow:
-            if #available(iOS 14.0, *) {
-                return Image(systemName: "star.square.fill")
-                    .foregroundColor(gray ? .gray : .red)
-            } else {
+//            if #available(iOS 14.0, *) {
+//                return Image(systemName: "star.square.fill")
+//                    .foregroundColor(gray ? .gray : .red)
+//            } else {
                 return Image(systemName: "3.square.fill")
                     .foregroundColor(gray ? .gray : .red)
-            }
+//            }
         case .damn:
             return Image(systemName: "3.square")
                 .foregroundColor(gray ? .gray : .green)

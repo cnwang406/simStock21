@@ -78,7 +78,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         do {
 //            let request = BGAppRefreshTaskRequest(identifier: "com.mystock.simStock21.BGTask")
             let request = BGProcessingTaskRequest(identifier: "com.mystock.simStock21.BGTask")
-            request.earliestBeginDate = Date(timeIntervalSinceNow: 320) //背景預留時間
+            request.earliestBeginDate = Date(timeIntervalSinceNow: 330) //背景預留時間
             request.requiresNetworkConnectivity = true
             try BGTaskScheduler.shared.submit(request)
             simLog.addLog("BGTask submitted.")

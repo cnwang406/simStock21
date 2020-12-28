@@ -47,7 +47,7 @@ class simDataRequest {
             if days > 10 {    //10天更新一次
                 twseDailyMI()
             } else {
-                simLog.addLog("stocks   上次：\(twDateTime.stringFromDate(timeStocksDownloaded,format: "yyyy/MM/dd HH:mm:ss")), next: in \(String(format:"%.1f",10 - days)) days")
+                simLog.addLog("stocks 上次:\(twDateTime.stringFromDate(timeStocksDownloaded,format: "yyyy/MM/dd HH:mm:ss")), next in \(String(format:"%.1f",10 - days)) days")
             }
         } else {
             twseDailyMI()
@@ -89,7 +89,7 @@ class simDataRequest {
     private func runRequest(_ stocks:[Stock], action:simTechnicalAction = .realtime, allStocks:[Stock]?=nil) {
         self.stockCount = stocks.count
         if action != .simTesting {
-            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " progress:\(stockProgress) \(self.inMarketingTime ? "盤中待續" : "已收盤")"))
+            simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " \(self.inMarketingTime ? "盤中待續" : "已收盤")"))
             if self.stockProgress > 0 {
                 simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
                 if self.realtime {
@@ -206,13 +206,19 @@ class simDataRequest {
         
         func requestTWSE(_ requestStocks:[Stock], bgTask:BGTask?=nil) {
             let stockGroup:DispatchGroup = DispatchGroup()
-            if let stock = requestStocks.first, let dateStart = stock.dateRequestTWSE  {
-                stockGroup.enter()
-                let progress = self.progressTWSE ?? 0
-                let delay:Int = (progress % 5 == 0 ? 9 : 3)
-                self.progressTWSE = stocks.count - requestStocks.count + 1
-                DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
-                    self.twseRequest(stock: stock, dateStart: dateStart, stockGroup: stockGroup)
+            if let stock = requestStocks.first {
+                if let dateStart = stock.dateRequestTWSE  {
+                    stockGroup.enter()
+                    let progress = self.progressTWSE ?? 0
+                    let delay:Int = (progress % 5 == 0 ? 9 : 3) + (progress % 7 == 0 ? 3 : 0)
+                    self.progressTWSE = stocks.count - requestStocks.count + 1
+                    DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
+                        self.twseRequest(stock: stock, dateStart: dateStart, stockGroup: stockGroup)
+                    }
+                } else {
+                    stockGroup.enter()
+                    stockGroup.leave()
+                    simLog.addLog("TWSE \(stock.sId)\(stock.sName) 略。")
                 }
             }
             stockGroup.wait()
@@ -233,7 +239,7 @@ class simDataRequest {
                 simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷！ \(timeRemain)")
                 self.continueTWSE = true
                 self.progressTWSE = nil
-                submitBGTask()
+//                submitBGTask()
                 if let task = bgTask {
                     task.setTaskCompleted(success: false)
                 }
@@ -757,14 +763,14 @@ class simDataRequest {
                         }   //if let dt
                     }   //if let dt0
                 }   //for
-                simLog.addLog("\(stock.sId)\(stock.sName) twse \(twDateTime.stringFromDate(dateStart)) \(count)筆")
+                simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(count)筆")
                 if count > 0 {
                     self.simTechnical(stock: stock, action: .newTrades)
                 }
             } catch requestError.warning(let msg) {
-                simLog.addLog("\(stock.sId)\(stock.sName) twse \(twDateTime.stringFromDate(dateStart)) \(msg)")
+                simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(msg)")
             } catch {
-                simLog.addLog("\(stock.sId)\(stock.sName) twse \(twDateTime.stringFromDate(dateStart)) \(error)")
+                simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(error)")
                 self.continueTWSE = false
             }
             stockGroup.leave()
@@ -1573,6 +1579,7 @@ class simDataRequest {
         wantH += ((trade.tMa60Diff > (trade.grade <= .weak ? -0.5 : 0) && trade.tMa20Diff > (trade.grade <= .weak ? -0.5 : 0)) || trade.grade == .damn ? 1 : 0)
         wantH += (trade.tMa60DiffMax9 > 30 && trade.grade <= .fine  ? 1 : 0)
         wantH += (trade.tMa20DiffMax9 > 35 && trade.grade <= .none  ? 1 : 0)
+//        wantH += (trade.tMa20DiffMin9 > 0 && trade.tMa60DiffMin9 > 0 && trade.grade <= .weak ? 1 : 0)
 
         wantH += (trade.tKdKZ125 < -0.8 ? -1 : 0)
         wantH += (trade.tOscZ125 < -0.5 ? -1 : 0)
@@ -1603,6 +1610,7 @@ class simDataRequest {
             wantL += (trade.tOscZ125 < -0.9 && trade.tOscZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tKdDZ125 < -0.9 && trade.tKdDZ250 < -0.9 ? 1 : 0)
             wantL += (trade.tKdD - trade.tKdK > 20 && trade.tKdK < 40 && trade.grade <= .weak ? 1 : 0)
+//            wantL += (trade.tOscMin9 < (trade.grade <= .low ? 0.5 : 0) && trade.tOsc > trade.tOscMin9 && trade.grade <= .none ? 1 : 0)
 
             wantL += (trade.tMa20Days < -30 ? -1 : 0)
             wantL += (trade.tLowDiff >= (trade.grade <= .none ? 9 : 8) && trade.grade >= .weak ? -1 : 0) //或是 >= .low

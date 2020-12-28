@@ -150,7 +150,7 @@ struct tradeListView: View {
     @State var filterIsOn:Bool = false
     @State var selected: Date?
     
-    @available(iOS 14.0, *)
+//    @available(iOS 14.0, *)
     private func scrollToSelected(_ sv: ScrollViewProxy) {
         if let dt = selected {
             sv.scrollTo(dt)
@@ -179,7 +179,7 @@ struct tradeListView: View {
                         }
                     }))
             //== 日交易明細列表 ==
-            if #available(iOS 14.0, *) {
+//            if #available(iOS 14.0, *) {
                 GeometryReader { g in
                     ScrollView {
                         ScrollViewReader { sv in
@@ -206,20 +206,20 @@ struct tradeListView: View {
                         }
                     }
                 }
-            } else {
-                List (stock.trades, id:\.self.dateTime) { trade in
-                    tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
-                        .onTapGesture {
-                            if self.selected == trade.date {
-                                self.selected = nil
-                            } else {
-                                self.selected = trade.date
-                            }
-                        }
-                }
-                .id(UUID())
-                .listStyle(GroupedListStyle())
-            }
+//            } else {
+//                List (stock.trades, id:\.self.dateTime) { trade in
+//                    tradeCell(list: self.list, stock: self.stock, trade: trade, selected: self.$selected)
+//                        .onTapGesture {
+//                            if self.selected == trade.date {
+//                                self.selected = nil
+//                            } else {
+//                                self.selected = trade.date
+//                            }
+//                        }
+//                }
+//                .id(UUID())
+//                .listStyle(GroupedListStyle())
+//            }
         }   //VStack
     }
 }
@@ -339,7 +339,7 @@ struct tradeHeading:View {
                 Spacer(minLength: 40)
                 HStack (spacing: (list.widthClass != .compact ? 4 : 2)) {
                     //== 工具按鈕 0 == 過濾交易模擬
-                    if #available(iOS 14.0, *) {
+//                    if #available(iOS 14.0, *) {
                         Button(action: {self.filterIsOn = !self.filterIsOn}) {
                             if self.filterIsOn {
                                 Image(systemName: "square.2.stack.3d")
@@ -348,7 +348,7 @@ struct tradeHeading:View {
                             }
                         }
                             .padding(.trailing)
-                    }
+//                    }
 
                     //== 工具按鈕 1 == 設定
                     Button(action: {self.showSetting = true}) {
