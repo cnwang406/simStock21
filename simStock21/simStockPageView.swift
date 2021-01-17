@@ -260,7 +260,7 @@ struct settingForm: View {
                         Slider(value: $autoInvest, in: 0...10, step: 1)
                     }
                 }
-                Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults).font(.footnote)) {
+                Section(header: Text("擴大設定範圍").font(.title),footer: Text(self.list.simDefaults.text).font(.footnote)) {
                     Toggle("套用到全部股", isOn: $applyToAll)
                     .onReceive([self.applyToAll].publisher.first()) { (value) in
                         self.applyToGroup = value
@@ -300,6 +300,8 @@ struct tradeHeading:View {
     @ObservedObject var list: simStockList
     @ObservedObject var stock : Stock
     @State var showReload:Bool = false
+    @State var deleteAll:Bool = false
+    @State var showDeleteAlert:Bool = false
     @State var showSetting: Bool = false
     @State var showInformation:Bool = false
     @Binding var filterIsOn:Bool
@@ -337,17 +339,18 @@ struct tradeHeading:View {
                 }
                     .foregroundColor(list.isRunning ? .gray : .primary)
                 Spacer(minLength: 40)
-                HStack (spacing: (list.widthClass != .compact ? 4 : 2)) {
+                HStack {
                     //== 工具按鈕 0 == 過濾交易模擬
 //                    if #available(iOS 14.0, *) {
                         Button(action: {self.filterIsOn = !self.filterIsOn}) {
                             if self.filterIsOn {
                                 Image(systemName: "square.2.stack.3d")
+                                    .foregroundColor(.red)
                             } else {
                                 Image(systemName: "square.3.stack.3d")
                             }
                         }
-                            .padding(.trailing)
+                            .padding(.trailing, (list.widthClass == .compact ? 2 : 8))
 //                    }
 
                     //== 工具按鈕 1 == 設定
@@ -371,10 +374,12 @@ struct tradeHeading:View {
                                     self.list.reloadNow([self.stock], action: .tUpdateAll)
                                 },
                                 .default(Text("刪除最後1個月")) {
-                                    self.list.deleteTrades([self.stock], oneMonth: true)
+                                    self.deleteAll = false
+                                    self.showDeleteAlert = true
                                 },
                                 .default(Text("刪除全部")) {
-                                    self.list.deleteTrades([self.stock], oneMonth: false)
+                                    self.deleteAll = true
+                                    self.showDeleteAlert = true
                                 },
                                 .default(Text("[TWSE復驗]")) {
                                     self.list.reviseWithTWSE([self.stock])
@@ -382,6 +387,12 @@ struct tradeHeading:View {
                                 .destructive(Text("沒事，不用了。"))
                             ])
                         }
+                        .alert(isPresented: self.$showDeleteAlert) {
+                            Alert(title: Text("刪除\(deleteAll ? "全部" : "最後1個月")歷史價"), message: Text("刪除歷史價，再重新下載、計算。"), primaryButton: .default(Text("刪除"), action: {
+                                    self.list.deleteTrades([self.stock], oneMonth: !deleteAll)
+                                }), secondaryButton: .default(Text("取消"), action: {showDeleteAlert = false}))
+                            }
+
                     //== 工具按鈕 3 == 參考訊息
                     Spacer()
                     Button(action: {self.showInformation = true}) {

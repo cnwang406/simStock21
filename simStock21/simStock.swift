@@ -12,7 +12,7 @@ import Foundation
 struct simStock {
     
     let simTesting:Bool = false
-    let simTestStart:Date? = twDateTime.dateFromString("2005/12/23")
+    let simTestStart:Date? = twDateTime.dateFromString("2006/01/16")
     let request = simDataRequest()
 
     private(set) var stocks:[Stock] = []
@@ -26,7 +26,7 @@ struct simStock {
         if self.stocks.count == 0 {
             let group1:[(sId:String,sName:String)] = [
                 (sId:"3653", sName:"健策"),
-                (sId:"1515", sName:"力山"),
+                (sId:"2327", sName:"國巨"),
                 (sId:"2330", sName:"台積電"),
                 (sId:"3037", sName:"欣興")]
             self.newStock(stocks: group1, group: "股群_1")
@@ -231,7 +231,7 @@ struct simStock {
         print("\n\n\(group)： 自\(twDateTime.stringFromDate(start,format:"yyyy"))第\(years)年起 ... ", terminator:"")
         var nextYear:Date = start
         while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
-            let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 100, autoInvest: 2)
+            let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 200, autoInvest: 2)
             request.downloadTrades(stocks, requestAction: .simTesting)
             let summary = stocksSummary(stocks)
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi

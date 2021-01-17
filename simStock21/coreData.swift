@@ -397,7 +397,8 @@ public class Trade: NSManagedObject {
     }
     var grade:Grade {
         if self.rollRounds > 2 || self.days > 360 {
-            let roi = self.rollAmtRoi / self.stock.years
+            let stock:Stock? = self.stock   //刪除trades時，UI參考的舊trade.stock會是nil
+            let roi = self.rollAmtRoi / (stock?.years ?? 1)
             if self.days < 80 && roi > 20 {
                 return .wow
             } else if self.days < 80 && roi > 10 {
@@ -420,11 +421,11 @@ public class Trade: NSManagedObject {
         switch self.grade {
         case .wow:
 //            if #available(iOS 14.0, *) {
-//                return Image(systemName: "star.square.fill")
-//                    .foregroundColor(gray ? .gray : .red)
-//            } else {
-                return Image(systemName: "3.square.fill")
+                return Image(systemName: "star.square.fill")
                     .foregroundColor(gray ? .gray : .red)
+//            } else {
+//                return Image(systemName: "3.square.fill")
+//                    .foregroundColor(gray ? .gray : .red)
 //            }
         case .damn:
             return Image(systemName: "3.square")

@@ -48,7 +48,7 @@ struct simStockListView: View {
                     .listStyle(GroupedListStyle())
             }
                 .navigationBarTitle("", displayMode: .inline)
-                .navigationBarItems(leading: chooseCommand(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText), trailing: endChoosing(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText))
+                .navigationBarItems(leading: chooseCommand(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText), trailing: upperRightCommands(list: self.list, isChoosing: self.$isChoosing, isSearching: self.$isSearching, checkedStocks: self.$checkedStocks, searchText: self.$searchText))
         }
             .navigationViewStyle(StackNavigationViewStyle())
     }
@@ -57,52 +57,29 @@ struct simStockListView: View {
 struct logForm: View {
     @Binding var showLog: Bool
 
-    /*
     var body: some View {
         NavigationView {
-            Form {
-                VStack {
-                    Text(simLog.logReportText())
-                }
-                    .font(.footnote)
-                    .lineLimit(nil)
-            }
-            .navigationBarTitle("Log")
-            .navigationBarItems(leading: cancel)
-
-        }
-            .navigationViewStyle(StackNavigationViewStyle())
-    }
-    */
-    
-    var logArray:[String] {
-        simLog.logReportArray()
-    }
-    
-    var body: some View {
-        NavigationView {
-            GeometryReader { g in
-                ScrollView(.vertical) {
-                    ScrollViewReader { scroller in
-                        VStack(alignment: .leading) {
-                            ForEach(logArray, id:\.self) { log in
-                                Text(log)
-                                    .id(log)
-                            }
-                                .font(.footnote)
-                                .lineLimit(nil)
-                                .onAppear {
-                                    scroller.scrollTo(logArray.last, anchor: .bottom)
-                                }
+            ScrollView(.vertical) {
+                ScrollViewReader { scroller in
+                    let logArray:[String] = simLog.logReportArray()
+                    let end:Int = logArray.count - 1
+                    LazyVStack(alignment: .leading) {
+                        ForEach(0..<end, id:\.self) { i in
+                            Text(logArray[i])
                         }
-                            .frame(width: g.size.width, alignment: .topLeading)
-                            .padding()
+                            .font(.footnote)
+                            .lineLimit(nil)
                     }
-                }
-                    .navigationBarTitle("Log")
-                    .navigationBarItems(leading: cancel)
-                    .padding()
+                        .frame(alignment: .topLeading)
+                        .padding()
+                        .onAppear {
+                            scroller.scrollTo(end)
+                        }
+                }   //ScrollViewReader
             }
+                .navigationBarTitle("Log")
+                .navigationBarItems(leading: cancel)
+                .padding()
         }
             .navigationViewStyle(StackNavigationViewStyle())
     }
@@ -115,13 +92,14 @@ struct logForm: View {
     }
 }
 
-struct endChoosing:View {
+struct upperRightCommands:View {
     @ObservedObject var list: simStockList
     @Binding var isChoosing:Bool            //進入了選取模式
     @Binding var isSearching:Bool           //進入了搜尋模式
     @Binding var checkedStocks: [Stock]     //已選取的股票們
     @Binding var searchText:String          //輸入的搜尋文字
     @State var showLog:Bool = false         //顯示log
+    @State var showSetting:Bool = false
     @State var showInformation:Bool = false
 
     private func openUrl(_ url:String) {
@@ -154,6 +132,17 @@ struct endChoosing:View {
                     Button(action: {self.showLog = true}) {
                         Image(systemName: "doc.text")
                     }
+                        .padding(.trailing, (list.widthClass == .compact ? 2 : 8))
+                        .sheet(isPresented: $showLog) {
+                            logForm(showLog: self.$showLog)
+                        }
+                    Spacer()
+                    Button(action: {self.showSetting = true}) {
+                        Image(systemName: "wrench")
+                    }
+                        .sheet(isPresented: $showSetting) {
+                            listSettingForm(list: self.list, showSetting: self.$showSetting, dateStart: self.list.simDefaults.start, moneyBase: self.list.simDefaults.money, autoInvest: self.list.simDefaults.invest)
+                        }
                     Spacer()
                     Button(action: {self.showInformation = true}) {
                         Image(systemName: "questionmark.circle")
@@ -172,10 +161,6 @@ struct endChoosing:View {
         }
             .lineLimit(1)
             .minimumScaleFactor(0.6)
-            .sheet(isPresented: $showLog) {
-                logForm(showLog: self.$showLog)
-            }
-
     }
 }
 
@@ -223,7 +208,7 @@ struct chooseCommand:View {
                 }
             }
         }
-            .frame(width: (self.list.widthClass == .compact ? 300 : 500) , alignment: .leading)
+            .frame(width: (self.list.widthClass == .compact ? 270 : 500), alignment: .leading)
             .minimumScaleFactor(0.6)
             .lineLimit(1)
     }
@@ -238,9 +223,12 @@ struct stockActionMenu:View {
     @Binding var searchText:String          //輸入的搜尋文字
     
     @State var shareText:String = ""        //要匯出的文字內容
-    @State var showFilter:Bool = false      //顯示pickerGroups
+    @State var showGroupMenu:Bool = false
+    @State var showGroupFilter:Bool = false //顯示pickerGroups
     @State var showExport:Bool = false      //顯示匯出選單
     @State var showShare:Bool = false       //分享代號簡稱
+    @State var deleteAll:Bool = false
+    @State var showDeleteAlert:Bool = false
     @State var showMoveAlert:Bool = false
     @State var showReload:Bool = false
 
@@ -251,27 +239,53 @@ struct stockActionMenu:View {
 
     var body: some View {
         HStack {
-            if isChoosing {
-                Button((self.list.widthClass != .compact ? "自股群" : "") + "移除") {
-                    self.showMoveAlert = true
+//            if isChoosing {
+//                Button((self.list.widthClass != .compact ? "自股群" : "") + "移除") {
+//                    self.showMoveAlert = true
+//                }
+//                .alert(isPresented: self.$showMoveAlert) {
+//                        Alert(title: Text("自股群移除"), message: Text("移除不會刪去歷史價，\n只不再更新、計算或復驗。"), primaryButton: .default(Text("移除"), action: {
+//                            self.list.moveStocks(self.checkedStocks)
+//                            self.isChoosingOff()
+//                        }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
+//                    }
+//                Divider()
+//            }
+            if self.list.searchGotResults {
+                Button("加入" + (self.list.widthClass != .compact ? "股群" : "")) {
+                    self.showGroupFilter = true
                 }
+                .sheet(isPresented: self.$showGroupFilter) {
+                    pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isChoosing: self.$isChoosing, isSearching: self.$isSearching, isMoving: self.$isChoosing, isPresented: self.$showGroupFilter, searchText: self.$searchText, newGroup: list.newGroupName)
+                    }
+            }
+            if isChoosing {
+                Button("股群" + (self.list.widthClass != .compact ? "組成" : "")) {
+                    self.showGroupMenu = true
+                }
+                .actionSheet(isPresented: self.$showGroupMenu) {
+                        ActionSheet(title: Text("加入或移除股群"), message: Text("組成股群的行動？"), buttons: [
+                            .default(Text("自股群移除")) {
+                                self.showMoveAlert = true
+                            },
+                            .default(Text("加入股群")) {
+                                self.showGroupFilter = true
+                            },
+                            .destructive(Text("沒事，不用了。")) {
+                                self.isChoosingOff()
+                            }
+                        ])
+                    }
                 .alert(isPresented: self.$showMoveAlert) {
                         Alert(title: Text("自股群移除"), message: Text("移除不會刪去歷史價，\n只不再更新、計算或復驗。"), primaryButton: .default(Text("移除"), action: {
                             self.list.moveStocks(self.checkedStocks)
                             self.isChoosingOff()
                         }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
                     }
-                Divider()
-            }
-            if isChoosing || self.list.searchGotResults {
-                Button("加入" + (self.list.widthClass != .compact ? "股群" : "")) {
-                    self.showFilter = true
-                }
-                .sheet(isPresented: self.$showFilter) {
-                    pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isChoosing: self.$isChoosing, isSearching: self.$isSearching, isMoving: self.$isChoosing, isPresented: self.$showFilter, searchText: self.$searchText, newGroup: list.newGroupName)
+                .sheet(isPresented: self.$showGroupFilter) {
+                    pickerGroups(list: self.list, checkedStocks: self.$checkedStocks, isChoosing: self.$isChoosing, isSearching: self.$isSearching, isMoving: self.$isChoosing, isPresented: self.$showGroupFilter, searchText: self.$searchText, newGroup: list.newGroupName)
                     }
-            }
-            if isChoosing {
+
                 Divider()
                 Button((self.list.widthClass != .compact ? "刪除或" : "") + "重算") {
                     self.showReload = true
@@ -287,12 +301,12 @@ struct stockActionMenu:View {
                                 self.isChoosingOff()
                             },
                             .default(Text("刪除最後1個月")) {
-                                self.list.deleteTrades(self.checkedStocks, oneMonth: true)
-                                self.isChoosingOff()
+                                self.deleteAll = false
+                                self.showDeleteAlert = true
                             },
                             .default(Text("刪除全部")) {
-                                self.list.deleteTrades(self.checkedStocks, oneMonth: false)
-                                self.isChoosingOff()
+                                self.deleteAll  = true
+                                self.showDeleteAlert = true
                             },
                             .default(Text("[TWSE復驗]")) {
                                 self.list.reviseWithTWSE(self.checkedStocks)
@@ -302,6 +316,12 @@ struct stockActionMenu:View {
                                 self.isChoosingOff()
                             }
                         ])
+                    }
+                .alert(isPresented: self.$showDeleteAlert) {
+                    Alert(title: Text("刪除\(deleteAll ? "全部" : "最後1個月")歷史價"), message: Text("刪除歷史價，再重新下載、計算。"), primaryButton: .default(Text("刪除"), action: {
+                            self.list.deleteTrades(self.checkedStocks, oneMonth: !deleteAll)
+                            self.isChoosingOff()
+                        }), secondaryButton: .default(Text("取消"), action: {self.isChoosingOff()}))
                     }
                 Divider()
                 Button("匯出" + (self.list.widthClass != .compact ? "CSV" : "")) {
@@ -465,6 +485,83 @@ struct ShareSheet: UIViewControllerRepresentable {
     static func dismantleUIViewController(_ uiViewController: Self.UIViewControllerType, coordinator: Self.Coordinator) {
     }
 }
+
+struct listSettingForm: View {
+    @ObservedObject var list: simStockList
+    @Binding var showSetting: Bool
+    @State var dateStart:Date
+    @State var moneyBase:Double
+    @State var autoInvest:Double
+    @State var applyToAll:Bool = false
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("新股預設").font(.title)) {
+                    DatePicker(selection: $dateStart, in: (twDateTime.calendar.date(byAdding: .year, value: -15, to: Date()) ?? self.list.simDefaults.first)...(twDateTime.calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date()), displayedComponents: .date) {
+                        Text("起始日期")
+                    }
+                    .environment(\.locale, Locale(identifier: "zh_Hant_TW"))
+                    HStack {
+                        Text(String(format:"起始本金%.f萬元",self.moneyBase))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(width: 180, alignment: .leading)
+                        Slider(value: $moneyBase, in: 10...1000, step: 10)
+                    }
+                    HStack {
+                        Text(self.autoInvest > 9 ? "自動無限加碼" : (self.autoInvest > 0 ? String(format:"自動%.0f次加碼", self.autoInvest) : "不自動加碼"))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(width: 180, alignment: .leading)
+                        Slider(value: $autoInvest, in: 0...10, step: 1)
+                    }
+                }
+                Section(header: Text("股群設定").font(.title),footer: Text(self.list.simDefaults.text).font(.footnote)) {
+                    Toggle("套用到全部股", isOn: $applyToAll)
+                }
+
+            }
+            .navigationBarTitle("模擬設定")
+            .navigationBarItems(leading: cancel, trailing: done)
+
+        }
+            .navigationViewStyle(StackNavigationViewStyle())
+    }
+    
+    var cancel: some View {
+        Button("取消") {
+            self.showSetting = false
+        }
+    }
+    var done: some View {
+        Button("確認") {
+            DispatchQueue.global().async {
+                self.list.applySetting(dateStart: self.dateStart, moneyBase: self.moneyBase, autoInvest: self.autoInvest, applyToAll: self.applyToAll, saveToDefaults: true)
+            }
+            self.showSetting = false
+        }
+    }
+    
+
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 struct stockSection : View {

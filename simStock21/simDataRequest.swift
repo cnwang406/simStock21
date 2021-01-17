@@ -97,6 +97,10 @@ class simDataRequest {
                 }
                 return
             }
+            if netConnect.isNotOK() {
+                simLog.addLog("暫停查價：網路未連線。")
+                return
+            }
         }
         self.twseCount = 0
         self.stockProgress = 1
@@ -177,6 +181,7 @@ class simDataRequest {
     
     func reviseWithTWSE(_ stocks:[Stock], bgTask:BGTask?=nil) {
         self.countTWSE = stocks.count
+        self.continueTWSE = true
         self.progressTWSE = 0
         
         var timeRemain:String {
@@ -218,7 +223,7 @@ class simDataRequest {
                 } else {
                     stockGroup.enter()
                     stockGroup.leave()
-                    simLog.addLog("TWSE \(stock.sId)\(stock.sName) 略。")
+                    simLog.addLog("TWSE \(stock.sId)\(stock.sName) 略。 繼續？\(self.continueTWSE)")
                 }
             }
             stockGroup.wait()
@@ -230,7 +235,7 @@ class simDataRequest {
                 } else {
                     self.progressTWSE = nil
                     simLog.addLog("TWSE(\(stocks.count))完成。 \(timeRemain)")
-                    submitBGTask()
+//                    submitBGTask()
                     if let task = bgTask {
                         task.setTaskCompleted(success: true)
                     }
@@ -412,6 +417,10 @@ class simDataRequest {
     
     
     private func twseDailyMI() {
+        if netConnect.isNotOK() {
+            simLog.addLog("放棄代號更新：網路未連線。")
+            return
+        }
         //        let y = calendar.component(.Year, fromDate: qDate) - 1911
         //        let m = calendar.component(.Month, fromDate: qDate)
         //        let d = calendar.component(.Day, fromDate: qDate)
@@ -1560,7 +1569,7 @@ class simDataRequest {
             }
         }
 
-//        if twDateTime.stringFromDate(trade.dateTime) == "2018/09/07" && trade.stock.sId == "1590" {
+//        if twDateTime.stringFromDate(trade.dateTime) == "2020/08/31" && trade.stock.sId == "1515" {
 //            NSLog("\(trade.stock.sId)\(trade.stock.sName) tracking... ")
 //        }
         

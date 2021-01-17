@@ -36,7 +36,7 @@ public class simLog {
     
     static func logReportArray() -> [String] {
         let reportText = logReportText().replacingOccurrences(of: "\n\n", with: "\n \n")
-        let reportArray = Array(reportText.split(separator: "\n").map{String($0)})
+        let reportArray = Array(reportText.split(separator: "\n").map{String($0)}) + [""]
         return reportArray
     }
     
@@ -53,8 +53,8 @@ public class simLog {
     }
 }
 
-public struct NetConnection {  // 偵測網路連線是否有效
-    static func isConnectedToNetwork() -> Bool {
+public struct netConnect {  // 偵測網路連線是否有效
+    static func isNotOK() -> Bool {
         var zeroAddress = sockaddr_in()
         zeroAddress.sin_len = UInt8(MemoryLayout.size(ofValue: zeroAddress))
         zeroAddress.sin_family = sa_family_t(AF_INET)
@@ -70,7 +70,7 @@ public struct NetConnection {  // 偵測網路連線是否有效
         }
         let isReachable = (flags.rawValue & UInt32(kSCNetworkFlagsReachable)) != 0
         let needsConnection = (flags.rawValue & UInt32(kSCNetworkFlagsConnectionRequired)) != 0
-        return (isReachable && !needsConnection)
+        return (!isReachable  || needsConnection)
     }
 }
 

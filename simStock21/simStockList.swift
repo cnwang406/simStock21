@@ -322,15 +322,13 @@ class simStockList:ObservableObject {
         sim.setReversed(trade)
     }
 
-    var simDefaults:String {
+    var simDefaults:(first:Date,start:Date,money:Double,invest:Double,text:String) {
         let defaults = sim.simDefaults
-        let start = twDateTime.stringFromDate(defaults.start,format: "起始日yyyy/MM/dd")
-        let money = String(format:"起始本金%.f萬元",defaults.money)
-        if defaults.invest == 9 {
-            
-        }
-        let invest = (defaults.invest > 9 ? "自動無限加碼" : (defaults.invest > 0 ? String(format:"自動%.0f次加碼", defaults.invest) : ""))
-        return "新股預設：\(start) \(money) \(invest)"
+        let startX = twDateTime.stringFromDate(defaults.start,format: "起始日yyyy/MM/dd")
+        let moneyX = String(format:"起始本金%.f萬元",defaults.money)
+        let investX = (defaults.invest > 9 ? "自動無限加碼" : (defaults.invest > 0 ? String(format:"自動%.0f次加碼", defaults.invest) : ""))
+        let txt = "新股預設：\(startX) \(moneyX) \(investX)"
+        return (defaults.first, defaults.start, defaults.money, defaults.invest, txt)
     }
     
     func stocksSummary(_ stocks:[Stock]) -> String {
@@ -353,20 +351,22 @@ class simStockList:ObservableObject {
         self.sim.request.downloadTrades(stocks, requestAction: action, allStocks: self.sim.stocks)
     }
     
-    func applySetting (_ stock:Stock, dateStart:Date,moneyBase:Double,autoInvest:Double, applyToGroup:Bool, applyToAll:Bool, saveToDefaults:Bool) {
+    func applySetting (_ stock:Stock?=nil, dateStart:Date,moneyBase:Double,autoInvest:Double, applyToGroup:Bool?=false, applyToAll:Bool, saveToDefaults:Bool) {
         var stocks:[Stock] = []
-        if applyToAll {
-            stocks = sim.stocks
-        } else if applyToGroup {
-            for g in groupStocks {
-                if g[0].group == stock.group {
-                    for s in g {
-                        stocks.append(s)
+        if let st = stock {
+            if let ag = applyToGroup, ag == true {
+                for g in groupStocks {
+                    if g[0].group == st.group {
+                        for s in g {
+                            stocks.append(s)
+                        }
                     }
                 }
+            } else {
+                stocks.append(st)
             }
-        } else {
-            stocks.append(stock)
+        } else if applyToAll {
+            stocks = sim.stocks
         }
         sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, autoInvest: autoInvest)
         if saveToDefaults {
