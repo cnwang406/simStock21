@@ -47,3 +47,4 @@
 <img src="https://github.com/peiyu66/simStock21/raw/master/screenshot/Simulator%20Screen%20Shot%20-%20iPhone%20SE%20(2nd%20generation)%20-%202020-10-28%20at%2014.34.45.png" width="30%">  <img src="https://github.com/peiyu66/simStock21/raw/master/screenshot/Simulator%20Screen%20Shot%20-%20iPad%20Pro%20(11-inch)%20(2nd%20generation)%20-%202020-10-28%20at%2014.32.56.png" width="50%">
 <br>
 
+<img src="icon/icon180.png">
