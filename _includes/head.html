@@ -1,10 +1,14 @@
-<link rel="apple-touch-icon" sizes="57x57" href="icon/icon57.png">
-<link rel="apple-touch-icon" sizes="114x114" href="icon/icon114.png">
-<link rel="apple-touch-icon" sizes="72x72" href="icon/icon72.png">
-<link rel="apple-touch-icon" sizes="144x144" href="icon/icon144.png">
-<link rel="apple-touch-icon" sizes="60x60" href="icon/icon60.png">
-<link rel="apple-touch-icon" sizes="120x120" href="icon/icon120.png">
-<link rel="apple-touch-icon" sizes="76x76" href="icon/icon76.png">
-<link rel="apple-touch-icon" sizes="152x152" href="icon/icon152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icon/icon180.png">
-<link rel="shortcut icon" type="image/x-icon" href="icon/favicon.ico">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- seo -%}
+  <link rel="stylesheet" href="{{ "/assets/css/style.css" | relative_url }}">
+  {%- feed_meta -%}
+  {%- if jekyll.environment == 'production' and site.google_analytics -%}
+    {%- include google-analytics.html -%}
+  {%- endif -%}
+
+  {%- include custom-head.html -%}
+  
+</head>
