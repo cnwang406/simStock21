@@ -46,7 +46,7 @@
 <br><br>
 <img src="https://github.com/peiyu66/simStock21/raw/master/screenshot/Simulator%20Screen%20Shot%20-%20iPhone%20SE%20(2nd%20generation)%20-%202020-10-28%20at%2014.34.45.png" width="30%">  <img src="https://github.com/peiyu66/simStock21/raw/master/screenshot/Simulator%20Screen%20Shot%20-%20iPad%20Pro%20(11-inch)%20(2nd%20generation)%20-%202020-10-28%20at%2014.32.56.png" width="50%">
 
-<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+<link rel="shortcut icon" type="image/x-icon" href="/icon/favicon.ico">
 <link rel="apple-touch-icon" sizes="57x57" href="/icon/icon57.png">
 <link rel="apple-touch-icon" sizes="114x114" href="/icon/icon114.png">
 <link rel="apple-touch-icon" sizes="72x72" href="/icon/icon72.png">
