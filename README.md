@@ -54,5 +54,5 @@
 <link rel="apple-touch-icon" sizes="60x60" href="/icon/icon60.png">
 <link rel="apple-touch-icon" sizes="120x120" href="/icon/icon120.png">
 <link rel="apple-touch-icon" sizes="76x76" href="/icon/icon76.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/iconicon152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/iconicon180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icon/icon152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon/icon180.png">
