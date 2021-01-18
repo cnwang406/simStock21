@@ -1,9 +1,0 @@
-icon114.png	
-icon144.png	
-icon180.png	
-icon60.png	
-icon76.png
-icon120.png	
-icon152.png	
-icon57.png	
-icon72.png
