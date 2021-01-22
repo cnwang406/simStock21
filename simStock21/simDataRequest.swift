@@ -723,7 +723,7 @@ class simDataRequest {
         let request = URLRequest(url: url,timeoutInterval: 30)
         let task = URLSession.shared.dataTask(with: request, completionHandler: {(data, response, error) in
             do {
-                guard let jsonData = data else { throw requestError.warning(msg:"no data") }
+                guard let jsonData = data else { throw requestError.error(msg:"no data") }
                 guard let jroot = try JSONSerialization.jsonObject(with: jsonData, options: .allowFragments) as? [String:Any] else {throw requestError.error(msg: "invalid jroot") }
                 guard let stat = jroot["stat"] as? String else {throw requestError.error(msg:"no rtmessage") }
                 if stat != "OK" {
@@ -777,6 +777,8 @@ class simDataRequest {
                     self.simTechnical(stock: stock, action: .newTrades)
                 }
             } catch requestError.warning(let msg) {
+                simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(msg)")
+            } catch requestError.error(let msg) {
                 simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(msg)")
             } catch {
                 simLog.addLog("\(stock.sId)\(stock.sName) TWSE \(twDateTime.stringFromDate(dateStart)) \(error)")

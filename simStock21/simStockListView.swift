@@ -185,8 +185,10 @@ struct chooseCommand:View {
                     } else {
                         Button("全選") {
                             for stocks in self.list.groupStocks {
-                                for stock in stocks {
-                                    self.checkedStocks.append(stock)
+                                if let s = stocks.first, (s.group == "" || !self.list.searchGotResults) {
+                                    for stock in stocks {
+                                        self.checkedStocks.append(stock)
+                                    }
                                 }
                             }
                         }
