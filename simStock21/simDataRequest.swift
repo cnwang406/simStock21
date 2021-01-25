@@ -92,9 +92,9 @@ class simDataRequest {
             simLog.addLog("\(action)(\(stocks.count)) " + twDateTime.stringFromDate(timeTradesUpdated, format: "上次：yyyy/MM/dd HH:mm:ss") + (isOffDay ? " 今天休市" : " \(self.inMarketingTime ? "盤中待續" : "已收盤")"))
             if self.stockProgress > 0 {
                 simLog.addLog("\t前查價未完？？？(\(self.stockProgress)/\(self.stockCount))")
-                if self.realtime {
+//                if self.realtime {
                     self.setupTimer(allStocks ?? stocks, timeInterval: 30)
-                }
+//                }
                 return
             }
             if netConnect.isNotOK() {

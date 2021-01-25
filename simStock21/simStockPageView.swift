@@ -307,14 +307,15 @@ struct tradeHeading:View {
     @Binding var filterIsOn:Bool
     
     var totalSummary: (profit:String, roi:String, days:String) {
-        if let trade = stock.trades.first {
+        if stock.trades.count > 0 {
+            let trade = stock.trades[0]
             if trade.rollRounds > 0 {
                 let numberFormatter = NumberFormatter()
                 numberFormatter.numberStyle = .currency   //貨幣格式
                 numberFormatter.maximumFractionDigits = 0
                 let rollAmtProfit = "累計損益" + (numberFormatter.string(for: trade.rollAmtProfit) ?? "$0")
                 let rollAmtRoi = String(format:"年報酬率%.1f%%",trade.rollAmtRoi/stock.years)
-                let rollDays = String(format:"平均週期%.f天",trade.rollDays/trade.rollRounds)
+                let rollDays = String(format:"平均週期%.f天",trade.days)
                 return (rollAmtProfit,rollAmtRoi,rollDays)
             }
         }
@@ -583,7 +584,7 @@ struct tradeCell: View {
         .font(.custom("Courier", size: textSize(textStyle: .callout)))
     }
     
-     var body: some View {
+    var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 //== 1反轉 ==
