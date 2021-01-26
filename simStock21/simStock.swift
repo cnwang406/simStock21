@@ -11,7 +11,7 @@ import Foundation
 
 struct simStock {
     
-    let simTesting:Bool = false
+    let simTesting:Bool = true
     let simTestStart:Date? = twDateTime.dateFromString("2006/01/16")
     let request = simDataRequest()
 
@@ -184,7 +184,7 @@ struct simStock {
             .sorted {$0[0].group < $1[0].group}
     }
     
-    func stocksSummary(_ stocks:[Stock]) -> (count:Double, roi:Double, days:Double) {
+    func stocksSummary(_ stocks:[Stock], date:Date?=nil) -> (count:Double, roi:Double, days:Double) {
         if stocks.count == 0 {
             return (0,0,0)
         }
@@ -192,7 +192,7 @@ struct simStock {
         var sumDays:Double = 0
         let s = stocks.filter{$0.sId != "t00"}
         for stock in s {
-            if let trade = stock.lastTrade(stock.context) {
+            if let trade = stock.lastTrade(stock.context, date: date) {
                 sumRoi += (trade.rollAmtRoi / stock.years)
                 sumDays += trade.days
             }
@@ -203,8 +203,9 @@ struct simStock {
         return (count, roi, days)
     }
     
-    func runTest(start:Date) {
+    func runTest() {
         UserDefaults.standard.set(true, forKey: "simResetAll")
+        let start = self.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)   //測試15年內每年的模擬3年的成績
         NSLog("")
         NSLog("== simTesting \(twDateTime.stringFromDate(start)) ==")
         var groupRoi:String = ""
@@ -233,7 +234,8 @@ struct simStock {
         while nextYear <= (twDateTime.calendar.date(byAdding: .year, value: -1, to: twDateTime.startOfDay()) ?? Date.distantPast) {
             let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 200, autoInvest: 2)
             request.downloadTrades(stocks, requestAction: .simTesting)
-            let summary = stocksSummary(stocks)
+            let endYear = (twDateTime.calendar.date(byAdding: .year, value: 3, to: nextYear) ?? Date.distantFuture)
+            let summary = stocksSummary(stocks, date: endYear)  
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi
             days = String(format:"%.f", summary.days) + (days.count > 0 ? ", " : "") + days
             print("\(twDateTime.stringFromDate(nextYear, format: "yyyy"))" + String(format:"(%.1f/%.f) ",summary.roi,summary.days), terminator:"")
@@ -292,7 +294,7 @@ struct simStock {
         var roi:Double = 0
         var roiSum:Double = 0
         var maxMoney:Double = 0
-        let trades = Trade.fetch(stock.context, stock: stock, dateTime: from, asc: true)
+        let trades = Trade.fetch(stock.context, stock: stock, start: from, asc: true)
         for trade in trades {
             let mmTrade = twDateTime.startOfMonth(trade.dateTime)
             if mmTrade > mm {  //跨月了

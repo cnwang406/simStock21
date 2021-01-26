@@ -393,8 +393,7 @@ class simStockList:ObservableObject {
             simLog.shrinkLog(200)
             self.versionLast = UserDefaults.standard.string(forKey: "simStockVersion") ?? ""
             if sim.simTesting {
-                let start = sim.simTestStart ?? (twDateTime.calendar.date(byAdding: .year, value: -15, to: twDateTime.startOfDay()) ?? Date.distantPast)
-                sim.runTest(start: start)
+                sim.runTest()
             } else {
                 UserDefaults.standard.set(versionNow, forKey: "simStockVersion")
                 sim.request.downloadStocks()

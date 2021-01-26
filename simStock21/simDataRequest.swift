@@ -270,7 +270,7 @@ class simDataRequest {
 
     private func simTechnical(stock:Stock, action:simTechnicalAction) {
         let context = coreData.shared.context
-        let trades = Trade.fetch(context, stock: stock, fetchLimit: (action == .realtime ? 256 : nil), asc:(action == .realtime ? false : true))
+        let trades = Trade.fetch(context, stock: stock, end: (action == .simTesting ? (twDateTime.calendar.date(byAdding: .year, value: 3, to: stock.dateStart) ?? Date.distantFuture) : nil), fetchLimit: (action == .realtime ? 256 : nil), asc:(action == .realtime ? false : true))
         if trades.count > 0 {
             if action == .realtime {
                 let tr376:[Trade] = trades.reversed()
@@ -1589,7 +1589,7 @@ class simDataRequest {
         wantH += (trade.tMa20Diff - trade.tMa60Diff > 1 && trade.tMa20Days > 0 ? 1 : 0)
         wantH += ((trade.tMa60Diff > (trade.grade <= .weak ? -0.5 : 0) && trade.tMa20Diff > (trade.grade <= .weak ? -0.5 : 0)) || trade.grade == .damn ? 1 : 0)
         wantH += (trade.tMa60DiffMax9 > 30 && trade.grade <= .fine  ? 1 : 0)
-        wantH += (trade.tMa20DiffMax9 > 35 && trade.grade <= .none  ? 1 : 0)
+        wantH += (trade.tMa20DiffMax9 > 35 && trade.grade <= .none  ? 1 : 0)    //只有某年1次有效？
 //        wantH += (trade.tMa20DiffMin9 > 0 && trade.tMa60DiffMin9 > 0 && trade.grade <= .weak ? 1 : 0)
 
         wantH += (trade.tKdKZ125 < -0.8 ? -1 : 0)
@@ -1603,7 +1603,8 @@ class simDataRequest {
         wantH += (trade.grade <= .weak && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.grade == .damn && (ma20d > 6 || ma60d > 7) ? -1 : 0)
         wantH += (trade.tMa20DiffZ125 > 1.6 && trade.grade <= .damn ? -1 : 0)
-        
+        wantH += (trade.tMa20Diff > 0 && (trade.tMa20DiffMax9 - trade.tMa20Diff) < (trade.grade <= .weak ? 1.5 : 2) && (trade.tMa20DiffZ125 > 1.5 && trade.tMa60DiffZ125 > 1.5) && (trade.grade >= .weak && trade.grade <= .none) ? -1 : 0)
+
         if wantH >= 1 {
             if (trade.grade <= .weak && prev.priceClose < trade.priceClose) && (prev.simRule == "H" || prev.simRule == "I") {
                 trade.simRule = "I"

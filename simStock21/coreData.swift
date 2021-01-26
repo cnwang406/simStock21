@@ -163,8 +163,8 @@ public class Stock: NSManagedObject {
         return trades.first
     }
     
-    func lastTrade(_ context:NSManagedObjectContext) -> Trade? {
-        let trades = Trade.fetch(context, stock: self, fetchLimit: 1, asc: false)
+    func lastTrade(_ context:NSManagedObjectContext, date:Date?=nil) -> Trade? {
+        let trades = Trade.fetch(context, stock: self, end: date, fetchLimit: 1, asc: false)
         return trades.first
     }
     
@@ -176,7 +176,7 @@ public class Stock: NSManagedObject {
                 mStart = twDateTime.startOfMonth(last.date)
             }
         }
-        let trades = Trade.fetch(context, stock: self, dateTime: mStart)
+        let trades = Trade.fetch(context, stock: self, start: mStart)
         NSLog("\(self.sId)\(self.sName) 刪除trades:共\(trades.count)筆")
         for trade in trades {
             context.delete(trade)
@@ -195,7 +195,8 @@ public class Stock: NSManagedObject {
     var p10:P10 = P10()
     
     var dateRequestTWSE:Date? {
-        if let trade = Trade.fetch(self.context, stock: self, tillYesterday: true, TWSE: false, fetchLimit: 1, asc: false).first {
+        let yesterday = (twDateTime.calendar.date(byAdding: .day, value: -1, to: twDateTime.endOfDay()) ?? Date.distantFuture)
+        if let trade = Trade.fetch(self.context, stock: self, end: yesterday, TWSE: false, fetchLimit: 1, asc: false).first {
             if let twseStart:Date = twDateTime.dateFromString("2010/01/01"), trade.date >= twseStart { //2010之前的沒得查
                 return trade.date
             }
@@ -229,15 +230,14 @@ struct P10 {    //五檔價格試算建議
 
 @objc(Trade)
 public class Trade: NSManagedObject {
-    static func fetchRequest (stock:Stock, dateTime:Date?=nil, tillYesterday:Bool=false, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
+    static func fetchRequest (stock:Stock, start:Date?=nil, end:Date?=nil, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> NSFetchRequest<Trade> {
         var predicates:[NSPredicate] = []
         predicates.append(NSPredicate(format: "stock == %@", stock))
-        if let dt = dateTime {
-            predicates.append(NSPredicate(format: "dateTime >= %@", dt as CVarArg))
+        if let dtS = start {
+            predicates.append(NSPredicate(format: "dateTime >= %@", dtS as CVarArg))
         }
-        if tillYesterday {
-            let today = twDateTime.startOfDay()
-            predicates.append(NSPredicate(format: "dateTime < %@", today as CVarArg))
+        if let dtE = end {
+            predicates.append(NSPredicate(format: "dateTime <= %@", dtE as CVarArg))
         }
         if let t = TWSE {
             predicates.append(NSPredicate(format: "tSource \(t ? "==" : "!=") %@", "TWSE"))
@@ -254,14 +254,14 @@ public class Trade: NSManagedObject {
         return fetchRequest
     }
     
-    static func fetch (_ context:NSManagedObjectContext, stock:Stock, dateTime:Date?=nil, tillYesterday:Bool=false, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
-        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dateTime, tillYesterday: tillYesterday, TWSE: TWSE, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
+    static func fetch (_ context:NSManagedObjectContext, stock:Stock, start:Date?=nil, end:Date?=nil, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
+        let fetchRequest = self.fetchRequest(stock: stock, start: start, end: end, TWSE: TWSE, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
         return (try? context.fetch(fetchRequest)) ?? []
     }
     
     static func trade (_ context:NSManagedObjectContext, stock:Stock, date:Date) -> Trade {
         let dt = twDateTime.startOfDay(date)
-        let fetchRequest = self.fetchRequest(stock: stock, dateTime: dt ,fetchLimit: 1, asc: true)
+        let fetchRequest = self.fetchRequest(stock: stock, start: dt ,fetchLimit: 1, asc: true)
         if let trades = try? context.fetch(fetchRequest), let trade = trades.first, trade.date == dt{
             return trade
         } else {

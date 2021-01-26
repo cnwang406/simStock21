@@ -655,8 +655,9 @@ struct stockCell : View {
                 .foregroundColor(list.isRunning ? .gray : .primary)
             if stock.group != "" {
                 Group {
-                    if stock.trades.count > 0 {
-                        lastTrade(list: self.list, stock: self.stock, trade: stock.trades[0], isChoosing: self.$isChoosing, isSearching: self.$isSearching)
+//                    if stock.trades.count > 0 {
+                    if let trade = stock.lastTrade(stock.context) {
+                        lastTrade(list: self.list, stock: self.stock, trade: trade, isChoosing: self.$isChoosing, isSearching: self.$isSearching)
                     } else {
                         EmptyView()
                     }
