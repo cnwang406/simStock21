@@ -183,6 +183,7 @@ class simDataRequest {
         self.countTWSE = stocks.count
         self.continueTWSE = true
         self.progressTWSE = 0
+        var tasks = stocks
         
         var timeRemain:String {
             if bgTask != nil && UIApplication.shared.backgroundTimeRemaining < 500 {
@@ -210,48 +211,50 @@ class simDataRequest {
         }
         
         func requestTWSE(_ requestStocks:[Stock], bgTask:BGTask?=nil) {
+            var requests = requestStocks
             let stockGroup:DispatchGroup = DispatchGroup()
-            if let stock = requestStocks.first {
+            if let stock = requests.first {
                 if let dateStart = stock.dateRequestTWSE  {
                     stockGroup.enter()
                     let progress = self.progressTWSE ?? 0
                     let delay:Int = (progress % 5 == 0 ? 9 : 3) + (progress % 7 == 0 ? 3 : 0)
-                    self.progressTWSE = stocks.count - requestStocks.count + 1
+                    self.progressTWSE = tasks.count - requests.count + 1
                     DispatchQueue.global().asyncAfter(deadline: DispatchTime.now() + .seconds(delay)) {
                         self.twseRequest(stock: stock, dateStart: dateStart, stockGroup: stockGroup)
                     }
+                    if dateStart == twDateTime.yesterday() {
+                        requests.append(stock)  //復驗是到昨天，可能只有1筆，就再多排一次
+                        tasks.append(stock)
+                    }
                 } else {
-                    stockGroup.enter()
-                    stockGroup.leave()
+//                    stockGroup.enter()
+//                    stockGroup.leave()
                     simLog.addLog("TWSE \(stock.sId)\(stock.sName) 略。 繼續？\(self.continueTWSE)")
                 }
             }
             stockGroup.wait()
             if self.continueTWSE {
-                var requests = requestStocks
                 requests.removeFirst()
                 if requests.count > 0 {
                     requestTWSE(requests, bgTask: bgTask)
                 } else {
                     self.progressTWSE = nil
-                    simLog.addLog("TWSE(\(stocks.count))完成。 \(timeRemain)")
-//                    submitBGTask()
+                    simLog.addLog("TWSE(\(requestStocks.count))完成。 \(timeRemain)")
                     if let task = bgTask {
                         task.setTaskCompleted(success: true)
                     }
                 }
             } else {
-                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(stocks.count))中斷！ \(timeRemain)")
+                simLog.addLog("TWSE(\(self.progressTWSE ?? 0)/\(requestStocks.count))中斷！ \(timeRemain)")
                 self.continueTWSE = true
                 self.progressTWSE = nil
-//                submitBGTask()
                 if let task = bgTask {
                     task.setTaskCompleted(success: false)
                 }
             }
         }
         
-        requestTWSE(stocks)
+        requestTWSE(tasks)
     }
     
     
@@ -1648,11 +1651,12 @@ class simDataRequest {
 
             let weekendDays:Double = (twDateTime.calendar.component(.weekday, from: trade.dateTime) <= 2 ? 2 : 0)
             let sRoi19 = trade.simUnitRoi > (trade.grade > .weak ? 21.5 : 19.5) && trade.simDays < (trade.tMa60DiffZ250 > 0 ? 30 : 90)
-            let sRoi15 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 15.5 : 11.5) && trade.simDays < 30
-            let sRoi13 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 13.5 : 9.5) && trade.simDays < 20
-            let sRoi09 = trade.simUnitRoi > (trade.tMa60DiffZ250 > 0 ? 9.5 : 7.5) && trade.simDays < 10
+            let forRoiH = trade.tMa60DiffZ250 > 0
+            let sRoi15 = trade.simUnitRoi > (forRoiH ? 15.5 : 11.5) && trade.simDays < 30
+            let sRoi13 = trade.simUnitRoi > (forRoiH ? 13.5 : 9.5) && trade.simDays < 20
+            let sRoi09 = trade.simUnitRoi > (forRoiH ? 9.5 : 7.5) && trade.simDays < 10
             let sRoi03 = trade.simUnitRoi > 3.5 && (trade.tKdKZ125 > 1.5 || trade.tOscZ125 > 1.5)
-            let sRoi02 = trade.simUnitRoi > 2.5
+            let sRoi02 = trade.simUnitRoi > (trade.grade <= .weak ? 1.5 : 2.5)
             let sRoi00 = trade.simUnitRoi > 0.45 && trade.simDays > (1 + weekendDays)
             let sBase5 = wantS >= topWantS && sRoi00 && trade.grade <= .weak
             let sBase4 = wantS >= (topWantS - 1) && sRoi02

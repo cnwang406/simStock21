@@ -153,8 +153,8 @@ public class Stock: NSManagedObject {
         String(sName.first ?? Character(""))
     }
     
-    var trades:[Trade] {    //只給swiftui用的
-        let context = self.context
+    var trades:[Trade] {
+        let context = coreData.shared.context   //不一定只給swiftui用的
         return Trade.fetch(context, stock: self, asc: false)
     }
     
@@ -256,6 +256,11 @@ public class Trade: NSManagedObject {
     
     static func fetch (_ context:NSManagedObjectContext, stock:Stock, start:Date?=nil, end:Date?=nil, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
         let fetchRequest = self.fetchRequest(stock: stock, start: start, end: end, TWSE: TWSE, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
+        let contextCurrency = (context.concurrencyType == .mainQueueConcurrencyType ? "main" : "private")
+        let threadCurrency = (Thread.current == Thread.main ? "main" : "private")
+        if contextCurrency != threadCurrency {
+            simLog.addLog("context:\(contextCurrency), but thread:\(threadCurrency)")
+        }
         return (try? context.fetch(fetchRequest)) ?? []
     }
     

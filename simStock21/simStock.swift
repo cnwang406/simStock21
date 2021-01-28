@@ -11,8 +11,8 @@ import Foundation
 
 struct simStock {
     
-    let simTesting:Bool = true
-    let simTestStart:Date? = twDateTime.dateFromString("2006/01/16")
+    let simTesting:Bool = false
+    let simTestStart:Date? = twDateTime.dateFromString("2006/01/28")
     let request = simDataRequest()
 
     private(set) var stocks:[Stock] = []
@@ -235,7 +235,7 @@ struct simStock {
             let _ = settingStocks(stocks, dateStart: nextYear, moneyBase: 200, autoInvest: 2)
             request.downloadTrades(stocks, requestAction: .simTesting)
             let endYear = (twDateTime.calendar.date(byAdding: .year, value: 3, to: nextYear) ?? Date.distantFuture)
-            let summary = stocksSummary(stocks, date: endYear)  
+            let summary = stocksSummary(stocks, date: endYear)
             roi = String(format:"%.1f", summary.roi) + (roi.count > 0 ? ", " : "") + roi
             days = String(format:"%.f", summary.days) + (days.count > 0 ? ", " : "") + days
             print("\(twDateTime.stringFromDate(nextYear, format: "yyyy"))" + String(format:"(%.1f/%.f) ",summary.roi,summary.days), terminator:"")

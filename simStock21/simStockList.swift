@@ -368,7 +368,9 @@ class simStockList:ObservableObject {
         } else if applyToAll {
             stocks = sim.stocks
         }
-        sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, autoInvest: autoInvest)
+        if stocks.count > 0 {
+            sim.settingStocks(stocks, dateStart: dateStart, moneyBase: moneyBase, autoInvest: autoInvest)
+        }
         if saveToDefaults {
             sim.setDefaults(start: dateStart, money: moneyBase, invest: autoInvest)
         }
