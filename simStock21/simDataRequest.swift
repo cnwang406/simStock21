@@ -180,11 +180,11 @@ class simDataRequest {
     var continueTWSE:Bool = true
     
     func reviseWithTWSE(_ stocks:[Stock], bgTask:BGTask?=nil) {
-        self.countTWSE = stocks.count
+        var tasks = stocks
+        self.countTWSE = tasks.count
         self.continueTWSE = true
         self.progressTWSE = 0
-        var tasks = stocks
-        
+
         var timeRemain:String {
             if bgTask != nil && UIApplication.shared.backgroundTimeRemaining < 500 {
                 return String(format:"剩餘時間: %.3fs",UIApplication.shared.backgroundTimeRemaining)
@@ -225,6 +225,7 @@ class simDataRequest {
                     if dateStart == twDateTime.yesterday() {
                         requests.append(stock)  //復驗是到昨天，可能只有1筆，就再多排一次
                         tasks.append(stock)
+                        countTWSE = tasks.count
                     }
                 } else {
 //                    stockGroup.enter()
@@ -239,7 +240,7 @@ class simDataRequest {
                     requestTWSE(requests, bgTask: bgTask)
                 } else {
                     self.progressTWSE = nil
-                    simLog.addLog("TWSE(\(requestStocks.count))完成。 \(timeRemain)")
+                    simLog.addLog("TWSE(\(tasks.count))完成。 \(timeRemain)")
                     if let task = bgTask {
                         task.setTaskCompleted(success: true)
                     }

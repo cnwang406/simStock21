@@ -196,7 +196,8 @@ public class Stock: NSManagedObject {
     
     var dateRequestTWSE:Date? {
         let yesterday = (twDateTime.calendar.date(byAdding: .day, value: -1, to: twDateTime.endOfDay()) ?? Date.distantFuture)
-        if let trade = Trade.fetch(self.context, stock: self, end: yesterday, TWSE: false, fetchLimit: 1, asc: false).first {
+        let context = coreData.shared.context
+        if let trade = Trade.fetch(context, stock: self, end: yesterday, TWSE: false, fetchLimit: 1, asc: false).first {
             if let twseStart:Date = twDateTime.dateFromString("2010/01/01"), trade.date >= twseStart { //2010之前的沒得查
                 return trade.date
             }
@@ -256,11 +257,13 @@ public class Trade: NSManagedObject {
     
     static func fetch (_ context:NSManagedObjectContext, stock:Stock, start:Date?=nil, end:Date?=nil, TWSE:Bool?=nil, simReversed:Bool?=nil, fetchLimit:Int?=nil, asc:Bool=false) -> [Trade] {
         let fetchRequest = self.fetchRequest(stock: stock, start: start, end: end, TWSE: TWSE, simReversed:simReversed, fetchLimit: fetchLimit, asc: asc)
-        let contextCurrency = (context.concurrencyType == .mainQueueConcurrencyType ? "main" : "private")
-        let threadCurrency = (Thread.current == Thread.main ? "main" : "private")
-        if contextCurrency != threadCurrency {
-            simLog.addLog("context:\(contextCurrency), but thread:\(threadCurrency)")
-        }
+        
+            let contextCurrency = (context.concurrencyType == .mainQueueConcurrencyType ? "main" : "private")
+            let threadCurrency = (Thread.current == Thread.main ? "main" : "private")
+            if contextCurrency != threadCurrency {
+                simLog.addLog("context:\(contextCurrency), but thread:\(threadCurrency)")
+            }
+        
         return (try? context.fetch(fetchRequest)) ?? []
     }
     
